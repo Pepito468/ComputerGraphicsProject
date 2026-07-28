@@ -6,14 +6,19 @@ project(SkeletonToChange LANGUAGES CXX)
 # Project layout
 # --------------------
 set(MAIN_DIR source)
-set(SRC_DIR ${MAIN_DIR}/src)
+set(SRC_DIR ${MAIN_DIR}/src/game)
 set(INCLUDE_DIR ${MAIN_DIR}/include)
+set(ENGINE_DIR ${MAIN_DIR}/src/engine)
 
 file(GLOB SRC_FILES CONFIGURE_DEPENDS "${SRC_DIR}/*.cpp")
 
 
 add_executable(${PROJECT_NAME} ${SRC_FILES})
-target_include_directories(${PROJECT_NAME} PRIVATE "${INCLUDE_DIR}")
+target_include_directories(${PROJECT_NAME} PRIVATE 
+    "${INCLUDE_DIR}"
+    "${ENGINE_DIR}"
+)
+
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
 set_source_files_properties(${SRC_DIR}/Libs.cpp PROPERTIES COMPILE_OPTIONS "-g0")
