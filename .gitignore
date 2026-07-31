@@ -2,4 +2,4 @@
 build/*
 # Local config
 .clangd
-.cache
+.idea
