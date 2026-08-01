@@ -1,1 +1,7 @@
 # Computer Graphics Project
+
+## Development Time (hours)
+
+| Task          | Michele Sangaletti | Andrea Riccioli | Shaan Vashisht | Christian Vezzoli |
+|:--------------|:------------------:|:---------------:|:--------------:|:-----------------:|
+| System Design |         5          |        5        |      9.5       |         5         |

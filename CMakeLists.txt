@@ -13,7 +13,12 @@ set(ENGINE_DIR ${MAIN_DIR}/src/engine)
 file(GLOB SRC_FILES CONFIGURE_DEPENDS "${SRC_DIR}/*.cpp")
 
 
-add_executable(${PROJECT_NAME} ${SRC_FILES})
+add_executable(${PROJECT_NAME} ${SRC_FILES}
+        source/src/engine/Camera.hpp
+        source/src/engine/Light.hpp
+        source/src/engine/Model.hpp
+        source/src/engine/Collider.hpp
+        source/src/engine/Behaviour.hpp)
 target_include_directories(${PROJECT_NAME} PRIVATE 
     "${INCLUDE_DIR}"
     "${ENGINE_DIR}"
