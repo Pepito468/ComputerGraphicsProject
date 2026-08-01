@@ -4,4 +4,4 @@
 
 | Task          | Michele Sangaletti | Andrea Riccioli | Shaan Vashisht | Christian Vezzoli |
 |:--------------|:------------------:|:---------------:|:--------------:|:-----------------:|
-| System Design |         5          |        5        |      9.5       |         5         |
+| System Design |         5          |        5        |      9.5       |         8         |

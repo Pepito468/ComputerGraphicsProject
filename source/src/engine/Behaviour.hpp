@@ -1,10 +1,11 @@
-﻿#ifndef BEHAVIOUR_HPP
-#define BEHAVIOUR_HPP
+﻿#ifndef ENGINE_BEHAVIOUR_HPP
+#define ENGINE_BEHAVIOUR_HPP
+
 #include "Node.hpp"
 #include "modules/Colliders.hpp"
 
 /// A node with custom logic
-abstract class Behaviour : public Node
+class Behaviour : public Node
 {
     public:
         /// Called every frame by the engine

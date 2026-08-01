@@ -1,15 +1,16 @@
 // 3DNode
 #ifndef ENGINE_NODE3D_H
 #define ENGINE_NODE3D_H
-#define GLM_FORCE_RADIANS
 
 #include "Node.hpp"
+
+#define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 /// Keeps track of a node's spacial characteristics
-struct Transform
-{
+struct Transform {
+
     /// The transform's position
     glm::vec3 position;
     /// The transform's rotation, in radians
@@ -17,11 +18,22 @@ struct Transform
     /// The transform's scale
     glm::vec3 scale;
 
-    Transform() : position(glm::vec3(0)), rotation(glm::vec3(0)), scale(glm::vec3(1)) {}
-    Transform(const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale) : position(position), rotation(rotation), scale(scale) {}
 
-    glm::mat4 calculateTransformationMatrix() const
-    {
+
+    /* Default constructor */
+    Transform() {
+        this->position = glm::vec3(0);
+        this->rotation = glm::vec3(0);
+        this->scale = glm::vec3(1);
+    }
+    /* Constructor with parameters */
+    Transform(const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale) {
+        this->position = position;
+        this->rotation = rotation;
+        this->scale = scale;
+    }
+
+    glm::mat4 calculateTransformationMatrix() const {
         const glm::mat4 transformMat =
             glm::translate(glm::mat4(1.0), position) *
             glm::rotate(glm::mat4(1.0), rotation.y , glm::vec3(0,1,0)) *
@@ -31,8 +43,7 @@ struct Transform
         return transformMat;
     }
 
-    glm::vec3 getXAxis() const
-    {
+    glm::vec3 getXAxis() const {
         return
         glm::rotate(glm::mat4(1.0), rotation.y , glm::vec3(0,1,0)) *
             glm::rotate(glm::mat4(1.0), rotation.x , glm::vec3(1,0,0)) *
@@ -40,8 +51,7 @@ struct Transform
                 glm::vec4(1, 0, 0, 1);
     }
 
-    glm::vec3 getYAxis() const
-    {
+    glm::vec3 getYAxis() const {
         return
         glm::rotate(glm::mat4(1.0), rotation.y , glm::vec3(0,1,0)) *
             glm::rotate(glm::mat4(1.0), rotation.x , glm::vec3(1,0,0)) *
@@ -49,8 +59,7 @@ struct Transform
                 glm::vec4(0, 1, 0, 1);
     }
 
-    glm::vec3 getZAxis() const
-    {
+    glm::vec3 getZAxis() const {
         return
         glm::rotate(glm::mat4(1.0), rotation.y , glm::vec3(0,1,0)) *
             glm::rotate(glm::mat4(1.0), rotation.x , glm::vec3(1,0,0)) *
@@ -63,8 +72,7 @@ struct Transform
      * @param newSpace The transform to use as a reference system.
      * @return A new transform instance.
      */
-    Transform localized(const Transform newSpace) const
-    {
+    Transform localized(const Transform newSpace) const {
         return Transform(
             position - newSpace.position,
             rotation - newSpace.rotation, //TODO
@@ -77,8 +85,7 @@ struct Transform
      * @param oldSpace The transform to use as a reference system.
      * @return A new transform instance.
      */
-    Transform globalized(const Transform oldSpace) const
-    {
+    Transform globalized(const Transform oldSpace) const {
         return Transform(
             position + oldSpace.position,
             rotation + oldSpace.rotation,//TODO
@@ -91,27 +98,29 @@ struct Transform
      * @param point The point to use.
      * @return A new vec3 instance.
      */
-    glm::vec3 toLocalSpace(const glm::vec3 point) const
-    {
+    glm::vec3 toLocalSpace(const glm::vec3 point) const {
         return calculateTransformationMatrix() * glm::vec4(point, 1);
     }
 };
 
 /// A Node that has a place in 3D space
 class Node3D : public Node {
+
     public:
+
         /// The node's transform in world space
         Transform globalTransform;
 
         /// The node's transform relative to its parent (if no 3D parent, same as global)
         Transform localTransform;
 
+
+
         /**
          * Adds a node to this node's children and updates its localTransform. \n
          * @copydoc Node::adopt
          */
-        void adopt(Node3D* child)
-        {
+        void adopt(Node3D* child) {
             Node::adopt(child);
             child->localTransform = child->globalTransform.localized(globalTransform);
         }
@@ -120,8 +129,7 @@ class Node3D : public Node {
          * Removes a node from this node's children and updates its localTransform. \n
          * @copydoc Node::adopt
          */
-        void disown(Node3D* child)
-        {
+        void disown(Node3D* child) {
             Node::disown(child);
             child->localTransform = child->globalTransform;
         }
