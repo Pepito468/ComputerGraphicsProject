@@ -38,6 +38,11 @@ class Node3D : public Node {
 
         /* Constructor with parameters */
         Node3D(const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale) : Node() {
+            if (scale.x == 0 || scale.y == 0 || scale.z == 0) {
+                // A scale of 0 produces nan after a rotation
+                error("Flattening, at least one of the scaling factors is 0");
+            }
+            
             this->matrix = 
                 glm::translate(MAT4_I, position) *
                 glm::rotate(MAT4_I, rotation.y, VEC3_Y) *
@@ -142,12 +147,21 @@ class Node3D : public Node {
             this->matrix = glm::translate(MAT4_I, newPosition - this->getPosition()) * this->matrix;
         }
 
+        /* Scales or mirrors the node by the given scale */
+        void scale(glm::vec3 scale) {
+            if (scale.x == 0 || scale.y == 0 || scale.z == 0) {
+                error("Flattening, at least one of the scaling factors is 0");
+            }
+
+            this->matrix = glm::scale(this->matrix, scale);
+        }
+
         /* Returns the position of the node */
         glm::vec3 getPosition() {
             return glm::vec3(this->matrix[3][0], this->matrix[3][1], this->matrix[3][2]);
         }
 
-        /* Returns a vector with the rotation of the ndoe (in rad) */
+        /* Returns a vector with the rotation of the node (in rad) */
         glm::vec3 getRotation() {
             glm::vec3 xAxis = this->getLocalXAxis();
             glm::vec3 yAxis = this->getLocalYAxis();
@@ -158,8 +172,6 @@ class Node3D : public Node {
                     std::asin(zAxis[0]),
                     std::atan2(yAxis[0], xAxis[0]));
         }
-
-        // TODO: scale
 };
 
 #endif

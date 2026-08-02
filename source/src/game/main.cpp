@@ -6,6 +6,7 @@
 #include "glm/trigonometric.hpp"
 #include <cstdio>
 #include <iostream>
+#include <numbers>
 #include <ostream>
 
 int main() {
@@ -57,7 +58,16 @@ int main() {
     printf("POS: %.2f %.2f %.2f\n", pos.x, pos.y, pos.z);
     printf("ROT: %.2f %.2f %.2f\n", rot.x, rot.y, rot.z);
 
-    
+    std::cout << std::endl << "TRANSFORM TEST 2" << std::endl << std::endl;
+
+    Node3D a = Node3D(glm::vec3(1, 1, 0), glm::vec3(0, 0, 0), glm::vec3(1, 1, 1));
+    a.rotateZ(std::numbers::pi/4);
+    a.scale(glm::vec3(2, -1, 1));
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++)
+            printf("%.2f\t", a.matrix[j][i]);
+        std::cout << std::endl;
+    }
 
     std::cout << std::endl << "END TEST" << std::endl << std::endl;
     // NOTE: early return for debugging
