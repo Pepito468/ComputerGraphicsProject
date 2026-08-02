@@ -1,11 +1,17 @@
 #include "Engine.hpp"
 #include "Light.hpp"
+#include "Node3D.hpp"
 #include "gamenodes/gamenode.hpp"
+#include "glm/fwd.hpp"
+#include "glm/trigonometric.hpp"
+#include <cstdio>
 #include <iostream>
 #include <ostream>
 
 int main() {
     // Node Test
+    std::cout << "NODE TEST" << std::endl << std::endl;
+
     Node *testNode = new GameNode();
     testNode->onEnter();
     std::cout << "testNode UUID after onEnter(): " << testNode->UUID << std::endl;
@@ -28,9 +34,34 @@ int main() {
     delete parent;
     delete child;
 
+    std::cout << std::endl << "TRANSFORM TEST" << std::endl << std::endl;
 
-    std::cout << "END TEST" << std::endl << std::endl;
+    Node3D node3d = Node3D();
+    node3d.translate(glm::vec3(2, 2, 0));
+    node3d.rotateX(glm::radians(60.0f));
+    node3d.rotateY(glm::radians(45.0f));
+    node3d.rotateZ(glm::radians(-45.0f));
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++)
+            printf("%.2f\t", node3d.matrix[j][i]);
+        std::cout << std::endl;
+    }
+    std::cout << "Should be:" << std::endl;
+    std::cout << "0.5,   0.5,  0.7,   2" << std::endl;
+    std::cout << "0.79,  0.78, -0.61, 2" << std::endl;
+    std::cout << "-0.86, 0.36, 0.35,  0" << std::endl;
+    std::cout << "0,     0,    0,     1" << std::endl;
+    std::cout << std::endl;
+    glm::vec3 pos = node3d.getPosition();
+    glm::vec3 rot = node3d.getRotation();
+    printf("POS: %.2f %.2f %.2f\n", pos.x, pos.y, pos.z);
+    printf("ROT: %.2f %.2f %.2f\n", rot.x, rot.y, rot.z);
 
+    
+
+    std::cout << std::endl << "END TEST" << std::endl << std::endl;
+    // NOTE: early return for debugging
+    return 0;
 
     Engine game;
 

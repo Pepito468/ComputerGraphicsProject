@@ -1,6 +1,7 @@
 ﻿#ifndef COLLIDER_HPP
 #define COLLIDER_HPP
 
+#include "glm/ext/vector_float3.hpp"
 #define GLM_ENABLE_EXPERIMENTAL
 #include "Node3D.hpp"
 #include "glm/gtx/vector_angle.hpp"
@@ -24,10 +25,11 @@ class Collider: public Node3D
         Collider(): isTrigger(false), onTriggerEnter(nullptr), onTriggerExit(nullptr), onTriggerStay(nullptr) {}
 
         /// Checks if a point is within the bounds of the collider.
-        virtual bool inBounds(glm::vec3 point) const;
+        virtual bool inBounds(glm::vec3 point) = 0;
 
         /// Checks if a collider intersects with this one.
-        virtual bool intersects(Collider coll) const;
+        /// // NOTE: I had to change it to pass by reference since cpp doesn't like abstract classes passed by value
+        virtual bool intersects(const Collider& coll) = 0;
 };
 
 /// A collider shaped like a box
@@ -45,17 +47,18 @@ class BoxCollider: public Collider
 
         BoxCollider(): width(1.0f), height(1.0f), depth(1.0f) {}
 
-        bool inBounds(const glm::vec3 point) const override
+        bool inBounds(const glm::vec3 point) override
         {
-            const glm::vec3 p = globalTransform.toLocalSpace(point);
-            const float dX = std::abs(globalTransform.position.x - p.x);
-            const float dY = std::abs(globalTransform.position.y - p.y);
-            const float dZ = std::abs(globalTransform.position.z - p.z);
+            const glm::vec3 p = this->toLocalSpace(point);
+            glm::vec3 position = this->getPosition();
+            const float dX = std::abs(position.x - p.x);
+            const float dY = std::abs(position.y - p.y);
+            const float dZ = std::abs(position.z - p.z);
 
             return dX <= width / 2 && dY <= height / 2 && dZ <= depth / 2;
         }
 
-        bool intersects(const Collider coll) const override
+        bool intersects(const Collider& coll) override
         {
             //TODO
             return false;
@@ -71,12 +74,12 @@ class SphereCollider: public Collider
 
         SphereCollider(): radius(1) {}
 
-        bool inBounds(const glm::vec3 point) const override
+        bool inBounds(const glm::vec3 point) override
         {
-            return glm::distance(point, globalTransform.position) <= radius;
+            return glm::distance(point, this->getPosition()) <= radius;
         }
 
-        bool intersects(const Collider coll) const override
+        bool intersects(const Collider& coll) override
         {
             return false; //TODO
         }
@@ -93,26 +96,26 @@ class CapsuleCollider: public Collider
 
         CapsuleCollider(): radius(1), height(1) {}
 
-        bool inBounds(const glm::vec3 point) const override
+        bool inBounds(const glm::vec3 point) override
         {
-            const glm::vec3 p = globalTransform.toLocalSpace(point);
-            const float dY = p.y - globalTransform.position.y;
+            const glm::vec3 p = this->toLocalSpace(point);
+            const float dY = p.y - this->getPosition().y;
             if (-height / 2 <= dY && dY <= height / 2)
             {
                 //Cylindrical
-                const float dX = std::abs(p.x - globalTransform.position.x);
-                const float dZ = std::abs(p.z - globalTransform.position.z);
+                const float dX = std::abs(p.x - this->getPosition().x);
+                const float dZ = std::abs(p.z - this->getPosition().z);
                 return (dX * dX + dZ * dZ) <= radius * radius;
             }
 
             //Sphere caps
-            const glm::vec3 capC = globalTransform.position + (glm::vec3(0.0f, 1.0f, 0.0f) * (height / 2) * glm::sign(dY));
+            const glm::vec3 capC = this->getPosition() + (glm::vec3(0.0f, 1.0f, 0.0f) * (height / 2) * glm::sign(dY));
 
 
             return glm::distance(p, capC) <= radius;
         }
 
-        bool intersects(const Collider coll) const override
+        bool intersects(const Collider& coll) override
         {
             return false; //TODO
         }
@@ -130,16 +133,16 @@ class ConeCollider : public Collider
 
         ConeCollider(): radius(1.0f), aperture(glm::radians(45.0f)) {}
 
-        bool inBounds(const glm::vec3 point) const override
+        bool inBounds(const glm::vec3 point) override
         {
-            if (!(glm::distance(point, globalTransform.position) <= radius)) return false;
+            if (!(glm::distance(point, this->getPosition()) <= radius)) return false;
 
-            const glm::vec3 p = glm::normalize(point - globalTransform.position);
-            const float angle = glm::acos(glm::dot(globalTransform.position, p));
+            const glm::vec3 p = glm::normalize(point - this->getPosition());
+            const float angle = glm::acos(glm::dot(this->getPosition(), p));
             return angle <= aperture;
         }
 
-        bool intersects(const Collider coll) const override
+        bool intersects(const Collider& coll) override
         {
             return false; //TODO
         }
