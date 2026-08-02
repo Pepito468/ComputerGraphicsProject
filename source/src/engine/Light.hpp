@@ -54,8 +54,11 @@ class Spotlight : public Light {
 
     public:
 
-        /// The half-angle of the spotlight's cone, in radians
+        /// The half-angle of the spotlight's cone (alpha_in), in radians
         float aperture;
+
+        /// The half-angle of the spotlight's decay cone (alpha_out), in radians
+        float decay;
 
         /// How far from the origin the light reaches
         float range;
@@ -64,6 +67,7 @@ class Spotlight : public Light {
         /* Default constructor */
         Spotlight() {
             aperture = 0.0f;
+            decay = 0.0f;
             range = 0.0f;
         }
 };

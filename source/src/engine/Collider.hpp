@@ -1,13 +1,12 @@
 ﻿#ifndef COLLIDER_HPP
 #define COLLIDER_HPP
-#include <complex>
-#include <functional>
 
+#define GLM_ENABLE_EXPERIMENTAL
 #include "Node3D.hpp"
 #include "glm/gtx/vector_angle.hpp"
 
 /// A node with a physics collider
-abstract class Collider: public Node3D
+class Collider: public Node3D
 {
     public:
         /// If the collider allows objects to pass through it
@@ -44,14 +43,14 @@ class BoxCollider: public Collider
         /// The length of the box along the Z-axis
         float depth;
 
-        BoxCollider(): width(1f), height(1f), depth(1f) {}
+        BoxCollider(): width(1.0f), height(1.0f), depth(1.0f) {}
 
         bool inBounds(const glm::vec3 point) const override
         {
             const glm::vec3 p = globalTransform.toLocalSpace(point);
-            const float dX = abs(globalTransform.position.x - p.x);
-            const float dY = abs(globalTransform.position.y - p.y);
-            const float dZ = abs(globalTransform.position.z - p.z);
+            const float dX = std::abs(globalTransform.position.x - p.x);
+            const float dY = std::abs(globalTransform.position.y - p.y);
+            const float dZ = std::abs(globalTransform.position.z - p.z);
 
             return dX <= width / 2 && dY <= height / 2 && dZ <= depth / 2;
         }
@@ -101,13 +100,13 @@ class CapsuleCollider: public Collider
             if (-height / 2 <= dY && dY <= height / 2)
             {
                 //Cylindrical
-                const float dX = abs(p.x - globalTransform.position.x);
-                const float dZ = abs(p.z - globalTransform.position.z);
-                return (dx * dX + dZ * dZ) <= radius * radius;
+                const float dX = std::abs(p.x - globalTransform.position.x);
+                const float dZ = std::abs(p.z - globalTransform.position.z);
+                return (dX * dX + dZ * dZ) <= radius * radius;
             }
 
             //Sphere caps
-            const glm::vec3 capC = globalTransform.position + (glm::vec3(0f, 1f, 0f) * (height / 2) * glm::sign(dY));
+            const glm::vec3 capC = globalTransform.position + (glm::vec3(0.0f, 1.0f, 0.0f) * (height / 2) * glm::sign(dY));
 
 
             return glm::distance(p, capC) <= radius;
@@ -129,11 +128,11 @@ class ConeCollider : public Collider
         /// The angle of the sector, in radians
         float aperture;
 
-        ConeCollider(): radius(1f), aperture(glm::radians(45)) {}
+        ConeCollider(): radius(1.0f), aperture(glm::radians(45.0f)) {}
 
         bool inBounds(const glm::vec3 point) const override
         {
-            if (!glm::distance(point, globalTransform.position) <= radius) return false;
+            if (!(glm::distance(point, globalTransform.position) <= radius)) return false;
 
             const glm::vec3 p = glm::normalize(point - globalTransform.position);
             const float angle = glm::acos(glm::dot(globalTransform.position, p));

@@ -6,17 +6,17 @@
 
 int main() {
     // Node Test
-    Node *testnode = new GameNode();
-    testnode->onEnter();
-    std::cout << testnode->UUID << std::endl;
-    testnode->onExit();
-    std::cout << testnode->UUID << std::endl;
+    Node *testNode = new GameNode();
+    testNode->onEnter();
+    std::cout << "testNode UUID after onEnter(): " << testNode->UUID << std::endl;
+    testNode->onExit();
+    std::cout << "testNode UUID after onExit(): " << testNode->UUID << std::endl;
 
     Node *parent = new Light();
     Node *child = new Node();
 
-    std::cout << parent->UUID << std::endl;
-    std::cout << child->UUID << std::endl;
+    std::cout << "parent UUID: " << parent->UUID << std::endl;
+    std::cout << "child UUID: " << child->UUID << std::endl;
 
     parent->adopt(child);
     parent->adopt(child);
@@ -24,12 +24,12 @@ int main() {
     parent->disown(child);
 
 
-    delete testnode;
+    delete testNode;
     delete parent;
     delete child;
 
 
-    std::cout << "END TEST" << std::endl;
+    std::cout << "END TEST" << std::endl << std::endl;
 
 
     Engine game;
