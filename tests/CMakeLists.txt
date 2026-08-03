@@ -1,4 +1,6 @@
 include_directories(../source/src/engine)
+include_directories(../source/include/modules)
+include_directories(../source/include)
 
 # To add a new test:
 #   - Write the test file newTest.cpp in source/tests/
@@ -10,3 +12,5 @@ include_directories(../source/src/engine)
 
 add_executable(nodeTest nodeTest.cpp)
 add_test(NodeTest nodeTest)
+
+

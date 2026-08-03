@@ -11,6 +11,9 @@
 #define  SCENE_IMPLEMENTATION
 #include "modules/Scene.hpp"
 
+#include "Node.hpp"
+#include "Node3D.hpp"
+
 // The uniform buffer object used in this example
 struct UniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
@@ -30,6 +33,10 @@ struct Vertex {
 
 
 class Engine : public BaseProject {
+    // NOTE: new
+    public:
+
+
     protected:
     // Here you list all the Vulkan objects you need:
     

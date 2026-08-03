@@ -175,9 +175,9 @@ class Node3D : public Node {
 
             // Rotation
             // Compute rotation from the rotation matrix (the local axises) using geometry
-            glm::vec3 xAxis = this->getLocalXAxis();
-            glm::vec3 yAxis = this->getLocalYAxis();
-            glm::vec3 zAxis = this->getLocalZAxis();
+            const glm::vec3 xAxis = this->getLocalXAxis();
+            const glm::vec3 yAxis = this->getLocalYAxis();
+            const glm::vec3 zAxis = this->getLocalZAxis();
             this->rotation =  glm::vec3(
                     -std::atan2(zAxis[1], zAxis[2]),
                     std::asin(zAxis[0]),
@@ -194,7 +194,7 @@ class Node3D : public Node {
 
         }
 
-        // TODO: move to engine to update world matrices
+        // TODO: move to engine
         void updateWorldTransform(Node *node, glm::mat4 fatherTransformMatrix) {
 
             // Update self matrix
