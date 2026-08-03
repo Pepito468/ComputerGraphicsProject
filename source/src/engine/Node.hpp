@@ -36,6 +36,8 @@ class Node {
             parent = nullptr;
         }
 
+        virtual ~Node() = default;
+
         /// Called by the Engine when the node is added to the scene
         virtual void onEnter() {}
 
