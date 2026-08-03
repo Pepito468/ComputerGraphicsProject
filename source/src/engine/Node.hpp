@@ -11,6 +11,7 @@
 
 /// Represents a functional element within a scene
 class Node {
+    inline static uint64_t nodeCounter = 0;
 
     public:
 
@@ -26,11 +27,10 @@ class Node {
         /// Parent node
         Node *parent;
 
-
-
-        /* Default constructor */
+        /// Default constructor
         Node() {
-            UUID = random(); // TODO: use a better random function
+            nodeCounter++;
+            UUID = nodeCounter;
             name = std::format("{} {}", typeid(this).name(), UUID);
             children = std::set<Node*>();
             parent = nullptr;

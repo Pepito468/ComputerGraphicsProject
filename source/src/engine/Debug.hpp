@@ -6,13 +6,13 @@
 #include <string>
 #include <iostream>
 
-/* Prints a warning to stdout */
-inline void warning(std::string string) {
+/// Prints a warning to stdout
+inline void warning(const std::string& string) {
     std::cout << "WARNING: " << string << std::endl;
 }
 
-/* Prints and error to console and then throws the error itself */
-inline void error(std::string string) {
+/// Prints and error to console and then throws the error itself
+inline void error(const std::string& string) {
     std::cout << "ERROR: " << string << std::endl;
     throw std::runtime_error(string);
 }
