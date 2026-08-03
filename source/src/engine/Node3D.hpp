@@ -18,8 +18,18 @@
 #define VEC3_Z glm::vec3(0.0f, 0.0f, 1.0f)
 #define VEC3_ZERO glm::vec3(0.0f)
 #define VEC3_ONE glm::vec3(1.0f)
+#define X_ROTATION_INDEX 0
+#define Y_ROTATION_INDEX 1
+#define Z_ROTATION_INDEX 2
+#define POSITION_INDEX 3
 
-/// A Node that has a place in 3D space
+/* A Node that has a place in 3D space
+ *
+ * NOTES:
+ *      the rotation convention is ZYX
+ *      the rotation angles are in radiants
+ *
+ * */
 class Node3D : public Node {
 
     public:
@@ -79,22 +89,22 @@ class Node3D : public Node {
         /* Computes the local coordinates of the given point from the node's position */
         glm::vec3 toLocalSpace(glm::vec3 point) {
             glm::mat4 newLocalMatrix = glm::inverse(this->matrix) * glm::translate(MAT4_I, point);
-            return glm::vec3(newLocalMatrix[3][0], newLocalMatrix[3][1], newLocalMatrix[3][2]);
+            return glm::vec3(newLocalMatrix[POSITION_INDEX]);
         }
 
         /* gets the nodes's local X axis */
         glm::vec3 getLocalXAxis() const {
-            return glm::normalize(glm::vec3(this->matrix[0]));
+            return glm::normalize(glm::vec3(this->matrix[X_ROTATION_INDEX]));
         }
 
         /* gets the nodes's local Y axis */
         glm::vec3 getLocalYAxis() const {
-            return glm::normalize(glm::vec3(this->matrix[1]));
+            return glm::normalize(glm::vec3(this->matrix[Y_ROTATION_INDEX]));
         }
 
         /* gets the nodes's local Z axis */
         glm::vec3 getLocalZAxis() const {
-            return glm::normalize(glm::vec3(this->matrix[2]));
+            return glm::normalize(glm::vec3(this->matrix[Z_ROTATION_INDEX]));
         }
 
         /* Rotate the node around the x axis parallel */
@@ -142,23 +152,52 @@ class Node3D : public Node {
                 this->matrix;
         }
 
+        /* Sets the angle for the node from the given angles (in rad) */
+        void setRotation(float alpha, float beta, float gamma) {
+            glm::vec3 position = this->getPosition();
+            glm::vec3 rotation = this->getRotation();
+            this->matrix = 
+                glm::translate(MAT4_I, position) *
+                glm::rotate(MAT4_I, alpha, VEC3_X) *
+                glm::rotate(MAT4_I, beta, VEC3_Y) *
+                glm::rotate(MAT4_I, gamma, VEC3_Z) *
+                glm::rotate(MAT4_I, -rotation.z, VEC3_Z) *
+                glm::rotate(MAT4_I, -rotation.y, VEC3_Y) *
+                glm::rotate(MAT4_I, -rotation.x, VEC3_X) *
+                glm::translate(MAT4_I, -position) *
+                this->matrix;
+        }
+
         /* Sets a new position to the node */
         void translate(glm::vec3 newPosition) {
             this->matrix = glm::translate(MAT4_I, newPosition - this->getPosition()) * this->matrix;
         }
 
-        /* Scales or mirrors the node by the given scale */
-        void scale(glm::vec3 scale) {
-            if (scale.x == 0 || scale.y == 0 || scale.z == 0) {
-                error("Flattening, at least one of the scaling factors is 0");
-            }
+        /* Sets the node's scale */
+        void setScale(glm::vec3 newScale) {
+            // Scale cannot be 0
+            if (newScale.x == 0 || newScale.y == 0 or newScale.z == 0)
+                error(std::format("Flattening, at leat one of the scaling factors for [{}] is 0", this->name));
 
-            this->matrix = glm::scale(this->matrix, scale);
+            glm::vec3 position = this->getPosition();
+            glm::vec3 rotation = this->getRotation();
+            glm::vec3 scale = this->getScale();
+            this->matrix =
+                glm::translate(MAT4_I, position) *
+                glm::rotate(MAT4_I, rotation.x, VEC3_X) *
+                glm::rotate(MAT4_I, rotation.y, VEC3_Y) *
+                glm::rotate(MAT4_I, rotation.z, VEC3_Z) *
+                glm::scale(MAT4_I, newScale / scale) *
+                glm::rotate(MAT4_I, -rotation.z, VEC3_Z) *
+                glm::rotate(MAT4_I, -rotation.y, VEC3_Y) *
+                glm::rotate(MAT4_I, -rotation.x, VEC3_X) *
+                glm::translate(MAT4_I, -position) *
+                this->matrix;
         }
 
         /* Returns the position of the node */
         glm::vec3 getPosition() {
-            return glm::vec3(this->matrix[3][0], this->matrix[3][1], this->matrix[3][2]);
+            return glm::vec3(this->matrix[POSITION_INDEX]);
         }
 
         /* Returns a vector with the rotation of the node (in rad) */
@@ -166,11 +205,21 @@ class Node3D : public Node {
             glm::vec3 xAxis = this->getLocalXAxis();
             glm::vec3 yAxis = this->getLocalYAxis();
             glm::vec3 zAxis = this->getLocalZAxis();
-            // Compute rotation from the rotationb matrix (the local axises)
+            // Compute rotation from the rotationb matrix (the local axises) using geometry
             return glm::vec3(
                     -std::atan2(zAxis[1], zAxis[2]),
                     std::asin(zAxis[0]),
-                    std::atan2(yAxis[0], xAxis[0]));
+                    -std::atan2(yAxis[0], xAxis[0]));
+        }
+
+        /* Returns the vector containing the scale of the node */
+        glm::vec3 getScale() {
+            /* Use Pythagoras' theorem to get the length of the axis */
+            return glm::vec3(
+                    glm::length(glm::vec3(this->matrix[X_ROTATION_INDEX])),
+                    glm::length(glm::vec3(this->matrix[Y_ROTATION_INDEX])),
+                    glm::length(glm::vec3(this->matrix[Z_ROTATION_INDEX]))
+                    );
         }
 };
 

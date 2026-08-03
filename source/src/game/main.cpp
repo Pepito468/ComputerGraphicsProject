@@ -2,6 +2,7 @@
 #include "Light.hpp"
 #include "Node3D.hpp"
 #include "gamenodes/gamenode.hpp"
+#include "glm/detail/qualifier.hpp"
 #include "glm/fwd.hpp"
 #include "glm/trigonometric.hpp"
 #include <cstdio>
@@ -42,27 +43,37 @@ int main() {
     node3d.rotateX(glm::radians(60.0f));
     node3d.rotateY(glm::radians(45.0f));
     node3d.rotateZ(glm::radians(-45.0f));
+    node3d.setScale(glm::vec3(1, 2, 3));
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++)
             printf("%.2f\t", node3d.matrix[j][i]);
         std::cout << std::endl;
     }
-    std::cout << "Should be:" << std::endl;
-    std::cout << "0.5,   0.5,  0.7,   2" << std::endl;
-    std::cout << "0.79,  0.78, -0.61, 2" << std::endl;
-    std::cout << "-0.86, 0.36, 0.35,  0" << std::endl;
-    std::cout << "0,     0,    0,     1" << std::endl;
+
     std::cout << std::endl;
     glm::vec3 pos = node3d.getPosition();
     glm::vec3 rot = node3d.getRotation();
+    glm::vec3 sca = node3d.getScale();
     printf("POS: %.2f %.2f %.2f\n", pos.x, pos.y, pos.z);
     printf("ROT: %.2f %.2f %.2f\n", rot.x, rot.y, rot.z);
+    printf("SCA: %.2f %.2f %.2f\n\n", sca.x, sca.y, sca.z);
+    node3d.setRotation(glm::radians(45.0f), glm::radians(15.0f), glm::radians(90.0f));
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++)
+            printf("%.2f\t", node3d.matrix[j][i]);
+        std::cout << std::endl;
+    }
+    printf("ROT: %.2f %.2f %.2f\n\n", rot.x, rot.y, rot.z);
+
+    glm::vec3 point = glm::vec3(2, 2, 2);
+    glm::vec3 localPos = node3d.toLocalSpace(point);
+    printf("LOCAL: %.2f %.2f %.2f\n\n", localPos.x, localPos.y, localPos.z);
 
     std::cout << std::endl << "TRANSFORM TEST 2" << std::endl << std::endl;
 
     Node3D a = Node3D(glm::vec3(1, 1, 0), glm::vec3(0, 0, 0), glm::vec3(1, 1, 1));
     a.rotateZ(std::numbers::pi/4);
-    a.scale(glm::vec3(2, -1, 1));
+    a.setScale(glm::vec3(2, -1, 1));
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++)
             printf("%.2f\t", a.matrix[j][i]);
@@ -70,6 +81,7 @@ int main() {
     }
 
     std::cout << std::endl << "END TEST" << std::endl << std::endl;
+
     // NOTE: early return for debugging
     return 0;
 
