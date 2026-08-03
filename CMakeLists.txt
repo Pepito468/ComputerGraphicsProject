@@ -3,6 +3,12 @@ cmake_minimum_required(VERSION 3.21)
 project(SkeletonToChange LANGUAGES CXX)
 
 # --------------------
+# Testing
+# --------------------
+enable_testing()
+add_subdirectory(tests)
+
+# --------------------
 # Project layout
 # --------------------
 set(MAIN_DIR source)
@@ -88,7 +94,7 @@ foreach(SHADER IN LISTS SHADERS)
           COMMAND ${CMAKE_COMMAND} -E make_directory "${SHADER_BUILD_DIR}/${SHADER_REL_DIR}"
           COMMAND "${Vulkan_GLSLC_EXECUTABLE}" -o "${SPIRV}" "${SHADER}"
           DEPENDS "${SHADER}"
-          COMMENT "Compilo shader: ${SHADER_REL_PATH}"
+          COMMENT "Compiling shader: ${SHADER_REL_PATH}"
           VERBATIM
   )
   add_custom_command(
@@ -99,7 +105,7 @@ foreach(SHADER IN LISTS SHADERS)
           "${CMAKE_CURRENT_BINARY_DIR}/shader_copy_stamps/${SHADER_REL_DIR}"
           COMMAND ${CMAKE_COMMAND} -E touch "${COPY_STAMP}"
           DEPENDS "${SPIRV}"
-          COMMENT "Copio SPIR-V: ${SHADER_REL_PATH} -> ${FINAL_SHADER_DIR}"
+          COMMENT "Copying SPIR-V: ${SHADER_REL_PATH} -> ${FINAL_SHADER_DIR}"
           VERBATIM
   )
   list(APPEND SPIRV_OUTPUTS "${SPIRV}")
@@ -118,5 +124,5 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${ASSET_SRC_DIR}"
     "${ASSET_DST_DIR}"
-  COMMENT "Copio asset in: ${ASSET_DST_DIR}"
+  COMMENT "Copying asset in: ${ASSET_DST_DIR}"
 )
