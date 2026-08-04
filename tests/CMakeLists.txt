@@ -14,3 +14,5 @@ add_executable(nodeTest nodeTest.cpp)
 add_test(NodeTest nodeTest)
 
 
+add_executable(transformTest transformTest.cpp)
+add_test(TransformTest transformTest)
