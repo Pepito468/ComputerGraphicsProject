@@ -1,15 +1,26 @@
-﻿#ifndef ENGINE_CAMERA_H
+﻿/// Camera
+#ifndef ENGINE_CAMERA_H
 #define ENGINE_CAMERA_H
 
 #include "Node3D.hpp"
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include "glm/matrix.hpp"
+#include <glm/ext/matrix_clip_space.hpp>
+/*
+ *  TODO:
+ *  global OK
+ *  view (view matrix is the inverse of the camera global matrix) OK
+ *  projection (orthogonal, use its matrix) OK
+ *  normalization (for every point)
+ *  screen (pixel coordinates)
+ *  Engine does the last 2?
+ * */
 
 /// A camera in the scene
 class Camera : public Node3D
 {
-    public:
 
-        /// The camera's field of view
-        float fov;
+    public:
 
         /// The distance of the near plane
         float near;
@@ -17,33 +28,25 @@ class Camera : public Node3D
         /// The distance of the far plane
         float far;
 
-        /// The camera's aspect ratio
-        float aspect;
-
-        enum ProjectionType
-        {
-            ORTHOGRAPHIC,
-            PERSPECTIVE
-        };
-
-        /// The projection the camera should use
-        ProjectionType projection;
 
 
-
-        /* Default constructor */
+        /** Default constructor */
         Camera() {
-            fov = 0.0f;
-            near = 0.0f;
-            far = 0.0f;
-            aspect = 0.0f;
-            projection = ORTHOGRAPHIC;
+            this->near = 0.0f;
+            this->far = 0.0f;
         }
 
-        /// Returns the View-Projection matrix of this camera
-        glm::mat4 calculateViewProjection() const
-        {
-            //TODO
+        /**
+         * Returns the projection matrix of this camera
+         * */
+        virtual const glm::mat4 getProjectionMatrix() = 0;
+
+        /**
+         * Returns the view matrix
+         * */
+        const glm::mat4 getViewMatrix() const {
+            return glm::inverse(this->matrix);
         }
+
 };
 #endif
