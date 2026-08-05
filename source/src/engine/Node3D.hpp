@@ -4,13 +4,11 @@
 
 #include "Node.hpp"
 #include "glm/ext/matrix_transform.hpp"
-#include "glm/ext/vector_float3.hpp"
 #include "glm/geometric.hpp"
 #include "glm/matrix.hpp"
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 #define MAT4_I glm::mat4(1.0f)
 #define VEC3_X glm::vec3(1.0f, 0.0f, 0.0f)
@@ -163,6 +161,13 @@ class Node3D : public Node {
         glm::vec3 toLocalSpace(const glm::vec3 point) const {
             glm::mat4 newLocalMatrix = glm::inverse(this->localMatrix) * glm::translate(MAT4_I, point);
             return glm::vec3(newLocalMatrix[POSITION_INDEX]);
+        }
+
+        /// Computes the global coordinates of the given point
+        glm::vec3 toGlobalSpace(const glm::vec3 point) const
+        {
+            glm::mat4 newGlobalMatrix = this->matrix * glm::translate(MAT4_I, point);
+            return glm::vec3(newGlobalMatrix[POSITION_INDEX]);
         }
 
         /**
