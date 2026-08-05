@@ -44,7 +44,7 @@ class Node2D: public Node {
             this->localMatrix = MAT4_I;
         }
 
-        Node2D(glm::vec2 position, float rotation, glm::vec2 scale) {
+        Node2D(const glm::vec2 position, const float rotation, const glm::vec2 scale) {
             this->localPosition = position;
             this->localRotation = rotation;
             this->localScale = scale;
@@ -58,7 +58,7 @@ class Node2D: public Node {
         /**
          *  Moves the node of the given distance
          * */
-        void translate(glm::vec2 distance) {
+        void translate(const glm::vec2 distance) {
             this->localMatrix = glm::translate(MAT4_I, glm::vec3(distance, 0)) * this->localMatrix;
             this->localPosition += distance;
         }
@@ -66,7 +66,7 @@ class Node2D: public Node {
         /**
          *  Rotates the node of the given angle
          * */
-        void rotate(float angle) {
+        void rotate(const float angle) {
             this->localMatrix =
                 glm::translate(MAT4_I, glm::vec3(this->localPosition, 0)) *
                 glm::rotate(MAT4_I, angle, PLANE_ROTATION) *
@@ -78,7 +78,7 @@ class Node2D: public Node {
         /**
          *  Scales the node of the given scale
          * */
-        void scaleAll(glm::vec2 scale) {
+        void scaleAll(const glm::vec2 scale) {
             this->localMatrix =
                 glm::translate(MAT4_I, glm::vec3(this->localPosition, 0)) *
                 glm::rotate(MAT4_I, this->localRotation, PLANE_ROTATION) *
@@ -106,7 +106,7 @@ class Node2D: public Node {
         /**
          *  Updates the node's global matrix from the father's one and the local matrix
          * */
-        void updateGlobalMatrix(glm::mat4 fatherMatrix) {
+        void updateGlobalMatrix(const glm::mat4 fatherMatrix) {
             this->matrix = fatherMatrix * this->localMatrix;
         }
 

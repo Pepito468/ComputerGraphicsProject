@@ -25,6 +25,14 @@ class PerspectiveCamera : public Camera {
             this->aspectRatio = aspectRatio;
         }
 
+        /** Constructor with the standard boundaries */
+        PerspectiveCamera(const float near, const float far, const float right, const float left, const float top, const float bottom) {
+            this->near = near;
+            this->far = far;
+            this->aspectRatio = (right - left) / (top - bottom);
+            this->fov = atan(top / near) * 2;
+        }
+
         virtual const glm::mat4 getProjectionMatrix() override {
             glm::mat4 p = glm::perspective(this->fov, this->aspectRatio, this->near, this->far);
             // Apply negation because the perspective function was made for OpenGL

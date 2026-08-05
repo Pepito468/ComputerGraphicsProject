@@ -10,7 +10,7 @@
 
 #include <Light.hpp>
 
-// #include <Model.hpp>
+#include <Model3D.hpp>
 
 #include <Node.hpp>
 

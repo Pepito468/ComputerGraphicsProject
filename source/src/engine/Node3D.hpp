@@ -159,14 +159,14 @@ class Node3D : public Node {
 
         /// Computes the local coordinates of the given point from the node's position
         glm::vec3 toLocalSpace(const glm::vec3 point) const {
-            glm::mat4 newLocalMatrix = glm::inverse(this->localMatrix) * glm::translate(MAT4_I, point);
+            const glm::mat4 newLocalMatrix = glm::inverse(this->localMatrix) * glm::translate(MAT4_I, point);
             return glm::vec3(newLocalMatrix[POSITION_INDEX]);
         }
 
         /// Computes the global coordinates of the given point
         glm::vec3 toGlobalSpace(const glm::vec3 point) const
         {
-            glm::mat4 newGlobalMatrix = this->matrix * glm::translate(MAT4_I, point);
+            const glm::mat4 newGlobalMatrix = this->matrix * glm::translate(MAT4_I, point);
             return glm::vec3(newGlobalMatrix[POSITION_INDEX]);
         }
 

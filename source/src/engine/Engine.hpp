@@ -3,7 +3,6 @@
 #include "glm/trigonometric.hpp"
 #include <sstream>
 #include <json.hpp>
-#include <thread>
 
 
 #define  STARTER_IMPLEMENTATION

@@ -1,9 +1,9 @@
-﻿#ifndef MODEL_H
-#define MODEL_H
+﻿#ifndef ENGINE_MODEL3D_H
+#define ENGINE_MODEL3D_H
 #include "Node3D.hpp"
 
 /// A node represented with a 3D model
-class Model : public Node3D {
+class Model3D : public Node3D {
 
     public:
 
