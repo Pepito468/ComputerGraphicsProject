@@ -1,4 +1,5 @@
 #include "Node3D.hpp"
+#include "Engine.hpp"
 #include <glm/ext/vector_float3.hpp>
 #include <glm/gtc/epsilon.hpp>
 #include <glm/trigonometric.hpp>
@@ -7,6 +8,8 @@
 
 int main() {
     std::cout << std::endl << "TRANSFORM TEST" << std::endl << std::endl;
+
+    Engine engine = Engine();
 
     // Set approx
     const float epsilon = 0.01f;
@@ -22,7 +25,7 @@ int main() {
     node3d.scaleAll(glm::vec3(1, 2, 3));
 
     // Commit transform
-    node3d.updateWorldTransform(&node3d, MAT4_I);
+    engine.updateWorldTransform(&node3d, MAT4_I);
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++)
             printf("%.2f\t", node3d.matrix[j][i]);
@@ -54,7 +57,7 @@ int main() {
     Node3D a = Node3D(glm::vec3(1, 1, 0), glm::vec3(0, 0, 0), glm::vec3(1, 1, 1));
     a.rotateZ(std::numbers::pi/4);
     a.scaleAll(glm::vec3(2, -1, 1));
-    a.updateWorldTransform(&a, MAT4_I);
+    engine.updateWorldTransform(&a, MAT4_I);
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++)
             printf("%.2f\t", a.matrix[j][i]);
@@ -88,7 +91,7 @@ int main() {
     father.rotateZ(glm::radians(90.0f));
 
     // also updates children
-    father.updateWorldTransform(&father, MAT4_I);
+    engine.updateWorldTransform(&father, MAT4_I);
 
     printf("FATHER\n");
     for (int i = 0; i < 4; i++) {

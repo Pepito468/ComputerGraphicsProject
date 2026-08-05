@@ -2,6 +2,9 @@ include_directories(../source/src/engine)
 include_directories(../source/include/modules)
 include_directories(../source/include)
 
+find_package(glfw3 REQUIRED)
+find_package(Vulkan REQUIRED)
+
 # To add a new test:
 #   - Write the test file newTest.cpp in source/tests/
 #       - If headers other than those in source/src/engine are used, add an include_directiores(path/to/headers)
@@ -15,4 +18,6 @@ add_test(NodeTest nodeTest)
 
 
 add_executable(transformTest transformTest.cpp)
+target_link_libraries(transformTest PRIVATE glfw)
+target_link_libraries(transformTest PRIVATE Vulkan::Vulkan)
 add_test(TransformTest transformTest)

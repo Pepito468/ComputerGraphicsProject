@@ -13,6 +13,7 @@
 
 #include "Node.hpp"
 #include "Node3D.hpp"
+#include "Camera.hpp"
 
 // The uniform buffer object used in this example
 struct UniformBufferObject {
@@ -33,13 +34,51 @@ struct Vertex {
 
 
 class Engine : public BaseProject {
-    // NOTE: new
-    public:
 
+    // NOTE: new
+
+    public:
+        /// The root of the current rendered scene
+        Node *scene;
+
+        /// Camera that is currently being used to visualize the world
+        Camera *mainCamera;
+
+        /**
+         *  Sets the given node as the current scene
+         * */
+        void setScene(Node *scene) {
+            this->scene = scene;
+        }
+
+        /** Sets the given camera as main camera */
+        void setMainCamera(Camera *camera) {
+            this->mainCamera = camera;
+        }
+
+        /**
+         * Updates the global coordinate of every Node from its local matrix and the matrix of its ancestors (eldest node has the identity as ancestor) 
+         * */
+        void updateWorldTransform(Node *node, glm::mat4 fatherTransformMatrix) {
+
+            // Update self matrix
+            if (Node3D* node3d = dynamic_cast<Node3D*>(node)) {
+                node3d->matrix = fatherTransformMatrix * node3d->localMatrix;
+                node3d->updateTransformProperties();
+                fatherTransformMatrix = node3d->matrix;
+            }
+
+            // Propagate to children
+            for (Node* child : node->children) {
+                updateWorldTransform(child, fatherTransformMatrix);
+            }
+        }
+
+    // NOTE: end new
 
     protected:
     // Here you list all the Vulkan objects you need:
-    
+
     // Descriptor Layouts [what will be passed to the shaders]
     DescriptorSetLayout DSLlocal, DSLglobal;
 
@@ -70,7 +109,7 @@ class Engine : public BaseProject {
         // window size, titile and initial background
         windowWidth = 800;
         windowHeight = 600;
-        windowTitle = "Skeleton: place the name of your app here";
+        windowTitle = "Game";
         windowResizable = GLFW_TRUE;
         
         // Initial aspect ratio

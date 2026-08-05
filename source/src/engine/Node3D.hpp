@@ -194,21 +194,6 @@ class Node3D : public Node {
 
         }
 
-        // TODO: move to engine
-        void updateWorldTransform(Node *node, glm::mat4 fatherTransformMatrix) {
-
-            // Update self matrix
-            if (Node3D* node3d = dynamic_cast<Node3D*>(node)) {
-                node3d->matrix = fatherTransformMatrix * node3d->localMatrix;
-                node3d->updateTransformProperties();
-                fatherTransformMatrix = node3d->matrix;
-            }
-
-            // Propagate to children
-            for (Node* child : node->children) {
-                updateWorldTransform(child, fatherTransformMatrix);
-            }
-        }
 };
 
 #endif

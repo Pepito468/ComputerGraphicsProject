@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(SkeletonToChange LANGUAGES CXX)
+project(Engine LANGUAGES CXX)
 
 # --------------------
 # Testing
