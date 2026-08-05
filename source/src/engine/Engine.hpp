@@ -1,7 +1,9 @@
 // ENGINE
 
+#include "glm/trigonometric.hpp"
 #include <sstream>
 #include <json.hpp>
+#include <thread>
 
 
 #define  STARTER_IMPLEMENTATION
@@ -11,9 +13,7 @@
 #define  SCENE_IMPLEMENTATION
 #include "modules/Scene.hpp"
 
-#include "Node.hpp"
-#include "Node3D.hpp"
-#include "Camera.hpp"
+#include "Libraries.hpp"
 
 // The uniform buffer object used in this example
 struct UniformBufferObject {
@@ -59,18 +59,36 @@ class Engine : public BaseProject {
         /**
          * Updates the global coordinate of every Node from its local matrix and the matrix of its ancestors (eldest node has the identity as ancestor) 
          * */
-        void updateWorldTransform(Node *node, glm::mat4 fatherTransformMatrix) {
+        void update3DWorldTransform(Node *node, glm::mat4 fatherTransformMatrix) {
 
             // Update self matrix
             if (Node3D* node3d = dynamic_cast<Node3D*>(node)) {
-                node3d->matrix = fatherTransformMatrix * node3d->localMatrix;
+                node3d->updateGlobalMatrix(fatherTransformMatrix);
                 node3d->updateTransformProperties();
                 fatherTransformMatrix = node3d->matrix;
             }
 
             // Propagate to children
             for (Node* child : node->children) {
-                updateWorldTransform(child, fatherTransformMatrix);
+                update3DWorldTransform(child, fatherTransformMatrix);
+            }
+        }
+
+        /**
+         *  Updates every Node2D's global coordinates recursively
+         * */
+        void update2DWorldTransform(Node *node, glm::mat4 fatherTransformMatrix) {
+
+            // Update self matrix
+            if (Node2D* node2d = dynamic_cast<Node2D*>(node)) {
+                node2d->updateGlobalMatrix(fatherTransformMatrix);
+                node2d->updateTransformProperties();
+                fatherTransformMatrix = node2d->matrix;
+            }
+
+            // Propagate to children
+            for (Node* child : node->children) {
+                update2DWorldTransform(child, fatherTransformMatrix);
             }
         }
 
@@ -336,11 +354,15 @@ class Engine : public BaseProject {
         txt.updateCommandBuffer();
     }
     
+    float rot = 0;
+
+
     float GameLogic() {
         // Camera FOV-y, Near Plane and Far Plane
-        const float FOVy = glm::radians(45.0f);
+        // const float FOVy = glm::radians(45.0f);
         const float nearPlane = 0.1f;
         const float farPlane = 100.f;
+        const float FOVy = 45.0f;
 
         // Integration with the timers and the controllers
         float deltaT;
@@ -349,13 +371,18 @@ class Engine : public BaseProject {
         getSixAxis(deltaT, m, r, fire);
 
         // Projection
-        glm::mat4 Prj = glm::perspective(FOVy, Ar, nearPlane, farPlane);
-        Prj[1][1] *= -1;
-
+        rot += deltaT;
+        Camera *camera = new PerspectiveCamera(nearPlane, farPlane, FOVy, Ar);
+        // Camera *camera = new OrthoCamera(nearPlane, farPlane, -1, 1, 1, -1);
+        glm::mat4 Prj = camera->getProjectionMatrix();
+        camera->translate(glm::vec3(0, 1, 5));
+        rot -= deltaT * 500;
+        camera->rotateX(glm::radians(-25.0f + rot));
+        this->update3DWorldTransform(camera, MAT4_I);
         // View
-        View = glm::lookAt(glm::vec3(0.0f, 1.0f, 5.0f), // Pos
-                           glm::vec3(0.0f),                // Target
-                           glm::vec3(0.0f, 1.0f, 0.0f));
+        View = camera->getViewMatrix();
+        delete camera;
+        
 
         // View-Projection
         ViewPrj = Prj * View;

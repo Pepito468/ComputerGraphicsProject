@@ -27,7 +27,6 @@ FetchContent_Declare(
 set(GLM_ENABLE_CXX_20 ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(glm)
 
-target_link_libraries(transformTest PRIVATE glfw glm::glm)
 
 find_package(glfw3 REQUIRED)
 find_package(Vulkan REQUIRED)
@@ -40,14 +39,19 @@ find_package(Vulkan REQUIRED)
 #       - uniqueTestName is the name that will be shown in the terminal when running test.sh, nodeTest is the name of the executable found in build
 #   - To see the output of the test, go to build/tests/Testing/Temporary/LastTest.log
 
-add_executable(nodeTest nodeTest.cpp)
-add_test(NodeTest nodeTest)
+add_executable(NodeTest NodeTest.cpp)
+add_test(NodeTest NodeTest)
+
+add_executable(Node3DTest Node3DTest.cpp)
+target_link_libraries(Node3DTest PRIVATE glfw glm::glm)
+target_link_libraries(Node3DTest PRIVATE Vulkan::Vulkan)
+add_test(Node3DTest Node3DTest)
 
 
-add_executable(transformTest transformTest.cpp)
-target_link_libraries(transformTest PRIVATE glfw)
-target_link_libraries(transformTest PRIVATE Vulkan::Vulkan)
-add_test(TransformTest transformTest)
+add_executable(Node2DTest Node2DTest.cpp)
+target_link_libraries(Node2DTest PRIVATE glfw glm::glm)
+target_link_libraries(Node2DTest PRIVATE Vulkan::Vulkan)
+add_test(Node2DTest Node2DTest)
 
-add_executable(colliderTest colliderTest.cpp)
-add_test(ColliderTest colliderTest)
+# add_executable(colliderTest colliderTest.cpp)
+# add_test(ColliderTest colliderTest)

@@ -171,6 +171,13 @@ class Node3D : public Node {
         }
 
         /**
+         *  Updates the global matrix from the local and the given the father's matrix
+         * */
+        void updateGlobalMatrix(glm::mat4 fatherMatrix) {
+            this->matrix = fatherMatrix * this->localMatrix;
+        }
+
+        /**
          *  Updates the global transform properties of the node from the matrix (position, rotation, scale).
          *  *MUST* be called after updating the global matrix
          * */

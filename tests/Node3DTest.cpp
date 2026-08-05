@@ -25,7 +25,7 @@ int main() {
     node3d.scaleAll(glm::vec3(1, 2, 3));
 
     // Commit transform
-    engine.updateWorldTransform(&node3d, MAT4_I);
+    engine.update3DWorldTransform(&node3d, MAT4_I);
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++)
             printf("%.2f\t", node3d.matrix[j][i]);
@@ -57,7 +57,7 @@ int main() {
     Node3D a = Node3D(glm::vec3(1, 1, 0), glm::vec3(0, 0, 0), glm::vec3(1, 1, 1));
     a.rotateZ(std::numbers::pi/4);
     a.scaleAll(glm::vec3(2, -1, 1));
-    engine.updateWorldTransform(&a, MAT4_I);
+    engine.update3DWorldTransform(&a, MAT4_I);
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++)
             printf("%.2f\t", a.matrix[j][i]);
@@ -91,7 +91,7 @@ int main() {
     father.rotateZ(glm::radians(90.0f));
 
     // also updates children
-    engine.updateWorldTransform(&father, MAT4_I);
+    engine.update3DWorldTransform(&father, MAT4_I);
 
     printf("FATHER\n");
     for (int i = 0; i < 4; i++) {

@@ -4,7 +4,7 @@
 #include "Camera.hpp"
 #include "glm/ext/matrix_clip_space.hpp"
 
-class OrthoCamera : Camera {
+class OrthoCamera : public Camera {
 
     public:
         /// Camera lower bound

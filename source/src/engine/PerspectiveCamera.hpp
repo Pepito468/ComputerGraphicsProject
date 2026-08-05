@@ -4,7 +4,7 @@
 #include "Camera.hpp"
 #include <glm/ext/matrix_clip_space.hpp>
 
-class PerspectiveCamera : Camera {
+class PerspectiveCamera : public Camera {
 
     public:
 
