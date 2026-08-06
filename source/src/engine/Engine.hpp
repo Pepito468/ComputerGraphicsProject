@@ -1,6 +1,9 @@
 // ENGINE
 
+#include "Node.hpp"
+#include "Node3D.hpp"
 #include "glm/trigonometric.hpp"
+#include <cstdlib>
 #include <sstream>
 #include <json.hpp>
 
@@ -68,7 +71,7 @@ class Engine : public BaseProject {
             }
 
             // Propagate to children
-            for (Node* child : node->children) {
+            for (Node *child : node->children) {
                 update3DWorldTransform(child, fatherTransformMatrix);
             }
         }
@@ -86,7 +89,7 @@ class Engine : public BaseProject {
             }
 
             // Propagate to children
-            for (Node* child : node->children) {
+            for (Node *child : node->children) {
                 update2DWorldTransform(child, fatherTransformMatrix);
             }
         }
@@ -354,6 +357,8 @@ class Engine : public BaseProject {
     }
     
     float rot = 0;
+    float pos = 0;
+    float dir = 1;
 
 
     float GameLogic() {
@@ -371,13 +376,21 @@ class Engine : public BaseProject {
 
         // Projection
         rot += deltaT;
+        if (pos >= 2)
+            dir = -1;
+        else if (pos <= 0)
+            dir = 1;
+        pos += dir*deltaT;
         Camera *camera = new PerspectiveCamera(nearPlane, farPlane, FOVy, Ar);
-        // Camera *camera = new OrthoCamera(nearPlane, farPlane, -1, 1, 1, -1);
+        camera->translate({0, 0, 5});
+        Node3D *father = new Node3D();
+        father->translate({0, pos, 0});
+        father->adopt(camera);
+
         glm::mat4 Prj = camera->getProjectionMatrix();
-        camera->translate(glm::vec3(0, 1, 5));
-        rot -= deltaT * 500;
-        camera->rotateX(glm::radians(-25.0f + rot));
-        this->update3DWorldTransform(camera, MAT4_I);
+        rot -= deltaT * 50;
+        father->rotateY(glm::radians(-25.0f + rot));
+        this->update3DWorldTransform(father, MAT4_I);
         // View
         View = camera->getViewMatrix();
         delete camera;

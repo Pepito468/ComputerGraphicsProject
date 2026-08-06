@@ -21,3 +21,7 @@
 #include <OrthoCamera.hpp>
 
 #include <PerspectiveCamera.hpp>
+
+#include <Sprite2D.hpp>
+
+#include <Text2D.hpp>

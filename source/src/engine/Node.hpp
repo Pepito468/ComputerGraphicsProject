@@ -59,7 +59,7 @@ class Node {
             }
 
 
-            // remove from old parent. NOTE: maybe the logic of removing the child can be put somewhere else
+            // remove from old parent
             if (child->parent != nullptr)
                 child->parent->disown(child);
             // add to new parent
@@ -77,27 +77,26 @@ class Node {
             if (!child)
                 error("Node::disown(): child == NULL");
 
-            // FIXME: set compares pointers so it never finds the actual object
             if (!this->children.contains(child)) {
                 warning(std::format("Node {} is not a child of {}", child->UUID, this->UUID));
                 return;
             }
 
-
             this->children.erase(child);
-            getRoot()->adopt(child);
+            child->parent = nullptr;
         }
 
         /// Returns a pointer to the root node
         Node* getRoot() {
 
-            Node* cur = this;
-            while (cur->parent) {
-                cur = cur->parent;
+            Node* currentNode = this;
+            while (currentNode->parent) {
+                currentNode = currentNode->parent;
             }
 
-            return cur;
+            return currentNode;
         }
+
 };
 
 #endif

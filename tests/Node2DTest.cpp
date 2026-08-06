@@ -43,5 +43,8 @@ int main() {
     printf("SCA: %.2f %.2f\n\n", sca.x, sca.y);
     assert(glm::all(glm::epsilonEqual(sca, glm::vec2(2, 3), epsilon)));
 
+
+    printf("END NODE2D TEST\n\n");
+
     return 0;
 }
