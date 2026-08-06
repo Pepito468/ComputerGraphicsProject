@@ -3,14 +3,9 @@
 #include <sstream>
 #include <json.hpp>
 
+#include "common.h"
 
-#define  STARTER_IMPLEMENTATION
-#include "modules/Starter.hpp"
-#define  TEXTMAKER_IMPLEMENTATION
-#include "modules/TextMaker.hpp"
-#define  SCENE_IMPLEMENTATION
-#include "modules/Scene.hpp"
-
+#include "PipelineRenderer.hpp"
 #include "Node.hpp"
 #include "Node3D.hpp"
 
@@ -18,17 +13,6 @@
 struct UniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
     alignas(16) glm::mat4 mMat;
-};
-
-struct GlobalUniformBufferObject {
-    alignas(16) glm::vec3 lightDir;
-    alignas(16) glm::vec4 lightColor;
-    alignas(16) glm::vec3 eyePos;
-};
-
-struct Vertex {
-    glm::vec3 pos;
-    glm::vec2 UV;
 };
 
 
@@ -39,7 +23,10 @@ class Engine : public BaseProject {
 
     protected:
     // Here you list all the Vulkan objects you need:
-    
+
+    //TODO
+    PipelineRenderer pp = {ShaderType::TOON};
+
     // Descriptor Layouts [what will be passed to the shaders]
     DescriptorSetLayout DSLlocal, DSLglobal;
 
@@ -91,8 +78,44 @@ class Engine : public BaseProject {
     
     // Here you load and setup all your Vulkan Models and Texutures.
     // Here you also create your Descriptor set layouts and load the shaders for the pipelines
+
+    //TODO
+    //LambertMaterial mat1 = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}};
+
+    //LambertMaterial mat2 = {glm::vec3(0.0f, 0.0f, 1.0f), {1.0f,1.0f,1.0f,50.0f}};
+
+    ToonMaterial mat1 = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
+    ToonMaterial mat2 = {glm::vec3(0.9f, 0.45f, 0.9f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
+
+
+    Model3D m = {"assets/models/Suzanne.obj", {1.0f, 0.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
+    Model3D m1 = {"assets/models/Suzanne.obj", {1.0f, 1.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
+    Model3D m2 = {"assets/models/Suzanne.obj", {1.0f, 2.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
+    Model3D m3 = {"assets/models/Suzanne.obj", {1.0f, 3.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
+    Model3D m4 = {"assets/models/Suzanne.obj", {1.0f, 4.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
+
+    Model3D m5 = {"assets/models/Suzanne.obj", {-1.0f, 0.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
+    Model3D m6 = {"assets/models/Suzanne.obj", {-1.0f, 1.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
+    Model3D m7 = {"assets/models/Suzanne.obj", {-1.0f, 2.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
+    Model3D m8 = {"assets/models/Suzanne.obj", {-1.0f, 3.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
+    Model3D m9 = {"assets/models/Suzanne.obj", {-1.0f, 4.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
+
     void localInit() {
         // Descriptor Layouts [what will be passed to the shaders]
+        //TODO
+        pp.instantiate(&m);
+        pp.instantiate(&m1);
+        pp.instantiate(&m2);
+        pp.instantiate(&m3);
+        pp.instantiate(&m4);
+        pp.instantiate(&m5);
+        pp.instantiate(&m6);
+        pp.instantiate(&m7);
+        pp.instantiate(&m8);
+        pp.instantiate(&m9);
+
+        pp.localInit(this);
+
         DSLlocal.init(this, {
                     // this array contains the binding:
                     // first  element : the binding number
@@ -132,9 +155,9 @@ class Engine : public BaseProject {
 
 
         // sets the size of the Descriptor Set Pool (it MUST be done before loading the scene)
-        DPSZs.uniformBlocksInPool = 2;
-        DPSZs.texturesInPool = 1;
-        DPSZs.setsInPool = 2;
+        DPSZs.uniformBlocksInPool = 10;
+        DPSZs.texturesInPool = 10;
+        DPSZs.setsInPool = 10;
 
         // to support scene
         VDRs.resize(1);
@@ -176,7 +199,10 @@ class Engine : public BaseProject {
         P.create(&RP);
         
         DSglobal.init(this, &DSLglobal, {});
-        
+
+        //TODO
+        pp.descriptorSetsInits(this, &RP);
+
         // Here you define the data set
         // If the scene has textures coming from a render pass, the corresponding element of the technique must be
         // updated before calling SC.pipelinesAndDescriptorSetsInit();
@@ -192,6 +218,9 @@ class Engine : public BaseProject {
         RP.cleanup();
         
         DSglobal.cleanup();
+
+        //TODO
+        pp.descriptorSetsCleanup();
         
         SC.pipelinesAndDescriptorSetsCleanup();
         txt.pipelinesAndDescriptorSetsCleanup();
@@ -206,6 +235,9 @@ class Engine : public BaseProject {
         P.destroy();
 
         RP.destroy();
+
+        //TODO
+        pp.localCleanup();
 
         SC.localCleanup();
         txt.localCleanup();
@@ -227,11 +259,17 @@ class Engine : public BaseProject {
         // begin standard pass
         RP.begin(commandBuffer, currentImage);
 
-        SC.populateCommandBuffer(commandBuffer, 0, currentImage);
+        //SC.populateCommandBuffer(commandBuffer, 0, currentImage);
+
+        //TODO
+        pp.populateCommandBuffer(commandBuffer, currentImage);
 
         RP.end(commandBuffer);
     }
 
+    //TODO
+    glm::vec3 CamPos = {0.0f, 1.0f, 4.0f};
+    float Pitch = 0.0f, Yaw = 0.0f;
     // Here is where you update the uniforms.
     // Very likely this will be where you will be writing the logic of your application.
     void updateUniformBuffer(uint32_t currentImage) {
@@ -243,6 +281,7 @@ class Engine : public BaseProject {
             glfwSetWindowShouldClose(window, GL_TRUE);
         }
 
+        /*
         // moves the view
         float deltaT = GameLogic();
         
@@ -274,7 +313,34 @@ class Engine : public BaseProject {
             // DS[1] = Pchar pass (main render): set0=DSLglobal, set1=DSLlocal
             SC.TI[0].I[instanceId].DS[0][0]->map(currentImage, &gubo, 0); // global (light/camera)
             SC.TI[0].I[instanceId].DS[0][1]->map(currentImage, &ubo, 0); // camera MVPs
-        }
+        }*/
+
+        //TODO
+        glm::mat4 View, Projection;
+        // Camera FOV-y, Near Plane and Far Plane
+        const float FOVy = glm::radians(45.0f);
+        const float nearPlane = 0.1f;
+        const float farPlane = 100.f;
+
+        float deltaT;
+        glm::vec3 m = {0,0,0}, r = {0,0,0};
+        bool fire = false;
+        getSixAxis(deltaT, m, r, fire);
+
+        Projection = glm::perspective(FOVy, Ar, nearPlane, farPlane);
+        Projection[1][1] *= -1;
+
+        // update the camera position and direction with the inputs
+        CamPos += m * deltaT;
+        Pitch -= r.x * deltaT;
+        Yaw   -= r.y * deltaT;
+
+        View = glm::rotate   (glm::mat4(1), -Pitch, glm::vec3(1,0,0)) *
+               glm::rotate   (glm::mat4(1), -Yaw,   glm::vec3(0,1,0)) *
+               glm::translate(glm::mat4(1), -CamPos);
+
+        pp.updateUniformBuffer(currentImage, CamPos, Projection, View);
+
         
         // updates the FPS
         static float elapsedT = 0.0f;
