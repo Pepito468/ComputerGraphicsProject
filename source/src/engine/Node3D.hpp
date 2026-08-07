@@ -52,6 +52,8 @@ class Node3D : public Node {
             this->localRotation = VEC3_ZERO;
             this->localScale = VEC3_ONE;
             this->localMatrix = MAT4_I;
+            this->updateGlobalMatrix(MAT4_I);
+            this->updateTransformProperties();
         }
 
         /// Constructor with parameters
@@ -71,6 +73,8 @@ class Node3D : public Node {
                 glm::rotate(MAT4_I, rotation.z, VEC3_Z) *
                 glm::scale(MAT4_I, scale) *
                 MAT4_I;
+            this->updateGlobalMatrix(MAT4_I);
+            this->updateTransformProperties();
         }
 
         /// Rotates the node around the X-axis parallel
