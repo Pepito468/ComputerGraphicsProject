@@ -7,7 +7,6 @@
 #include <glm/vec3.hpp>
 
 #include "Node3D.hpp"
-#include "Debug.hpp"
 
 struct Vec3Compare {
     bool operator()(const glm::vec3& a, const glm::vec3& b) const {

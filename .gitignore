@@ -3,3 +3,4 @@ build/*
 # Local config
 .clangd
 .idea
+temp.txt

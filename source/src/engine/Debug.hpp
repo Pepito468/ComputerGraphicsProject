@@ -28,4 +28,13 @@ inline void error(const std::string& string) {
     std::cout << "ERROR: " << string << std::endl;
     throw std::runtime_error(string);
 }
+
+/// If the given expression isn't true, calls error with the given message
+inline void _assert(const bool expression, const std::string& message) {
+    if (!expression) {
+        error(message);
+    }
+}
+
+
 #endif
