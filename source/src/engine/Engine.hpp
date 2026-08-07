@@ -5,7 +5,7 @@
 
 #include "common.h"
 
-#include "PipelineRenderer.hpp"
+#include "Renderer.hpp"
 #include "Node.hpp"
 #include "Node3D.hpp"
 
@@ -25,7 +25,7 @@ class Engine : public BaseProject {
     // Here you list all the Vulkan objects you need:
 
     //TODO
-    PipelineRenderer pp = {ShaderType::TOON};
+    Renderer renderer;
 
     // Descriptor Layouts [what will be passed to the shaders]
     DescriptorSetLayout DSLlocal, DSLglobal;
@@ -80,11 +80,11 @@ class Engine : public BaseProject {
     // Here you also create your Descriptor set layouts and load the shaders for the pipelines
 
     //TODO
-    //LambertMaterial mat1 = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}};
+    LambertMaterial mat1 = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}};
 
     //LambertMaterial mat2 = {glm::vec3(0.0f, 0.0f, 1.0f), {1.0f,1.0f,1.0f,50.0f}};
 
-    ToonMaterial mat1 = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
+    //ToonMaterial mat1 = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
     ToonMaterial mat2 = {glm::vec3(0.9f, 0.45f, 0.9f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
 
 
@@ -103,18 +103,19 @@ class Engine : public BaseProject {
     void localInit() {
         // Descriptor Layouts [what will be passed to the shaders]
         //TODO
-        pp.instantiate(&m);
-        pp.instantiate(&m1);
-        pp.instantiate(&m2);
-        pp.instantiate(&m3);
-        pp.instantiate(&m4);
-        pp.instantiate(&m5);
-        pp.instantiate(&m6);
-        pp.instantiate(&m7);
-        pp.instantiate(&m8);
-        pp.instantiate(&m9);
 
-        pp.localInit(this);
+        renderer.instantiate(&m);
+        renderer.instantiate(&m1);
+        renderer.instantiate(&m2);
+        renderer.instantiate(&m3);
+        renderer.instantiate(&m4);
+        renderer.instantiate(&m5);
+        renderer.instantiate(&m6);
+        renderer.instantiate(&m7);
+        renderer.instantiate(&m8);
+        renderer.instantiate(&m9);
+
+        renderer.localInit(this);
 
         DSLlocal.init(this, {
                     // this array contains the binding:
@@ -187,6 +188,7 @@ class Engine : public BaseProject {
 
         // Prepares for showing the FPS count
         txt.print(1.0f, 1.0f, "FPS:",1,"CO",false,false,true,TAL_RIGHT,TRH_RIGHT,TRV_BOTTOM,{1.0f,0.0f,0.0f,1.0f},{0.8f,0.8f,0.0f,1.0f});
+        txt.print(-1.0f, -1.0f ,  "Testo di prova", 2, "CO", false, false, false, TAL_LEFT, TRH_LEFT, TRV_TOP, {0.5f, 0.5f, 0.0f, 0.5f}, {0.5f,0.5f,0.0f,0.5f});
 
     }
     
@@ -201,7 +203,7 @@ class Engine : public BaseProject {
         DSglobal.init(this, &DSLglobal, {});
 
         //TODO
-        pp.descriptorSetsInits(this, &RP);
+        renderer.descriptorSetsInits(this, &RP);
 
         // Here you define the data set
         // If the scene has textures coming from a render pass, the corresponding element of the technique must be
@@ -220,7 +222,7 @@ class Engine : public BaseProject {
         DSglobal.cleanup();
 
         //TODO
-        pp.descriptorSetsCleanup();
+        renderer.descriptorSetsCleanup();
         
         SC.pipelinesAndDescriptorSetsCleanup();
         txt.pipelinesAndDescriptorSetsCleanup();
@@ -237,7 +239,7 @@ class Engine : public BaseProject {
         RP.destroy();
 
         //TODO
-        pp.localCleanup();
+        renderer.localCleanup();
 
         SC.localCleanup();
         txt.localCleanup();
@@ -262,7 +264,7 @@ class Engine : public BaseProject {
         //SC.populateCommandBuffer(commandBuffer, 0, currentImage);
 
         //TODO
-        pp.populateCommandBuffer(commandBuffer, currentImage);
+        renderer.populateCommandBuffer(commandBuffer, currentImage);
 
         RP.end(commandBuffer);
     }
@@ -339,7 +341,7 @@ class Engine : public BaseProject {
                glm::rotate   (glm::mat4(1), -Yaw,   glm::vec3(0,1,0)) *
                glm::translate(glm::mat4(1), -CamPos);
 
-        pp.updateUniformBuffer(currentImage, CamPos, Projection, View);
+        renderer.updateUniformBuffer(currentImage, CamPos, Projection, View);
 
         
         // updates the FPS

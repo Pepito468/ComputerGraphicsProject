@@ -36,14 +36,17 @@ struct SimpleUniformBufferObject {
 
 enum ShaderType {LAMBERT_BLINN, TOON};
 
+constexpr std::initializer_list<ShaderType> allShadersTypes = {LAMBERT_BLINN, TOON};
+
 const std::string shaderTypeToString(ShaderType s)
 {
     switch (s)
     {
         case LAMBERT_BLINN:   return "LambertBlinn";
         case TOON:   return "Toon";
-        default:      return "LambertBlinn";
+        default:      return "Error";
     }
 }
+
 
 #endif

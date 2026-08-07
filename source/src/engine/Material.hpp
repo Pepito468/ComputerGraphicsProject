@@ -8,9 +8,12 @@ class Material {
     glm::vec3 diffuse;
     glm::vec4 specular;
 
+    ShaderType shaderType;
+
     public:
     virtual ~Material() = default;
     virtual void updateUBO(SimpleUniformBufferObject& ubo);
+    ShaderType getShaderType() const {return shaderType;}
 };
 
 class LambertMaterial : public Material {
@@ -18,6 +21,8 @@ class LambertMaterial : public Material {
     LambertMaterial(glm::vec3 diffuse, glm::vec4 specular) {
         this->diffuse = diffuse;
         this->specular = specular;
+
+        shaderType = ShaderType::LAMBERT_BLINN;
     }
 
     ~LambertMaterial() override = default;
@@ -41,6 +46,8 @@ public:
         this->mD2 = mD2;
         this->mS1 = mS1;
         this->mS2 = mS2;
+
+        shaderType = ShaderType::TOON;
     }
 
     ~ToonMaterial() override = default;

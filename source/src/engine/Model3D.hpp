@@ -68,5 +68,9 @@ class Model3D : public Node3D {
         local.map(currentImage, &ubo, 0);
     }
 
+    ShaderType getShaderType() const {
+        return material->getShaderType();
+    }
+
 };
 #endif
