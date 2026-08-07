@@ -1,5 +1,4 @@
 #include "Node3D.hpp"
-#include "Engine.hpp"
 #include <glm/ext/vector_float3.hpp>
 #include <glm/gtc/epsilon.hpp>
 #include <glm/trigonometric.hpp>
@@ -8,8 +7,6 @@
 
 int main() {
     std::cout << std::endl << "TRANSFORM TEST" << std::endl << std::endl;
-
-    Engine engine = Engine();
 
     // Set approx
     const float epsilon = 0.01f;
@@ -25,7 +22,6 @@ int main() {
     node3d.scaleAll(glm::vec3(1, 2, 3));
 
     // Commit transform
-    engine.update3DWorldTransform(&node3d, MAT4_I);
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++)
             printf("%.2f\t", node3d.matrix[j][i]);
@@ -57,7 +53,6 @@ int main() {
     Node3D a = Node3D(glm::vec3(1, 1, 0), glm::vec3(0, 0, 0), glm::vec3(1, 1, 1));
     a.rotateZ(std::numbers::pi/4);
     a.scaleAll(glm::vec3(2, -1, 1));
-    engine.update3DWorldTransform(&a, MAT4_I);
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++)
             printf("%.2f\t", a.matrix[j][i]);
@@ -90,9 +85,6 @@ int main() {
     child.rotateZ(glm::radians(90.0f));
     father.rotateZ(glm::radians(90.0f));
 
-    // also updates children
-    engine.update3DWorldTransform(&father, MAT4_I);
-
     printf("FATHER\n");
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++)
@@ -117,6 +109,19 @@ int main() {
     assert(glm::all(glm::epsilonEqual(father.position, glm::vec3(1, 0, 0), epsilon)));
     assert(glm::all(glm::epsilonEqual(child.position, glm::vec3(1, 2, 0), epsilon)));
     assert(glm::all(glm::epsilonEqual(grandchild.position, glm::vec3(1, 2, 1), epsilon)));
+
+    // Test 4: Collider
+
+    Node3D box = Node3D();
+    Node3D box2 = Node3D();
+
+    box.scaleAll({16.3f, 0.42f, 61.54f});
+    box.translate({-18, -46, 0.57f});
+    box2.rotateX(glm::radians(64.0f));
+    box2.rotateY(glm::radians(-45.0f));
+    box2.scaleAll({16.3f, 0.42f, 61.54f});
+    // Should have the same scale
+    assert(glm::all(glm::epsilonEqual(box.scale, box2.scale, epsilon)));
 
 
     std::cout << "END TRANSFORM TEST" << std::endl;

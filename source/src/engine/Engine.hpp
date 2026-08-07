@@ -58,41 +58,6 @@ class Engine : public BaseProject {
             this->mainCamera = camera;
         }
 
-        /**
-         * Updates the global coordinate of every Node from its local matrix and the matrix of its ancestors (eldest node has the identity as ancestor) 
-         * */
-        void update3DWorldTransform(Node *node, glm::mat4 fatherTransformMatrix) {
-
-            // Update self matrix
-            if (Node3D* node3d = dynamic_cast<Node3D*>(node)) {
-                node3d->updateGlobalMatrix(fatherTransformMatrix);
-                node3d->updateTransformProperties();
-                fatherTransformMatrix = node3d->matrix;
-            }
-
-            // Propagate to children
-            for (Node *child : node->children) {
-                update3DWorldTransform(child, fatherTransformMatrix);
-            }
-        }
-
-        /**
-         *  Updates every Node2D's global coordinates recursively
-         * */
-        void update2DWorldTransform(Node *node, glm::mat4 fatherTransformMatrix) {
-
-            // Update self matrix
-            if (Node2D* node2d = dynamic_cast<Node2D*>(node)) {
-                node2d->updateGlobalMatrix(fatherTransformMatrix);
-                node2d->updateTransformProperties();
-                fatherTransformMatrix = node2d->matrix;
-            }
-
-            // Propagate to children
-            for (Node *child : node->children) {
-                update2DWorldTransform(child, fatherTransformMatrix);
-            }
-        }
 
     // NOTE: end new
 
@@ -390,11 +355,9 @@ class Engine : public BaseProject {
         glm::mat4 Prj = camera->getProjectionMatrix();
         rot -= deltaT * 50;
         father->rotateY(glm::radians(-25.0f + rot));
-        this->update3DWorldTransform(father, MAT4_I);
         // View
         View = camera->getViewMatrix();
         delete camera;
-        
 
         // View-Projection
         ViewPrj = Prj * View;

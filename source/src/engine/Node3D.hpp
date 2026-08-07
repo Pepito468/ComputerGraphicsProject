@@ -48,12 +48,10 @@ class Node3D : public Node {
 
         /// Default constructor
         Node3D() : Node() {
-            this->localPosition = VEC3_ZERO;
-            this->localRotation = VEC3_ZERO;
-            this->localScale = VEC3_ONE;
-            this->localMatrix = MAT4_I;
-            this->updateGlobalMatrix(MAT4_I);
-            this->updateTransformProperties();
+            this->position = this->localPosition = VEC3_ZERO;
+            this->rotation = this->localRotation = VEC3_ZERO;
+            this->scale = this->localScale = VEC3_ONE;
+            this->matrix = this->localMatrix = MAT4_I;
         }
 
         /// Constructor with parameters
@@ -63,18 +61,16 @@ class Node3D : public Node {
                 error(std::format("Trying to set scale for [{}] to 0", this->name));
             }
 
-            this->localPosition = position;
-            this->localRotation = rotation;
-            this->localScale = scale;
-            this->localMatrix =
+            this->position = this->localPosition = position;
+            this->rotation = this->localRotation = rotation;
+            this->scale = this->localScale = scale;
+            this->matrix = this->localMatrix =
                 glm::translate(MAT4_I, position) *
                 glm::rotate(MAT4_I, rotation.y, VEC3_Y) *
                 glm::rotate(MAT4_I, rotation.x, VEC3_X) *
                 glm::rotate(MAT4_I, rotation.z, VEC3_Z) *
                 glm::scale(MAT4_I, scale) *
                 MAT4_I;
-            this->updateGlobalMatrix(MAT4_I);
-            this->updateTransformProperties();
         }
 
         /// Rotates the node around the X-axis parallel
@@ -89,6 +85,8 @@ class Node3D : public Node {
                 glm::translate(MAT4_I, -this->localPosition) *
                 this->localMatrix;
             this->localRotation.x += angle;
+
+            this->commitUpdate();
         }
 
         /// Rotate the node around the Y-axis parallel
@@ -103,6 +101,8 @@ class Node3D : public Node {
                 glm::translate(MAT4_I, -this->localPosition) *
                 this->localMatrix;
             this->localRotation.y += angle;
+
+            this->commitUpdate();
         }
 
         /// Rotate the node around the Z-axis parallel
@@ -117,12 +117,16 @@ class Node3D : public Node {
                 glm::translate(MAT4_I, -this->localPosition) *
                 this->localMatrix;
             this->localRotation.z += angle;
+
+            this->commitUpdate();
         }
 
         /// Translates the node
         void translate(const glm::vec3 distance) {
             this->localMatrix = glm::translate(MAT4_I, distance) * this->localMatrix;
             this->localPosition += distance;
+
+            this->commitUpdate();
         }
 
         /**
@@ -145,6 +149,8 @@ class Node3D : public Node {
                 glm::translate(MAT4_I, -this->localPosition) *
                 this->localMatrix;
             this->localScale *= scale;
+
+            this->commitUpdate();
         }
 
         /// Gets the node's local X-axis
@@ -162,17 +168,29 @@ class Node3D : public Node {
             return glm::normalize(glm::vec3(this->matrix[Z_ROTATION_INDEX]));
         }
 
-        /// Computes the local coordinates of the given point from the node's position
-        glm::vec3 toLocalSpace(const glm::vec3 point) const {
-            const glm::mat4 newLocalMatrix = glm::inverse(this->localMatrix) * glm::translate(MAT4_I, point);
-            return glm::vec3(newLocalMatrix[POSITION_INDEX]);
+        /** Commits an update from the node */
+        void commitUpdate() {
+
+            // Commit update to self and to the node's children
+            this->updateGlobalTransform(this, MAT4_I);
         }
 
-        /// Computes the global coordinates of the given point
-        glm::vec3 toGlobalSpace(const glm::vec3 point) const
-        {
-            const glm::mat4 newGlobalMatrix = this->matrix * glm::translate(MAT4_I, point);
-            return glm::vec3(newGlobalMatrix[POSITION_INDEX]);
+        /** Recursively updates the node and its children and so on */
+        void updateGlobalTransform(Node *node, glm::mat4 fatherTransformMatrix) {
+
+            // Update self
+            // If node id Node3D, update it, else skip to its children
+            if (Node3D* node3d = dynamic_cast<Node3D*>(node)) {
+                node3d->updateGlobalMatrix(fatherTransformMatrix);
+                node3d->updateTransformProperties();
+                fatherTransformMatrix = node3d->matrix;
+            }
+
+            // Propagate to children
+            for (Node *child : node->children) {
+                updateGlobalTransform(child, fatherTransformMatrix);
+            }
+
         }
 
         /**
@@ -184,9 +202,10 @@ class Node3D : public Node {
 
         /**
          *  Updates the global transform properties of the node from the matrix (position, rotation, scale).
-         *  *MUST* be called after updating the global matrix
+         *  *MUST* be called after updating the global matrix to avoid data corruption
          * */
         void updateTransformProperties() {
+
             // Position
             this->position = glm::vec3(this->matrix[POSITION_INDEX]);
 
@@ -209,6 +228,19 @@ class Node3D : public Node {
                     glm::length(glm::vec3(this->matrix[Z_ROTATION_INDEX]))
                     );
 
+        }
+
+        /// Computes the local coordinates of the given point from the node's position
+        glm::vec3 toLocalSpace(const glm::vec3 point) const {
+            const glm::mat4 newLocalMatrix = glm::inverse(this->localMatrix) * glm::translate(MAT4_I, point);
+            return glm::vec3(newLocalMatrix[POSITION_INDEX]);
+        }
+
+        /// Computes the global coordinates of the given point
+        glm::vec3 toGlobalSpace(const glm::vec3 point) const
+        {
+            const glm::mat4 newGlobalMatrix = this->matrix * glm::translate(MAT4_I, point);
+            return glm::vec3(newGlobalMatrix[POSITION_INDEX]);
         }
 
 };

@@ -1,4 +1,3 @@
-#include "Engine.hpp"
 #include "Node2D.hpp"
 #include <glm/ext/vector_float2.hpp>
 #include <glm/gtc/epsilon.hpp>
@@ -19,7 +18,6 @@ void printMatrix(glm::mat4 m) {
 int main() {
 
 
-    Engine engine = Engine();
     const float epsilon = 0.01f;
 
     printf("NODE2D TEST\n\n");
@@ -29,7 +27,6 @@ int main() {
     node.rotate(glm::radians(45.0f));
     node.translate(glm::vec2(1, 2));
     node.scaleAll(glm::vec2(2, 3));
-    engine.update2DWorldTransform(&node, MAT4_I);
     printMatrix(node.matrix);
 
 

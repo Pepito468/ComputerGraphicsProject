@@ -38,17 +38,17 @@ class Node2D: public Node {
         glm::vec2 localScale;
 
         Node2D() {
-            this->localPosition = VEC2_ZERO;
-            this->localRotation = 0.0f;
-            this->localScale = VEC2_ONE;
-            this->localMatrix = MAT4_I;
+            this->position = this->localPosition = VEC2_ZERO;
+            this->rotation = this->localRotation = 0.0f;
+            this->scale = this->localScale = VEC2_ONE;
+            this->matrix = this->localMatrix = MAT4_I;
         }
 
         Node2D(const glm::vec2 position, const float rotation, const glm::vec2 scale) {
-            this->localPosition = position;
-            this->localRotation = rotation;
-            this->localScale = scale;
-            this->localMatrix =
+            this->position = this->localPosition = position;
+            this->rotation = this->localRotation = rotation;
+            this->scale = this->localScale = scale;
+            this->matrix = this->localMatrix =
                 glm::translate(MAT4_I, glm::vec3(position, 0)) *
                 glm::rotate(MAT4_I, rotation, PLANE_ROTATION) *
                 glm::scale(MAT4_I, glm::vec3(scale, 0)) *
@@ -61,6 +61,8 @@ class Node2D: public Node {
         void translate(const glm::vec2 distance) {
             this->localMatrix = glm::translate(MAT4_I, glm::vec3(distance, 0)) * this->localMatrix;
             this->localPosition += distance;
+
+            this->commitUpdate();
         }
 
         /**
@@ -73,6 +75,8 @@ class Node2D: public Node {
                 glm::translate(MAT4_I, glm::vec3(-this->localPosition, 0)) *
                 this->localMatrix;
             this->localRotation += angle;
+
+            this->commitUpdate();
         }
 
         /**
@@ -87,6 +91,8 @@ class Node2D: public Node {
                 glm::translate(MAT4_I, glm::vec3(-this->localPosition, 0)) *
                 this->localMatrix;
             this->localScale *= scale;
+
+            this->commitUpdate();
         }
 
         /**
@@ -103,10 +109,35 @@ class Node2D: public Node {
             return glm::normalize(glm::vec2(this->matrix[Y_ROTATION_INDEX]));
         }
 
+        /** Commits an update from the node */
+        void commitUpdate() {
+
+            // Commit update to self and to the node's children
+            this->updateGlobalTransform(this, MAT4_I);
+        }
+
+        /** Recursively updates the node and its children and so on */
+        void updateGlobalTransform(Node *node, glm::mat4 fatherTransformMatrix) {
+
+            // Update self
+            // If node id Node3D, update it, else skip to its children
+            if (Node2D* node2d = dynamic_cast<Node2D*>(node)) {
+                node2d->updateGlobalMatrix(fatherTransformMatrix);
+                node2d->updateTransformProperties();
+                fatherTransformMatrix = node2d->matrix;
+            }
+
+            // Propagate to children
+            for (Node *child : node->children) {
+                updateGlobalTransform(child, fatherTransformMatrix);
+            }
+
+        }
+
         /**
-         *  Updates the node's global matrix from the father's one and the local matrix
+         *  Updates the global matrix from the local and the given the father's matrix
          * */
-        void updateGlobalMatrix(const glm::mat4 fatherMatrix) {
+        void updateGlobalMatrix(glm::mat4 fatherMatrix) {
             this->matrix = fatherMatrix * this->localMatrix;
         }
 
@@ -127,6 +158,7 @@ class Node2D: public Node {
                     glm::length(glm::vec2(this->matrix[Y_ROTATION_INDEX]))
                     );
         }
+
 };
 
 #endif
