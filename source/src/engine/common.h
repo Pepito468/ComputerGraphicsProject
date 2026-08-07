@@ -16,6 +16,7 @@ struct Vertex {
 struct SimpleVertex {
     glm::vec3 pos;
     glm::vec3 norm;
+    glm::vec2 UV;
 };
 
 struct GlobalUniformBufferObject {
@@ -34,16 +35,28 @@ struct SimpleUniformBufferObject {
     alignas(16) glm::vec3 param2;
 };
 
-enum ShaderType {LAMBERT_BLINN, TOON};
+enum ShaderType {LAMBERT_BLINN, LAMBERT_TEX, TOON};
 
-constexpr std::initializer_list<ShaderType> allShadersTypes = {LAMBERT_BLINN, TOON};
+constexpr std::initializer_list<ShaderType> allShadersTypes = {LAMBERT_BLINN, LAMBERT_TEX, TOON};
 
-const std::string shaderTypeToString(ShaderType s)
+const std::string getShaderFragName(ShaderType s)
 {
     switch (s)
     {
         case LAMBERT_BLINN:   return "LambertBlinn";
+        case LAMBERT_TEX:     return "LambertBlinnTexture";
         case TOON:   return "Toon";
+        default:      return "Error";
+    }
+}
+
+const std::string getShaderVertName(ShaderType s)
+{
+    switch (s)
+    {
+        case LAMBERT_BLINN:   return "PosNorm";
+        case LAMBERT_TEX:     return "PosNormUV";
+        case TOON:   return "PosNorm";
         default:      return "Error";
     }
 }

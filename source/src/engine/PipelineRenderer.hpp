@@ -21,8 +21,8 @@ class PipelineRenderer {
 
     public:
     PipelineRenderer(ShaderType type = ShaderType::LAMBERT_BLINN) : shaderType(type) {
-        vertShader = "shaders/PosNorm.vert.spv";
-        fragShader = "shaders/" + shaderTypeToString(shaderType) + ".frag.spv";
+        vertShader = "shaders/" + getShaderVertName(shaderType) + ".vert.spv";
+        fragShader = "shaders/" + getShaderFragName(shaderType) + ".frag.spv";
     }
     ~PipelineRenderer() = default;
 
@@ -39,7 +39,9 @@ class PipelineRenderer {
                   {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(SimpleVertex, pos),
                          sizeof(glm::vec3), POSITION},
                   {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(SimpleVertex, norm),
-                         sizeof(glm::vec3), NORMAL},
+                      sizeof(glm::vec3), NORMAL},
+                  {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
+                      sizeof(glm::vec2), UV}
             });
 
         localLayout.init(bp, {
@@ -48,6 +50,7 @@ class PipelineRenderer {
                     // second element : the type of element (buffer or texture)
                     // third  element : the pipeline stage where it will be used
                     {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, sizeof(SimpleUniformBufferObject), 1},
+                    {1,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,VK_SHADER_STAGE_ALL_GRAPHICS,0,1}
                   });
 
         pipeline.init(bp, &vertexDescriptor, vertShader, fragShader, {&globalLayout, &localLayout});

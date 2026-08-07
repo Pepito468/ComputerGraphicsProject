@@ -80,25 +80,29 @@ class Engine : public BaseProject {
     // Here you also create your Descriptor set layouts and load the shaders for the pipelines
 
     //TODO
-    LambertMaterial mat1 = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}};
+    //LambertMaterial mat1 = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}};
 
-    //LambertMaterial mat2 = {glm::vec3(0.0f, 0.0f, 1.0f), {1.0f,1.0f,1.0f,50.0f}};
+    LambertMaterial mat2 = {glm::vec3(0.0f, 0.0f, 1.0f), {1.0f,1.0f,1.0f,50.0f}};
 
     //ToonMaterial mat1 = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
-    ToonMaterial mat2 = {glm::vec3(0.9f, 0.45f, 0.9f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
+    //ToonMaterial mat2 = {glm::vec3(0.9f, 0.45f, 0.9f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
+
+    LambertTexMaterial mat1 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "toChange.jpg"};
+
+    //LambertTexMaterial mat2 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "VChecker.png"};
 
 
-    Model3D m = {"assets/models/Suzanne.obj", {1.0f, 0.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
-    Model3D m1 = {"assets/models/Suzanne.obj", {1.0f, 1.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
-    Model3D m2 = {"assets/models/Suzanne.obj", {1.0f, 2.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
-    Model3D m3 = {"assets/models/Suzanne.obj", {1.0f, 3.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
-    Model3D m4 = {"assets/models/Suzanne.obj", {1.0f, 4.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
+    Model3D m = {"assets/models/SuzanneUV.obj", {1.0f, 0.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
+    Model3D m1 = {"assets/models/SuzanneUV.obj", {1.0f, 1.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
+    Model3D m2 = {"assets/models/SuzanneUV.obj", {1.0f, 2.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
+    Model3D m3 = {"assets/models/SuzanneUV.obj", {1.0f, 3.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
+    Model3D m4 = {"assets/models/SuzanneUV.obj", {1.0f, 4.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
 
-    Model3D m5 = {"assets/models/Suzanne.obj", {-1.0f, 0.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
-    Model3D m6 = {"assets/models/Suzanne.obj", {-1.0f, 1.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
-    Model3D m7 = {"assets/models/Suzanne.obj", {-1.0f, 2.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
-    Model3D m8 = {"assets/models/Suzanne.obj", {-1.0f, 3.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
-    Model3D m9 = {"assets/models/Suzanne.obj", {-1.0f, 4.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
+    Model3D m5 = {"assets/models/SuzanneUV.obj", {-1.0f, 0.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
+    Model3D m6 = {"assets/models/SuzanneUV.obj", {-1.0f, 1.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
+    Model3D m7 = {"assets/models/SuzanneUV.obj", {-1.0f, 2.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
+    Model3D m8 = {"assets/models/SuzanneUV.obj", {-1.0f, 3.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
+    Model3D m9 = {"assets/models/SuzanneUV.obj", {-1.0f, 4.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
 
     void localInit() {
         // Descriptor Layouts [what will be passed to the shaders]

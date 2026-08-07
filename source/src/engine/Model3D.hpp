@@ -26,10 +26,12 @@ class Model3D : public Node3D {
 
     void localInit(BaseProject* bp, VertexDescriptor* vertexDescriptor) {
         model.init(bp, vertexDescriptor, modelPath, OBJ);
+
+        material->getTexture().init(bp, "assets/textures/" + material->getTextureName());
     }
 
     void descriptorSetInit(BaseProject* bp, DescriptorSetLayout* localLayout) {
-        local.init(bp, localLayout, {});
+        local.init(bp, localLayout, {material->getTexture().getViewAndSampler()});
     }
 
     void descriptorSetCleanup() {
@@ -38,6 +40,9 @@ class Model3D : public Node3D {
 
     void modelCleanup() {
         model.cleanup();
+
+        //TODO: attenzione se il materiale è condiviso tra più oggetti, stai eliminando la stessa texture più volte
+        material->getTexture().cleanup();
     }
 
     void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage, Pipeline& pipeline) {

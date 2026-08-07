@@ -19,16 +19,14 @@ class Renderer {
 
         for (auto t : allShadersTypes) {
             pipelinesMap.insert({t, new PipelineRenderer(t)});
-            std::cout << shaderTypeToString(t) << std::endl;
+            std::cout << getShaderFragName(t) << std::endl;
         }
     }
 
     ~Renderer() = default;
 
     void instantiate(Model3D* model3D) {
-        std::cout << "Sto iniziando: " << shaderTypeToString(model3D->getShaderType()) << std::endl;
         pipelinesMap.at(model3D->getShaderType())->addModel3D(model3D);
-        std::cout << "Sto finendo" << std::endl;
     }
 
     void localInit(BaseProject* bp) {

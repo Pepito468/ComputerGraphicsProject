@@ -14,7 +14,7 @@ layout (binding = 0, set = 1) uniform UniformBufferObject {
 	mat4 mvpMat;
 	mat4 mMat;
 	mat4 nMat;
-	vec3 ambient;
+	vec3 diffuse;
 	vec4 specular;
 } ubo;
 
@@ -26,10 +26,7 @@ layout(binding = 0, set = 0) uniform GlobalUniformBufferObject {
     vec3 lightDir;
     vec3 lightColor;
     vec3 eyePos;
-	vec3 ambientLight;
 } gubo;
-
-
 
 void main() {
 	// returns a color computed with lambert + blinn
@@ -41,15 +38,14 @@ void main() {
 	vec3 albedo = texture(tex, fragUV).rgb;
 
 	// lambert diffuse
-	float kD = max(dot(N, L), 0.0) >= 0.3 ? 1.0 : 0.3;
+	float kD = max(dot(N, L), 0.0);
 
 	// blinn specular
 	vec3 H = normalize(V + L);
-	float kS = pow(max(dot(H, N), 0.0), ubo.specular.w) >= 0.95 ? 1.0 : 0.0;
+	float kS = pow(max(dot(H, N), 0.0), ubo.specular.w);
 	
 	// final color
-	vec3 color = (kD * albedo + kS * ubo.specular.rgb) * gubo.lightColor * (1.0 - gubo.ambientLight) +
-				 ubo.ambient * gubo.ambientLight * albedo;
+	vec3 color = (kD * albedo * ubo.diffuse + kS * ubo.specular.rgb) * gubo.lightColor;
 	
 	outColor = vec4(color, 1.0f);
 }

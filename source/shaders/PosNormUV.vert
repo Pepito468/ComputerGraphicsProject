@@ -16,8 +16,8 @@ layout (binding = 0, set = 1) uniform UniformBufferObject {
 	mat4 mvpMat;
 	mat4 mMat;
 	mat4 nMat;
+	vec3 diffuse;
 	vec4 specular;
-	vec3 ambient;
 } ubo;
 
 void main() {

@@ -6,6 +6,7 @@ layout (location = 0) out vec4 outColor;
 
 layout (location = 0) in vec3 fragPos;
 layout (location = 1) in vec3 fragNorm;
+layout (location = 2) in vec2 fragUV;
 
 // now we need to read the values in the uniforms
 // in this shader, we need the local uniforms
