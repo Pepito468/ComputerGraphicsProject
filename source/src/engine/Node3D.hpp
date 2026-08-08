@@ -21,6 +21,7 @@
 #define Y_ROTATION_INDEX 1
 #define Z_ROTATION_INDEX 2
 #define POSITION_INDEX 3
+#define EPSILON 0.00001f
 
 /**
  * A Node that has a place in 3D space

@@ -5,8 +5,9 @@
 #include <set>
 #include <glm/glm.hpp>
 #include <glm/vec3.hpp>
-
+#include <glm/gtc/epsilon.hpp>
 #include "Node3D.hpp"
+#include "Relations.hpp"
 
 struct Vec3Compare {
     bool operator()(const glm::vec3& a, const glm::vec3& b) const {
@@ -122,20 +123,20 @@ class Collider: public Node3D
 /// A collider shaped like a box
 class BoxCollider: public Collider
 {
-    PointSet* getCorners() const
+    float halfWidth() const {return width / 2.0f;}
+    float halfHeight() const {return height / 2.0f;}
+    float halfDepth() const {return depth / 2.0f;}
+
+    void getCorners(PointSet * set) const
     {
-        PointSet* res = new PointSet();
-
-        res->insert(toGlobalSpace(glm::vec3(width / 2.0f, height / 2.0f, depth / 2.0f)));
-        res->insert(toGlobalSpace(glm::vec3(width / 2.0f, height / 2.0f, -depth / 2.0f)));
-        res->insert(toGlobalSpace(glm::vec3(width / 2.0f, -height / 2.0f, depth / 2.0f)));
-        res->insert(toGlobalSpace(glm::vec3(width / 2.0f, -height / 2.0f, -depth / 2.0f)));
-        res->insert(toGlobalSpace(glm::vec3(-width / 2.0f, height / 2.0f, depth / 2.0f)));
-        res->insert(toGlobalSpace(glm::vec3(-width / 2.0f, height / 2.0f, -depth / 2.0f)));
-        res->insert(toGlobalSpace(glm::vec3(-width / 2.0f, -height / 2.0f, depth / 2.0f)));
-        res->insert(toGlobalSpace(glm::vec3(-width / 2.0f, -height / 2.0f, -depth / 2.0f)));
-
-        return res;
+        set->insert(toGlobalSpace(glm::vec3(halfWidth(), halfHeight(), halfDepth())));
+        set->insert(toGlobalSpace(glm::vec3(halfWidth(), halfHeight(), -halfDepth())));
+        set->insert(toGlobalSpace(glm::vec3(halfWidth(), -halfHeight(), halfDepth())));
+        set->insert(toGlobalSpace(glm::vec3(halfWidth(), -halfHeight(), -halfDepth())));
+        set->insert(toGlobalSpace(glm::vec3(-halfWidth(), halfHeight(), halfDepth())));
+        set->insert(toGlobalSpace(glm::vec3(-halfWidth(), halfHeight(), -halfDepth())));
+        set->insert(toGlobalSpace(glm::vec3(-halfWidth(), -halfHeight(), halfDepth())));
+        set->insert(toGlobalSpace(glm::vec3(-halfWidth(), -halfHeight(), -halfDepth())));
     }
 
     public:
@@ -161,11 +162,9 @@ class BoxCollider: public Collider
         bool inBounds(const glm::vec3 point) const override
         {
             const glm::vec3 p = toLocalSpace(point);
-            const float dX = std::abs(position.x - p.x);
-            const float dY = std::abs(position.y - p.y);
-            const float dZ = std::abs(position.z - p.z);
-            log(std::format("Delta: [{}, {}, {}]", dX, dY, dZ));
-            return dX <= width / 2.0f && dY <= height / 2.0f && dZ <= depth / 2.0f;
+            const glm::vec3 dist = {std::abs(p.x), std::abs(p.y), std::abs(p.z)};
+            const glm::vec3 limit = {halfWidth(), halfHeight(), halfDepth()};
+            return epsilonLessThanEqual(dist, limit);
         }
 
         PointSet* getPointSet() const override
@@ -173,22 +172,22 @@ class BoxCollider: public Collider
             PointSet* res = new PointSet();
 
             //Add the corners
-            const PointSet* corners = getCorners();
-            res->insert(corners->cbegin(), corners->cend());
-            delete corners;
+            PointSet corners = PointSet();
+            getCorners(&corners);
+            res->insert(corners.cbegin(), corners.cend());
 
             //Add in between
-            const double countRoot3 = cbrt(POINT_COUNT);
+            const int countRoot3 = ceil(cbrt(POINT_COUNT));
             const double dx = width / countRoot3;
             const double dy = height / countRoot3;
             const double dz = depth / countRoot3;
-            const glm::vec3 bottomCorner = glm::vec3(-width / 2.0f, -height / 2.0f, -depth / 2.0f);
+            const glm::vec3 bottomCorner = glm::vec3(-halfWidth(), -halfHeight(), -halfDepth());
 
-            for (int i = 0; i < countRoot3; i++)
+            for (int i = 0; i <= countRoot3; i++)
             {
-                for (int j = 0; j < countRoot3; j++)
+                for (int j = 0; j <= countRoot3; j++)
                 {
-                    for (int k = 0; k < countRoot3; k++)
+                    for (int k = 0; k <= countRoot3; k++)
                     {
                         const glm::vec3 p = bottomCorner + glm::vec3(dx * i, dy * j, dz * k);
                         res->insert(toGlobalSpace(p));
@@ -201,16 +200,15 @@ class BoxCollider: public Collider
 
         SphereBounds* getSphereBounds() const override
         {
-            const glm::vec3 corner = toGlobalSpace(glm::vec3(width / 2.0f, height / 2.0f, depth / 2.0f));
-
+            const glm::vec3 corner = toGlobalSpace(glm::vec3(halfWidth(), halfHeight(), halfDepth()));
             return new SphereBounds(position, glm::distance(position, corner));
         }
 
         AABBExtents* getAABBExtents() const override
         {
-            const PointSet* corners = getCorners();
-            AABBExtents* res = new AABBExtents(*corners);
-            delete corners;
+            PointSet corners = PointSet();
+            getCorners(&corners);
+            AABBExtents* res = new AABBExtents(corners);
             return res;
         }
 };

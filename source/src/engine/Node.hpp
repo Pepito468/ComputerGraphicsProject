@@ -2,7 +2,7 @@
 #ifndef ENGINE_NODE_H
 #define ENGINE_NODE_H
 
-#include "Debug.hpp"
+#include "../utils/Debug.hpp"
 #include <cstdint>
 #include <format>
 #include <set>

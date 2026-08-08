@@ -15,7 +15,7 @@
 #define  SCENE_IMPLEMENTATION
 #include "modules/Scene.hpp"
 
-#include "Libraries.hpp"
+#include "../utils/Libraries.hpp"
 
 // The uniform buffer object used in this example
 struct UniformBufferObject {
