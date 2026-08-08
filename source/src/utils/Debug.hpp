@@ -2,6 +2,8 @@
 #ifndef ENGINE_DEBUG_H
 #define ENGINE_DEBUG_H
 
+#include <format>
+#include <glm/glm.hpp>
 #include <stdexcept>
 #include <string>
 #include <iostream>
@@ -36,5 +38,12 @@ inline void _assert(const bool expression, const std::string& message) {
     }
 }
 
-
+/// Specialization to make vec3 compatible with std::format
+template <>
+struct std::formatter<glm::vec3> : std::formatter<std::string> {
+    auto format(glm::vec3 p, format_context& ctx) const {
+        return formatter<string>::format(
+          std::format("[{}, {}, {}]", p.x, p.y, p.z), ctx);
+    }
+};
 #endif

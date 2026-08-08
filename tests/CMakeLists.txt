@@ -1,4 +1,5 @@
 include_directories(../source/src/engine)
+include_directories(../source/src/utils)
 include_directories(../source/include/modules)
 include_directories(../source/include)
 
