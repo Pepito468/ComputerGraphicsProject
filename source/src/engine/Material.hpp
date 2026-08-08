@@ -10,14 +10,17 @@ class Material {
 
     ShaderType shaderType;
 
-    Texture texture;
+
     std::string textureName;
 
     public:
+
+    //TODO: non si dovrebbe usare getter e setter?
+    Texture* texture;
+
     virtual ~Material() = default;
     virtual void updateUBO(SimpleUniformBufferObject& ubo) = 0;
     ShaderType getShaderType() const {return shaderType;}
-    Texture& getTexture() {return texture;}
     std::string getTextureName() const {return textureName;}
 };
 

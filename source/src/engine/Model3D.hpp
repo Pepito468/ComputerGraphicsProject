@@ -10,12 +10,13 @@ class Model3D : public Node3D {
     std::string modelPath;
 
     DescriptorSet local;
-    Model model;
 
     Material* material;
 
-    glm::vec3 translate;
     public:
+    //TODO: non si dovrebbe usare invece getter e setter?
+    Model* model;
+
     Model3D(std::string modelPath, const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale, Material* material) :
         Node3D(position, rotation, scale)
     {
@@ -24,30 +25,17 @@ class Model3D : public Node3D {
     }
     ~Model3D() = default;
 
-    void localInit(BaseProject* bp, VertexDescriptor* vertexDescriptor) {
-        model.init(bp, vertexDescriptor, modelPath, OBJ);
-
-        material->getTexture().init(bp, "assets/textures/" + material->getTextureName());
-    }
-
     void descriptorSetInit(BaseProject* bp, DescriptorSetLayout* localLayout) {
-        local.init(bp, localLayout, {material->getTexture().getViewAndSampler()});
+        local.init(bp, localLayout, {material->texture->getViewAndSampler()});
     }
 
     void descriptorSetCleanup() {
         local.cleanup();
     }
 
-    void modelCleanup() {
-        model.cleanup();
-
-        //TODO: attenzione se il materiale è condiviso tra più oggetti, stai eliminando la stessa texture più volte
-        material->getTexture().cleanup();
-    }
-
     void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage, Pipeline& pipeline) {
         //select the model
-        model.bind(commandBuffer);
+        model->bind(commandBuffer);
 
         //select the local descriptor set for this object
         local.bind(commandBuffer, pipeline, 1, currentImage);
@@ -55,7 +43,7 @@ class Model3D : public Node3D {
         // draws something. This is a real Vulkan command, not wrapped by the system
         // note that now we use the "Indexed" version, since we have also the index buffer.
         // moreover, we can count the number of elements to write, from the size of the index array
-        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(model.indices.size()), 1, 0, 0, 0);
+        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(model->indices.size()), 1, 0, 0, 0);
     }
 
     //TODO: provvisorio per test
@@ -77,5 +65,12 @@ class Model3D : public Node3D {
         return material->getShaderType();
     }
 
+    std::string getModelPath() const {
+        return modelPath;
+    }
+
+    Material* getMaterial() const {
+        return material;
+    }
 };
 #endif

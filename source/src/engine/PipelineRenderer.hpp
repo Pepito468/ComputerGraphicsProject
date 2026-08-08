@@ -11,8 +11,6 @@ class PipelineRenderer {
     std::string vertShader;
     std::string fragShader;
 
-    VertexDescriptor vertexDescriptor;
-
     DescriptorSetLayout localLayout;
 
     Pipeline pipeline;
@@ -20,6 +18,7 @@ class PipelineRenderer {
     std::vector <Model3D*> pool;
 
     public:
+
     PipelineRenderer(ShaderType type = ShaderType::LAMBERT_BLINN) : shaderType(type) {
         vertShader = "shaders/" + getShaderVertName(shaderType) + ".vert.spv";
         fragShader = "shaders/" + getShaderFragName(shaderType) + ".frag.spv";
@@ -31,18 +30,7 @@ class PipelineRenderer {
         pool.push_back(model);
     }
 
-    void localInit(BaseProject* bp, DescriptorSetLayout& globalLayout) {
-        vertexDescriptor.init(bp,
-            {			// number of "bindings" that this vertex uses
-                {0, sizeof(SimpleVertex), VK_VERTEX_INPUT_RATE_VERTEX}	// binding number, size, and type
-            }, {		// this must match the structure Vertex defined above
-                  {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(SimpleVertex, pos),
-                         sizeof(glm::vec3), POSITION},
-                  {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(SimpleVertex, norm),
-                      sizeof(glm::vec3), NORMAL},
-                  {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
-                      sizeof(glm::vec2), UV}
-            });
+    void localInit(BaseProject* bp, DescriptorSetLayout& globalLayout, VertexDescriptor& vertexDescriptor) {
 
         localLayout.init(bp, {
                     // this array contains the binding:
@@ -54,10 +42,6 @@ class PipelineRenderer {
                   });
 
         pipeline.init(bp, &vertexDescriptor, vertShader, fragShader, {&globalLayout, &localLayout});
-
-        for (auto& p : pool) {
-            p->localInit(bp, &vertexDescriptor);
-        }
     }
 
     void descriptorSetsInits(BaseProject* bp, RenderPass* rp) {
@@ -79,9 +63,6 @@ class PipelineRenderer {
     void localCleanup() {
         pipeline.destroy();
         localLayout.cleanup();
-        for (auto& p : pool) {
-            p->modelCleanup();
-        }
     }
 
     void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage, DescriptorSet& global) {

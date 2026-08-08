@@ -91,18 +91,19 @@ class Engine : public BaseProject {
 
     //LambertTexMaterial mat2 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "VChecker.png"};
 
+    std::string modelPath = "SuzanneUV.obj";
 
-    Model3D m = {"assets/models/SuzanneUV.obj", {1.0f, 0.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
-    Model3D m1 = {"assets/models/SuzanneUV.obj", {1.0f, 1.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
-    Model3D m2 = {"assets/models/SuzanneUV.obj", {1.0f, 2.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
-    Model3D m3 = {"assets/models/SuzanneUV.obj", {1.0f, 3.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
-    Model3D m4 = {"assets/models/SuzanneUV.obj", {1.0f, 4.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
+    Model3D m = {modelPath , {1.0f, 0.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
+    Model3D m1 = {modelPath, {1.0f, 1.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
+    Model3D m2 = {modelPath, {1.0f, 2.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
+    Model3D m3 = {modelPath, {1.0f, 3.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
+    Model3D m4 = {modelPath, {1.0f, 4.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
 
-    Model3D m5 = {"assets/models/SuzanneUV.obj", {-1.0f, 0.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
-    Model3D m6 = {"assets/models/SuzanneUV.obj", {-1.0f, 1.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
-    Model3D m7 = {"assets/models/SuzanneUV.obj", {-1.0f, 2.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
-    Model3D m8 = {"assets/models/SuzanneUV.obj", {-1.0f, 3.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
-    Model3D m9 = {"assets/models/SuzanneUV.obj", {-1.0f, 4.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
+    Model3D m5 = {modelPath, {-1.0f, 0.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
+    Model3D m6 = {modelPath, {-1.0f, 1.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
+    Model3D m7 = {modelPath, {-1.0f, 2.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
+    Model3D m8 = {modelPath, {-1.0f, 3.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
+    Model3D m9 = {modelPath, {-1.0f, 4.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
 
     void localInit() {
         // Descriptor Layouts [what will be passed to the shaders]
