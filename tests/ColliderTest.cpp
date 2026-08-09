@@ -6,7 +6,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/epsilon.hpp>
 
-
 void boxTest() {
     println("\tBOX COLLIDER TEST");
     BoxCollider box = BoxCollider();
@@ -207,9 +206,297 @@ void boxTest() {
     println("\tEND BOX COLLIDER TEST");
 }
 
+void sphereTest()
+{
+    println("\tSPHERE COLLIDER TEST");
+    SphereCollider sphere = SphereCollider();
+
+    println("\t\tBOUNDS TEST -- Basic");
+
+    for (float x = -1; x < 1; x += 0.1f) {
+        for (float y = -1; y < 1; y += 0.1f) {
+            for (float z = -1; z < 1; z += 0.1f) {
+                const glm::vec3 p = {x, y, z};
+                if (epsilonLessThanEqual(glm::length(p), 1)) {
+                    _assert(sphere.inBounds(p), std::format("{} Not in bounds", p));
+                } else {
+                    _assert(!sphere.inBounds(p), std::format("{} In bounds", p));
+                }
+            }
+        }
+    }
+
+    println("\t\tBOUNDS TEST -- Rotated sphere");
+
+    sphere.rotateY(glm::radians(45.0f));
+    sphere.rotateX(glm::radians(-45.0f));
+    sphere.rotateZ(glm::radians(65.0f));
+    for (float x = -1; x < 1; x += 0.1f) {
+        for (float y = -1; y < 1; y += 0.1f) {
+            for (float z = -1; z < 1; z += 0.1f) {
+                const glm::vec3 p = {x, y, z};
+                if (epsilonLessThanEqual(glm::length(p), 1)) {
+                    _assert(sphere.inBounds(p), std::format("{} Not in bounds", p));
+                } else {
+                    _assert(!sphere.inBounds(p), std::format("{} In bounds", p));
+                }
+            }
+        }
+    }
+    sphere.rotateZ((glm::radians(-65.0f)));
+    sphere.rotateX((glm::radians(45.0f)));
+    sphere.rotateY((glm::radians(-45.0f)));
+
+    println("\t\tBOUNDS TEST -- Enlarged sphere");
+
+    sphere.radius = 4.37f;
+    for (float x = -5; x < 5; x += 0.1f) {
+        for (float y = -5; y < 5; y += 0.1f) {
+            for (float z = -5; z < 5; z += 0.1f) {
+                const glm::vec3 p = {x, y, z};
+                if (epsilonLessThanEqual(glm::length(p), 4.37f)) {
+                    _assert(sphere.inBounds(p), std::format("{} Not in bounds", p));
+                } else {
+                    _assert(!sphere.inBounds(p), std::format("{} In bounds", p));
+                }
+            }
+        }
+    }
+    sphere.radius = 1;
+
+    println("\t\tBOUNDS TEST -- Non-uniformly scaled sphere");
+
+    glm::vec3 scaling = {2, 1, 1};
+    sphere.scaleAll(scaling);
+    for (float x = -3; x < 3; x += 0.1f) {
+        for (float y = -1; y < 1; y += 0.1f) {
+            for (float z = -1; z < 1; z += 0.1f) {
+                const glm::vec3 p = {x, y, z};
+                const glm::vec3 p2 = p * (glm::vec3(1) / scaling);
+                // Sphere eq: (0.5x)^2 + y^2 + z^2 <= 1
+                if (epsilonLessThanEqual(glm::dot(p2, p2), 1)) {
+                    _assert(sphere.inBounds(p), std::format("{} Not in bounds", p));
+                } else {
+                    _assert(!sphere.inBounds(p), std::format("{} In bounds", p));
+                }
+            }
+        }
+    }
+    sphere.scaleAll(glm::vec3(1) / scaling);
+
+    println("\t\tBOUNDS TEST -- Translated sphere");
+
+    glm::vec3 move = {2, 4, -5.5f};
+    sphere.translate(move);
+    for (float x = 0.5f; x < 3.5f; x += 0.1f) {
+        for (float y = 2.5f; y < 5.5f; y += 0.1f) {
+            for (float z = -7.0f; z < -4.0f; z += 0.1f) {
+                const glm::vec3 p = {x, y, z};
+                const glm::vec3 p2 = p - move;
+                // Sphere eq: (x - 2)^2 + (y - 4)^2 + (z + 5.5)^2 <= 1
+                if (epsilonLessThanEqual(glm::dot(p2, p2), 1)) {
+                    _assert(sphere.inBounds(p), std::format("{} Not in bounds", p));
+                } else {
+                    _assert(!sphere.inBounds(p), std::format("{} In bounds", p));
+                }
+            }
+        }
+    }
+    sphere.translate(-move);
+
+    println("\t\tSPHERE BOUNDS TEST -- Basic");
+
+    SphereBounds* sB = sphere.getSphereBounds();
+    _assert(epsilonEqual(sB->center, sphere.position), std::format("Wrong center: {} vs {}", sB->center, sphere.position));
+    _assert(epsilonEqual(sB->radius, sphere.radius), std::format("Wrong radius: {} vs {}", sB->radius, sphere.radius));
+    delete sB;
+
+    println("\t\tSPHERE BOUNDS TEST -- Rotated and translated sphere");
+
+    sphere.rotateY(glm::radians(45.0f));
+    sphere.rotateX(glm::radians(-86.42));
+    sphere.translate({-4, 16.79f, 9});
+
+    sB = sphere.getSphereBounds();
+    _assert(epsilonEqual(sB->center, sphere.position), std::format("Wrong center: {} vs {}", sB->center, sphere.position));
+    _assert(epsilonEqual(sB->radius, sphere.radius), std::format("Wrong radius: {} vs {}", sB->radius, sphere.radius));
+    delete sB;
+
+    sphere.translate({4, -16.79f, -9});
+    sphere.rotateX(glm::radians(86.42));
+    sphere.rotateY(glm::radians(-45.0f));
+
+    println("\t\tSPHERE BOUNDS TEST -- Elongated sphere");
+
+    scaling = {7.36f, 0.67f, 5.42f};
+    sphere.scaleAll(scaling);
+
+    sB = sphere.getSphereBounds();
+    _assert(epsilonEqual(sB->center, sphere.position), std::format("Wrong center: {} vs {}", sB->center, sphere.position));
+    _assert(epsilonEqual(sB->radius, sphere.radius * maxComponent(scaling)), std::format("Wrong radius: {} vs {}", sB->radius, sphere.radius * maxComponent(scaling)));
+    delete sB;
+
+    sphere.scaleAll(glm::vec3(1) / scaling);
+
+    println("\t\tAABB TEST -- Basic");
+
+    AABBExtents* aabb = sphere.getAABBExtents();
+    _assert(epsilonEqual(aabb->xMax, 1), std::format("Wrong xMax: {} vs {}", aabb->xMax, 1));
+    _assert(epsilonEqual(aabb->yMax, 1), std::format("Wrong yMax: {} vs {}", aabb->yMax, 1));
+    _assert(epsilonEqual(aabb->zMax, 1), std::format("Wrong zMax: {} vs {}", aabb->zMax, 1));
+    _assert(epsilonEqual(aabb->xMin, -1), std::format("Wrong xMin: {} vs {}", aabb->xMin, -1));
+    _assert(epsilonEqual(aabb->yMin, -1), std::format("Wrong yMin: {} vs {}", aabb->yMin, -1));
+    _assert(epsilonEqual(aabb->zMin, -1), std::format("Wrong zMin: {} vs {}", aabb->zMin, -1));
+    delete aabb;
+
+    println("\t\tAABB TEST -- Translated sphere");
+
+    move = {16.42f, 5.89f, -73};
+    sphere.translate(move);
+
+    aabb = sphere.getAABBExtents();
+    _assert(epsilonEqual(aabb->xMax, 1 + move.x), std::format("Wrong xMax: {} vs {}", aabb->xMax, 1 + move.x));
+    _assert(epsilonEqual(aabb->yMax, 1 + move.y), std::format("Wrong yMax: {} vs {}", aabb->yMax, 1 + move.y));
+    _assert(epsilonEqual(aabb->zMax, 1 + move.z), std::format("Wrong zMax: {} vs {}", aabb->zMax, 1 + move.z));
+    _assert(epsilonEqual(aabb->xMin, -1 + move.x), std::format("Wrong xMin: {} vs {}", aabb->xMin, -1 + move.x));
+    _assert(epsilonEqual(aabb->yMin, -1 + move.y), std::format("Wrong yMin: {} vs {}", aabb->yMin, -1 + move.y));
+    _assert(epsilonEqual(aabb->zMin, -1 + move.z), std::format("Wrong zMin: {} vs {}", aabb->zMin, -1 + move.z));
+    delete aabb;
+
+    sphere.translate(-move);
+
+    println("\t\tAABB TEST -- Rotated sphere");
+
+    sphere.rotateX(glm::radians(63.15f));
+    sphere.rotateY(glm::radians(-18.54f));
+    sphere.rotateZ(glm::radians(174.77f));
+
+    aabb = sphere.getAABBExtents();
+    _assert(epsilonEqual(aabb->xMax, 1), std::format("Wrong xMax: {} vs {}", aabb->xMax, 1));
+    _assert(epsilonEqual(aabb->yMax, 1), std::format("Wrong yMax: {} vs {}", aabb->yMax, 1));
+    _assert(epsilonEqual(aabb->zMax, 1), std::format("Wrong zMax: {} vs {}", aabb->zMax, 1));
+    _assert(epsilonEqual(aabb->xMin, -1), std::format("Wrong xMin: {} vs {}", aabb->xMin, -1));
+    _assert(epsilonEqual(aabb->yMin, -1), std::format("Wrong yMin: {} vs {}", aabb->yMin, -1));
+    _assert(epsilonEqual(aabb->zMin, -1), std::format("Wrong zMin: {} vs {}", aabb->zMin, -1));
+    delete aabb;
+
+    sphere.rotateZ(glm::radians(-174.77f));
+    sphere.rotateY(glm::radians(18.54f));
+    sphere.rotateX(glm::radians(-63.15f));
+
+    println("\t\tAABB TEST -- Scaled sphere");
+
+    scaling = {0.46f, 12.73f, 3};
+    sphere.scaleAll(scaling);
+    sphere.radius = 2;
+
+    aabb = sphere.getAABBExtents();
+    _assert(epsilonEqual(aabb->xMax, scaling.x * 2), std::format("Wrong xMax: {} vs {}", aabb->xMax, scaling.x * 2));
+    _assert(epsilonEqual(aabb->yMax, scaling.y * 2), std::format("Wrong yMax: {} vs {}", aabb->yMax, scaling.y * 2));
+    _assert(epsilonEqual(aabb->zMax, scaling.z * 2), std::format("Wrong zMax: {} vs {}", aabb->zMax, scaling.z * 2));
+    _assert(epsilonEqual(aabb->xMin, -scaling.x * 2), std::format("Wrong xMin: {} vs {}", aabb->xMin,-scaling.x * 2));
+    _assert(epsilonEqual(aabb->yMin, -scaling.y * 2), std::format("Wrong yMin: {} vs {}", aabb->yMin,-scaling.y * 2));
+    _assert(epsilonEqual(aabb->zMin, -scaling.z * 2), std::format("Wrong zMin: {} vs {}", aabb->zMin,-scaling.z * 2));
+    delete aabb;
+
+    sphere.radius = 1;
+    sphere.scaleAll(glm::vec3(1) / scaling);
+
+    println("\t\tAABB TEST -- Rotated oblong sphere");
+
+    sphere.rotateY(glm::radians(45.0f));
+    sphere.scaleAll({2, 1, 1});
+
+    //Values found through manual testing in geogebra
+    aabb = sphere.getAABBExtents();
+    _assert(epsilonEqual(aabb->xMax, 1.581137f), std::format("Wrong xMax: {} vs {}", aabb->xMax, 1.581137f));
+    _assert(epsilonEqual(aabb->yMax, 1), std::format("Wrong yMax: {} vs {}", aabb->yMax, 1));
+    _assert(epsilonEqual(aabb->zMax, 1.581137f), std::format("Wrong zMax: {} vs {}", aabb->zMax, 1.581137f));
+    _assert(epsilonEqual(aabb->xMin, -1.581137f), std::format("Wrong xMin: {} vs {}", aabb->xMin, -1.581137f));
+    _assert(epsilonEqual(aabb->yMin, -1), std::format("Wrong yMin: {} vs {}", aabb->yMin, -1));
+    _assert(epsilonEqual(aabb->zMin, -1.581137f), std::format("Wrong zMin: {} vs {}", aabb->zMin, -1.581137f));
+    delete aabb;
+
+    sphere.rotateY(glm::radians(-45.0f));
+    sphere.scaleAll({0.5f, 1, 1});
+
+    println("\t\tPOINTS TEST -- Basic");
+
+    PointSet* points = sphere.getPointSet();
+    _assert(points->size() >= POINT_COUNT, std::format("Too few points: {} vs {}", points->size(), POINT_COUNT));
+    for ( glm::vec3 point : *points)
+    {
+        _assert(sphere.inBounds(point), std::format("{} Not in bounds", point));
+    }
+    delete points;
+
+    println("\t\tPOINTS TEST -- Funky");
+
+    sphere.translate(glm::vec3(1.0f, 2.0f, 3.0f));
+    sphere.rotateY(glm::radians(45.0f));
+    sphere.rotateX(glm::radians(-45.0f));
+    sphere.rotateZ(glm::radians(65.0f));
+    sphere.scaleAll(glm::vec3(1.0f, 2.0f, 3.0f));
+    points = sphere.getPointSet();
+    _assert(points->size() >= POINT_COUNT, std::format("Too few points: {} vs {}", points->size(), POINT_COUNT));
+
+    for (glm::vec3 point : *points)
+    {
+        _assert(sphere.inBounds(point), std::format("{} Not in bounds", point));
+    }
+    delete points;
+
+    println("\tEND SPHERE COLLIDER TEST");
+}
+
+void capsuleTest()
+{
+    println("\tCAPSULE COLLIDER TEST");
+    println("\t\tBOUNDS TEST -- Basic");
+    println("\t\tBOUNDS TEST -- Rotated capsule");
+    println("\t\tBOUNDS TEST -- Elongated capsule");
+    println("\t\tBOUNDS TEST -- Non-uniformly scaled capsule");
+    println("\t\tBOUNDS TEST -- Translated capsule");
+    println("\t\tSPHERE BOUNDS TEST -- Basic");
+    println("\t\tSPHERE BOUNDS TEST -- Rotated and translated capsule");
+    println("\t\tSPHERE BOUNDS TEST -- Elongated capsule");
+    println("\t\tAABB TEST -- Basic");
+    println("\t\tAABB TEST -- Translated capsule");
+    println("\t\tAABB TEST -- Rotated capsule");
+    println("\t\tAABB TEST -- Scaled capsule");
+    println("\t\tPOINTS TEST -- Basic");
+    println("\t\tPOINTS TEST -- Funky");
+    println("\tEND CAPSULE COLLIDER TEST");
+    println("COLLIDER TEST");
+    println("END COLLIDER TEST");
+}
+
+void coneTest()
+{
+    println("\tCONE COLLIDER TEST");
+    println("\t\tBOUNDS TEST -- Basic");
+    println("\t\tBOUNDS TEST -- Rotated cone");
+    println("\t\tBOUNDS TEST -- Elongated cone");
+    println("\t\tBOUNDS TEST -- Non-uniformly scaled cone");
+    println("\t\tBOUNDS TEST -- Translated cone");
+    println("\t\tSPHERE BOUNDS TEST -- Basic");
+    println("\t\tSPHERE BOUNDS TEST -- Rotated and translated cone");
+    println("\t\tSPHERE BOUNDS TEST -- Elongated cone");
+    println("\t\tAABB TEST -- Basic");
+    println("\t\tAABB TEST -- Translated cone");
+    println("\t\tAABB TEST -- Rotated cone");
+    println("\t\tAABB TEST -- Scaled cone");
+    println("\t\tPOINTS TEST -- Basic");
+    println("\t\tPOINTS TEST -- Funky");
+    println("\tEND CONE COLLIDER TEST");
+    println("COLLIDER TEST");
+    println("END COLLIDER TEST");
+}
+
 int main() {
     println("COLLIDER TEST");
     boxTest();
+    sphereTest();
     println("END COLLIDER TEST");
 }
 

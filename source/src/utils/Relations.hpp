@@ -53,4 +53,28 @@ inline bool epsilonBetween(const float min, const float x, const float max)
 {
     return epsilonLessThanEqual(min, x) && epsilonLessThanEqual(x, max);
 }
+
+/// Returns the maximum component of the vector
+template<glm::length_t L, glm::qualifier Q>
+float maxComponent(const glm::vec<L, float, Q>& v)
+{
+    float max = v[0];
+    for(int i = 1; i < L; ++i)
+    {
+        if(v[i] > max) max = v[i];
+    }
+    return max;
+}
+
+/// Returns the minimum component of the vector
+template<glm::length_t L, glm::qualifier Q>
+float minComponent(const glm::vec<L, float, Q>& v)
+{
+    float max = v[0];
+    for(int i = 1; i < L; ++i)
+    {
+        if(v[i] < max) max = v[i];
+    }
+    return max;
+}
 #endif

@@ -37,9 +37,9 @@ struct SphereBounds
     }
 
     /// @return True if there is overlap between the two bounding spheres.
-    bool overlaps(const SphereBounds& other) const
+    static bool overlap(const SphereBounds& a, const SphereBounds& b)
     {
-        return glm::distance(this->center, other.center) <= this->radius + other.radius;
+        return epsilonLessThanEqual(glm::distance(a.center, b.center), a.radius + b.radius);
     }
 };
 
@@ -72,11 +72,11 @@ struct AABBExtents
     }
 
     /// @return True if there is overlap between the two bounding boxes.
-    bool overlaps(const AABBExtents& other) const
+    static bool overlaps(const AABBExtents& a, const AABBExtents& b)
     {
-        return (xMin <= other.xMax) && (xMax >= other.xMin)
-            && (yMin <= other.yMax) && (yMax >= other.yMin)
-            && (zMin <= other.zMax) && (zMax >= other.zMin);
+        return (a.xMin <= b.xMax) && (b.xMax >= b.xMin)
+            && (a.yMin <= b.yMax) && (b.yMax >= b.yMin)
+            && (a.zMin <= b.zMax) && (b.zMax >= b.zMin);
     }
 };
 
@@ -231,7 +231,7 @@ class SphereCollider: public Collider
         bool inBounds(const glm::vec3 point) const override
         {
             const glm::vec3 p = toLocalSpace(point);
-            return glm::length(p) <= radius;
+            return epsilonLessThanEqual(glm::length(p), radius);
         }
 
         PointSet* getPointSet() const override
@@ -263,28 +263,25 @@ class SphereCollider: public Collider
 
         SphereBounds* getSphereBounds() const override
         {
-            const float maxScale = std::max(std::max(scale.x, scale.y), scale.z);
-            return new SphereBounds(position, radius * maxScale);
+            return new SphereBounds(position, radius * maxComponent(scale));
         }
 
         AABBExtents* getAABBExtents() const override
         {
-            PointSet* pts = new PointSet();
-            pts->insert(toGlobalSpace(VEC3_X * radius));
-            pts->insert(toGlobalSpace(-VEC3_X * radius));
-            pts->insert(toGlobalSpace(VEC3_Y * radius));
-            pts->insert(toGlobalSpace(-VEC3_Y * radius));
-            pts->insert(toGlobalSpace(VEC3_Z * radius));
-            pts->insert(toGlobalSpace(-VEC3_Z * radius));
-            pts->insert(position + VEC3_X * radius * glm::dot(scale, VEC3_X));
-            pts->insert(position + VEC3_Y * radius * glm::dot(scale, VEC3_Y));
-            pts->insert(position + VEC3_Z * radius * glm::dot(scale, VEC3_Z));
-            pts->insert(position - VEC3_X * radius * glm::dot(scale, VEC3_X));
-            pts->insert(position - VEC3_Y * radius * glm::dot(scale, VEC3_Y));
-            pts->insert(position - VEC3_Z * radius * glm::dot(scale, VEC3_Z));
+            // Method for sphere extents by Tavian Barnes
+            // https://tavianator.com/2014/ellipsoid_bounding_boxes.html
+            AABBExtents* res = new AABBExtents();
 
-            AABBExtents* res = new AABBExtents(*pts);
-            delete pts;
+            const double dX = radius * std::sqrt(glm::dot(glm::vec3(matrix[0][0], matrix[1][0], matrix[2][0]), glm::vec3(matrix[0][0], matrix[1][0], matrix[2][0])));
+            const double dY = radius * std::sqrt(glm::dot(glm::vec3(matrix[0][1], matrix[1][1], matrix[2][1]), glm::vec3(matrix[0][1], matrix[1][1], matrix[2][1])));
+            const double dZ = radius * std::sqrt(glm::dot(glm::vec3(matrix[0][2], matrix[1][2], matrix[2][2]), glm::vec3(matrix[0][2], matrix[1][2], matrix[2][2])));
+
+            res->xMax = position.x + dX;
+            res->yMax = position.y + dY;
+            res->zMax = position.z + dZ;
+            res->xMin = position.x - dX;
+            res->yMin = position.y - dY;
+            res->zMin = position.z - dZ;
             return res;
         }
 };
