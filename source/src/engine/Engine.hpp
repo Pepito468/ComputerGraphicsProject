@@ -82,10 +82,10 @@ class Engine : public BaseProject {
     //TODO
     //LambertMaterial mat1 = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}};
 
-    LambertMaterial mat2 = {glm::vec3(0.0f, 0.0f, 1.0f), {1.0f,1.0f,1.0f,50.0f}};
+    //LambertMaterial mat2 = {glm::vec3(0.0f, 0.0f, 1.0f), {1.0f,1.0f,1.0f,50.0f}};
 
     //ToonMaterial mat1 = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
-    //ToonMaterial mat2 = {glm::vec3(0.9f, 0.45f, 0.9f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
+    ToonMaterial mat2 = {glm::vec3(0.9f, 0.45f, 0.9f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
 
     LambertTexMaterial mat1 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "toChange.jpg"};
 
@@ -109,6 +109,10 @@ class Engine : public BaseProject {
         // Descriptor Layouts [what will be passed to the shaders]
         //TODO
 
+        renderer.loadSceneFromJSON();
+
+        //std::cout << "TEST\n";
+
         renderer.instantiate(&m);
         renderer.instantiate(&m1);
         renderer.instantiate(&m2);
@@ -119,6 +123,7 @@ class Engine : public BaseProject {
         renderer.instantiate(&m7);
         renderer.instantiate(&m8);
         renderer.instantiate(&m9);
+
 
         renderer.localInit(this);
 
@@ -161,9 +166,9 @@ class Engine : public BaseProject {
 
 
         // sets the size of the Descriptor Set Pool (it MUST be done before loading the scene)
-        DPSZs.uniformBlocksInPool = 10;
-        DPSZs.texturesInPool = 10;
-        DPSZs.setsInPool = 10;
+        DPSZs.uniformBlocksInPool = 20;
+        DPSZs.texturesInPool = 20;
+        DPSZs.setsInPool = 20;
 
         // to support scene
         VDRs.resize(1);

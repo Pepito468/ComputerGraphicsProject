@@ -15,6 +15,9 @@ class Renderer {
     std::unordered_map<ShaderType, PipelineRenderer*> pipelinesMap;
     std::unordered_map <std::string, Model> modelsAssets;
     std::unordered_map <std::string, Texture> texturesAssets;
+    std::unordered_map <std::string, Material*> materialsAssets;
+
+    std::vector<Model3D> sceneObjects;
 
     public:
     Renderer() {
@@ -32,6 +35,75 @@ class Renderer {
 
     ~Renderer() = default;
 
+    void loadSceneFromJSON(std::string sceneName = "test") {
+        std::ifstream f("assets/scenes/" + sceneName + ".json");
+
+        if (!f.is_open()) {
+            std::cout << "Error! Scene file >" << sceneName << "< not found!";
+            exit(-1);
+        }
+        nlohmann::json data = nlohmann::json::parse(f);
+
+        nlohmann::json mat_info = data["materials"]["LambertBlinnTexture"];
+        for (int i = 0; i < mat_info.size(); i++) {
+
+            materialsAssets.insert({mat_info[i]["id"].get<std::string>(), new LambertTexMaterial(
+                {
+                    mat_info[i]["diffuse"][0],
+                    mat_info[i]["diffuse"][1],
+                    mat_info[i]["diffuse"][2]
+                         },
+            {
+                    mat_info[i]["specular"][0],
+                    mat_info[i]["specular"][1],
+                    mat_info[i]["specular"][2],
+                    mat_info[i]["specular"][3]
+                        },
+                mat_info[i]["texture"].get<std::string>())});
+        }
+
+        mat_info = data["materials"]["Toon"];
+        for (int i = 0; i < mat_info.size(); i++) {
+
+            materialsAssets.insert({mat_info[i]["id"].get<std::string>(), new ToonMaterial(
+                {
+                    mat_info[i]["diffuse"][0],
+                    mat_info[i]["diffuse"][1],
+                    mat_info[i]["diffuse"][2]
+                         },
+            {
+                    mat_info[i]["specular"][0],
+                    mat_info[i]["specular"][1],
+                    mat_info[i]["specular"][2],
+                    mat_info[i]["specular"][3]
+                        },
+                        mat_info[i]["params"][0],
+                        mat_info[i]["params"][1],
+                        mat_info[i]["params"][2],
+                        mat_info[i]["params"][3],
+                        mat_info[i]["params"][4],
+                        mat_info[i]["params"][5])});
+        }
+
+        mat_info = data["instances"];
+        sceneObjects.reserve(sceneObjects.size() + mat_info.size());
+        for (int i = 0; i < mat_info.size(); i++) {
+            sceneObjects.emplace_back(Model3D( mat_info[i]["model"].get<std::string>(),
+                {mat_info[i]["position"][0], mat_info[i]["position"][1], mat_info[i]["position"][2]},
+                {mat_info[i]["rotation"][0], mat_info[i]["rotation"][1], mat_info[i]["rotation"][2]},
+                {mat_info[i]["scale"][0],mat_info[i]["scale"][1],mat_info[i]["scale"][2]},
+                materialsAssets.at(mat_info[i]["material"].get<std::string>())));
+
+            //TODO: da finire al momento crasha
+            instantiate(&sceneObjects.at(i));
+        }
+
+        std::cout << "RENDERER - JSON PARSED: " << sceneName << std::endl;
+
+        //exit(0);
+
+    }
+
     ///Draw a 3D model on the screen
     void instantiate(Model3D* model3D) {
 
@@ -47,6 +119,7 @@ class Renderer {
         model3D->model = &modelsAssets[model3D->getModelPath()];
         model3D->getMaterial()->texture = &texturesAssets[model3D->getMaterial()->getTextureName()];
 
+
         //Add to existing pipeline
         pipelinesMap.at(model3D->getShaderType())->addModel3D(model3D);
     }
@@ -60,7 +133,7 @@ class Renderer {
                         sizeof(glm::vec3), POSITION},
                  {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(SimpleVertex, norm),
                      sizeof(glm::vec3), NORMAL},
-                 {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
+                 {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(SimpleVertex, UV),
                      sizeof(glm::vec2), UV}
            });
 
@@ -73,7 +146,12 @@ class Renderer {
           });
 
         for (auto& m : modelsAssets) {
-            m.second.init(bp, &vertexDescriptor, "assets/models/" + m.first,OBJ);
+            if (m.first.find(".obj") != std::string::npos)
+                m.second.init(bp, &vertexDescriptor, "assets/models/" + m.first,OBJ);
+            else if (m.first.find(".gltf") != std::string::npos)
+                m.second.init(bp, &vertexDescriptor, "assets/models/" + m.first,GLTF);
+            else
+                std::cout << "Error: " <<  m.first << ", not a valid object file" << std::endl;
         }
 
         for (auto& t : texturesAssets) {

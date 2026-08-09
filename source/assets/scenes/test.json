@@ -1,0 +1,38 @@
+{
+  "materials": {
+    "LambertBlinnTexture": [
+      {
+        "id": "mat1",
+        "diffuse": [1.0, 1.0, 1.0],
+        "specular": [1.0, 1.0, 1.0, 100.0],
+        "texture": "VChecker.png"
+      },
+      {
+        "id": "mat2",
+        "diffuse": [1.0, 1.0, 1.0],
+        "specular": [1.0, 1.0, 1.0, 100.0],
+        "texture": "Default.png"
+      }
+    ],
+    "Toon": [
+      {
+        "id": "mat3",
+        "diffuse": [1.0, 0.0, 1.0],
+        "specular": [1.0, 1.0, 1.0, 100.0],
+        "params": [0.3, 1.0, 0.3, 0.95, 1.0, 0.0]
+      },
+      {
+        "id": "mat4",
+        "diffuse": [7.0, 7.0, 0.0],
+        "specular": [1.0, 1.0, 1.0, 100.0],
+        "params": [0.3, 1.0, 0.3, 0.95, 1.0, 0.0]
+      }
+    ]
+  },
+  "instances": [
+      {"model": "SuzanneUV.obj", "material": "mat2", "position": [3.0, 0.0, 0.0], "rotation": [0.0, 0.0, 0.0] ,"scale": [0.5, 0.5, 0.5]},
+      {"model": "SuzanneUV.obj", "material": "mat1", "position": [-3.0, 0.0, 0.0], "rotation": [0.0, 0.0, 0.0] ,"scale": [0.5, 0.5, 0.5]},
+      {"model": "SuzanneUV.obj", "material": "mat3", "position": [-3.0, 1.0, 0.0], "rotation": [0.0, 0.0, 0.0] ,"scale": [0.5, 0.5, 0.5]},
+      {"model": "Plane.gltf", "material": "mat4", "position": [0.0, 0.0, 0.0], "rotation": [0.0, 0.0, 0.0] ,"scale": [0.5, 0.5, 0.5]}
+  ]
+}
