@@ -23,17 +23,17 @@ class Camera : public Node3D
     public:
 
         /// The distance of the near plane
-        float near;
+        float nearValue;
 
         /// The distance of the far plane
-        float far;
+        float farValue;
 
 
 
         /** Default constructor */
         Camera() {
-            this->near = 0.0f;
-            this->far = 0.0f;
+            this->nearValue = 0.0f;
+            this->farValue = 0.0f;
         }
 
         /**

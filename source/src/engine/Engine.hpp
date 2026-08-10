@@ -1,7 +1,5 @@
 // ENGINE
 
-#include "Node.hpp"
-#include "Node3D.hpp"
 #include "glm/trigonometric.hpp"
 #include <cstdlib>
 #include <sstream>
