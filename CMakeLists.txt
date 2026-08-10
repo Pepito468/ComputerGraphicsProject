@@ -27,7 +27,7 @@ add_executable(${PROJECT_NAME} ${SRC_FILES})
 target_include_directories(${PROJECT_NAME} PRIVATE 
     "${INCLUDE_DIR}"
     "${ENGINE_DIR}"
-        "${UTILS_DIR}"
+    "${UTILS_DIR}"
 )
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)

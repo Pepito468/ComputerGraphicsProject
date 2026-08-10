@@ -22,6 +22,7 @@
 #define Z_ROTATION_INDEX 2
 #define POSITION_INDEX 3
 #define EPSILON 0.00001f
+#define DEFAULT_POINT_SCALE 1
 
 /**
  * A Node that has a place in 3D space
@@ -74,7 +75,7 @@ class Node3D : public Node {
                 MAT4_I;
         }
 
-        /// Rotates the node around the X-axis parallel
+        /// Rotates the node around the local X-axis parallel
         void rotateX(const float angle) {
             this->localMatrix =
                 glm::translate(MAT4_I, this->localPosition) *
@@ -90,7 +91,7 @@ class Node3D : public Node {
             this->commitUpdate();
         }
 
-        /// Rotate the node around the Y-axis parallel
+        /// Rotate the node around the local Y-axis parallel
         void rotateY(const float angle) {
             this->localMatrix =
                 glm::translate(MAT4_I, this->localPosition) *
@@ -106,7 +107,7 @@ class Node3D : public Node {
             this->commitUpdate();
         }
 
-        /// Rotate the node around the Z-axis parallel
+        /// Rotate the node around the local Z-axis parallel
         void rotateZ(const float angle) {
             this->localMatrix =
                 glm::translate(MAT4_I, this->localPosition) *
@@ -203,7 +204,6 @@ class Node3D : public Node {
 
         /**
          *  Updates the global transform properties of the node from the matrix (position, rotation, scale).
-         *  *MUST* be called after updating the global matrix to avoid data corruption
          * */
         void updateTransformProperties() {
 
@@ -233,15 +233,12 @@ class Node3D : public Node {
 
         /// Computes the local coordinates of the given point from the node's position
         glm::vec3 toLocalSpace(const glm::vec3 point) const {
-            const glm::mat4 newLocalMatrix = glm::inverse(this->localMatrix) * glm::translate(MAT4_I, point);
-            return glm::vec3(newLocalMatrix[POSITION_INDEX]);
+            return glm::vec3(glm::inverse(this->matrix) * glm::vec4(point, DEFAULT_POINT_SCALE));
         }
 
         /// Computes the global coordinates of the given point
-        glm::vec3 toGlobalSpace(const glm::vec3 point) const
-        {
-            const glm::mat4 newGlobalMatrix = this->matrix * glm::translate(MAT4_I, point);
-            return glm::vec3(newGlobalMatrix[POSITION_INDEX]);
+        glm::vec3 toGlobalSpace(const glm::vec3 point) const {
+            return glm::vec3(this->matrix * glm::vec4(point, DEFAULT_POINT_SCALE));
         }
 
 };

@@ -1,5 +1,5 @@
-﻿#ifndef COLLIDER_HPP
-#define COLLIDER_HPP
+﻿#ifndef ENGINE_COLLIDER_HPP
+#define ENGINE_COLLIDER_HPP
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <set>

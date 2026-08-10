@@ -32,8 +32,8 @@ class Camera : public Node3D
 
         /** Default constructor */
         Camera() {
-            this->nearValue = 0.0f;
-            this->farValue = 0.0f;
+            this->nearValue = 0.1f;
+            this->farValue = 100.0f;
         }
 
         /**

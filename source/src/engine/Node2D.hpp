@@ -120,7 +120,7 @@ class Node2D: public Node {
         void updateGlobalTransform(Node *node, glm::mat4 fatherTransformMatrix) {
 
             // Update self
-            // If node id Node3D, update it, else skip to its children
+            // If node id Node2D, update it, else skip to its children
             if (Node2D* node2d = dynamic_cast<Node2D*>(node)) {
                 node2d->updateGlobalMatrix(fatherTransformMatrix);
                 node2d->updateTransformProperties();
@@ -143,7 +143,6 @@ class Node2D: public Node {
 
         /**
          *  Updates the global transform from the global matrix
-         *  *MUST* be called after updating the global matrix
          * */
         void updateTransformProperties() {
             this->position = glm::vec2(this->matrix[POSITION_INDEX]);
