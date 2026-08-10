@@ -284,6 +284,8 @@ class Engine : public BaseProject {
     float Pitch = 0.0f, Yaw = 0.0f;
     // Here is where you update the uniforms.
     // Very likely this will be where you will be writing the logic of your application.
+    int i = 0;
+    bool test = true, test_ = true;
     void updateUniformBuffer(uint32_t currentImage) {
         static bool debounce = false;
         static int curDebounce = 0;
@@ -292,6 +294,44 @@ class Engine : public BaseProject {
         if(glfwGetKey(window, GLFW_KEY_ESCAPE)) {
             glfwSetWindowShouldClose(window, GL_TRUE);
         }
+
+        if (glfwGetKey(window, GLFW_KEY_Q)) {
+            if (test) {
+                renderer.removeObject(0);
+                test = false;
+
+                submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
+            }
+        } else {
+            test = true;
+        }
+
+        /*
+        if (glfwGetKey(window, GLFW_KEY_Q)) {
+            if (test) {
+                renderer.getObject(i).isVisible = false;
+                i++;
+                test = false;
+
+                submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
+            }
+        } else {
+            test = true;
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_E)) {
+            if (test_) {
+                i--;
+                renderer.getObject(i).isVisible = true;
+                test_ = false;
+
+                submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
+            }
+        } else {
+            test_ = true;
+        }
+        */
+
 
         /*
         // moves the view

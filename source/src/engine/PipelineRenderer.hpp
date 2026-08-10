@@ -25,9 +25,18 @@ class PipelineRenderer {
     }
     ~PipelineRenderer() = default;
 
-    //TODO: rendere dinamico
     void addModel3D(Model3D* model) {
         pool.push_back(model);
+    }
+
+    bool removeModel3D(Model3D* model) {
+        auto it = std::find(pool.begin(), pool.end(), model);
+
+        if (it != pool.end()) {
+            pool.erase(it);
+        }
+
+        return pool.empty();
     }
 
     void localInit(BaseProject* bp, DescriptorSetLayout& globalLayout, VertexDescriptor& vertexDescriptor) {
@@ -69,7 +78,7 @@ class PipelineRenderer {
         pipeline.bind(commandBuffer);
         global.bind(commandBuffer, pipeline, 0, currentImage);
         for (auto& p : pool) {
-            p->populateCommandBuffer(commandBuffer, currentImage, pipeline);
+                p->populateCommandBuffer(commandBuffer, currentImage, pipeline);
         }
     }
 

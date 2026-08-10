@@ -12,19 +12,15 @@ class Renderer {
 
     VertexDescriptor vertexDescriptor;
 
-    std::unordered_map<ShaderType, PipelineRenderer*> pipelinesMap;
+    std::unordered_map<ShaderType, std::unique_ptr<PipelineRenderer>> pipelinesMap;
     std::unordered_map <std::string, Model> modelsAssets;
     std::unordered_map <std::string, Texture> texturesAssets;
-    std::unordered_map <std::string, Material*> materialsAssets;
+    std::unordered_map <std::string, std::unique_ptr<Material>> materialsAssets;
 
-    std::vector<Model3D> sceneObjects;
+    std::vector<std::unique_ptr<Model3D>> sceneObjects;
 
     public:
     Renderer() {
-        pipelinesMap = {};
-        modelsAssets = {};
-        texturesAssets = {};
-
         /*
         for (auto t : allShadersTypes) {
             pipelinesMap.insert({t, new PipelineRenderer(t)});
@@ -47,36 +43,36 @@ class Renderer {
         nlohmann::json mat_info = data["materials"]["LambertBlinnTexture"];
         for (int i = 0; i < mat_info.size(); i++) {
 
-            materialsAssets.insert({mat_info[i]["id"].get<std::string>(), new LambertTexMaterial(
-                {
+            materialsAssets.insert({mat_info[i]["id"].get<std::string>(), std::make_unique<LambertTexMaterial>(
+                glm::vec3(
                     mat_info[i]["diffuse"][0],
                     mat_info[i]["diffuse"][1],
                     mat_info[i]["diffuse"][2]
-                         },
-            {
+                         ),
+            glm::vec4(
                     mat_info[i]["specular"][0],
                     mat_info[i]["specular"][1],
                     mat_info[i]["specular"][2],
                     mat_info[i]["specular"][3]
-                        },
+                        ),
                 mat_info[i]["texture"].get<std::string>())});
         }
 
         mat_info = data["materials"]["Toon"];
         for (int i = 0; i < mat_info.size(); i++) {
 
-            materialsAssets.insert({mat_info[i]["id"].get<std::string>(), new ToonMaterial(
-                {
+            materialsAssets.insert({mat_info[i]["id"].get<std::string>(), std::make_unique<ToonMaterial>(
+                glm::vec3(
                     mat_info[i]["diffuse"][0],
                     mat_info[i]["diffuse"][1],
                     mat_info[i]["diffuse"][2]
-                         },
-            {
+                         ),
+            glm::vec4(
                     mat_info[i]["specular"][0],
                     mat_info[i]["specular"][1],
                     mat_info[i]["specular"][2],
                     mat_info[i]["specular"][3]
-                        },
+                        ),
                         mat_info[i]["params"][0],
                         mat_info[i]["params"][1],
                         mat_info[i]["params"][2],
@@ -88,20 +84,37 @@ class Renderer {
         mat_info = data["instances"];
         sceneObjects.reserve(sceneObjects.size() + mat_info.size());
         for (int i = 0; i < mat_info.size(); i++) {
-            sceneObjects.emplace_back(Model3D( mat_info[i]["model"].get<std::string>(),
-                {mat_info[i]["position"][0], mat_info[i]["position"][1], mat_info[i]["position"][2]},
-                {mat_info[i]["rotation"][0], mat_info[i]["rotation"][1], mat_info[i]["rotation"][2]},
-                {mat_info[i]["scale"][0],mat_info[i]["scale"][1],mat_info[i]["scale"][2]},
-                materialsAssets.at(mat_info[i]["material"].get<std::string>())));
+            sceneObjects.emplace_back(std::make_unique<Model3D>( mat_info[i]["model"].get<std::string>(),
+                glm::vec3(mat_info[i]["position"][0], mat_info[i]["position"][1], mat_info[i]["position"][2]),
+                glm::vec3(mat_info[i]["rotation"][0], mat_info[i]["rotation"][1], mat_info[i]["rotation"][2]),
+                glm::vec3(mat_info[i]["scale"][0],mat_info[i]["scale"][1],mat_info[i]["scale"][2]),
+                materialsAssets.at(mat_info[i]["material"].get<std::string>()).get()));
 
-            //TODO: da finire al momento crasha
-            instantiate(&sceneObjects.at(i));
+            instantiate(sceneObjects[i].get());
         }
 
         std::cout << "RENDERER - JSON PARSED: " << sceneName << std::endl;
 
         //exit(0);
 
+    }
+
+    Model3D* getObject(int i) {
+        return sceneObjects[i].get();
+    }
+
+    void removeObject(int i) {
+
+
+        if (pipelinesMap.at(sceneObjects[i].get()->getShaderType())->removeModel3D(sceneObjects[i].get())) {
+            pipelinesMap.at(sceneObjects[i].get()->getShaderType())->descriptorSetsCleanup();
+            pipelinesMap.at(sceneObjects[i].get()->getShaderType())->localCleanup();
+
+            pipelinesMap.erase(sceneObjects[i].get()->getShaderType());
+        }
+
+        sceneObjects[i].get()->descriptorSetCleanup();
+        sceneObjects.erase(sceneObjects.begin() + i);
     }
 
     ///Draw a 3D model on the screen
@@ -113,7 +126,7 @@ class Renderer {
         if ( texturesAssets.find(model3D->getMaterial()->getTextureName()) == texturesAssets.end())
             texturesAssets.insert({model3D->getMaterial()->getTextureName(),{}});
         if (pipelinesMap.find(model3D->getShaderType()) == pipelinesMap.end())
-            pipelinesMap.insert({model3D->getShaderType(), new PipelineRenderer(model3D->getShaderType())});
+            pipelinesMap.insert({model3D->getShaderType(), std::make_unique<PipelineRenderer>(model3D->getShaderType())});
 
         //Insert model and texture
         model3D->model = &modelsAssets[model3D->getModelPath()];
