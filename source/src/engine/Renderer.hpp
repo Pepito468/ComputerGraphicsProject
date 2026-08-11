@@ -17,9 +17,10 @@ class Renderer {
     std::unordered_map <std::string, Texture> texturesAssets;
     std::unordered_map <std::string, std::unique_ptr<Material>> materialsAssets;
 
-    std::vector<std::unique_ptr<Model3D>> sceneObjects;
+
 
     public:
+    std::vector<std::unique_ptr<Model3D>> sceneObjects;
     Renderer() {
         /*
         for (auto t : allShadersTypes) {
@@ -84,11 +85,11 @@ class Renderer {
         mat_info = data["instances"];
         sceneObjects.reserve(sceneObjects.size() + mat_info.size());
         for (int i = 0; i < mat_info.size(); i++) {
-            sceneObjects.emplace_back(std::make_unique<Model3D>( mat_info[i]["model"].get<std::string>(),
+            enterScene( mat_info[i]["model"].get<std::string>(),
                 glm::vec3(mat_info[i]["position"][0], mat_info[i]["position"][1], mat_info[i]["position"][2]),
                 glm::vec3(mat_info[i]["rotation"][0], mat_info[i]["rotation"][1], mat_info[i]["rotation"][2]),
                 glm::vec3(mat_info[i]["scale"][0],mat_info[i]["scale"][1],mat_info[i]["scale"][2]),
-                materialsAssets.at(mat_info[i]["material"].get<std::string>()).get()));
+                materialsAssets.at(mat_info[i]["material"].get<std::string>()).get());
 
             instantiate(sceneObjects[i].get());
         }
@@ -104,7 +105,10 @@ class Renderer {
     }
 
     void removeObject(int i) {
-
+        if (i < 0 || i >= sceneObjects.size()) {
+            std::cout << "RENDERER - no object found at " << i << " index (removeObject function)" << std::endl;
+            return;
+        }
 
         if (pipelinesMap.at(sceneObjects[i].get()->getShaderType())->removeModel3D(sceneObjects[i].get())) {
             pipelinesMap.at(sceneObjects[i].get()->getShaderType())->descriptorSetsCleanup();
@@ -118,6 +122,9 @@ class Renderer {
     }
 
     ///Draw a 3D model on the screen
+    void enterScene(std::string modelPath, glm::vec3 position, glm::vec3 rotation, glm::vec3 scale, Material* material) {
+        sceneObjects.emplace_back(std::make_unique<Model3D>( modelPath, position, rotation, scale, material));
+    }
     void instantiate(Model3D* model3D) {
 
         //Key doesn't exist
@@ -135,6 +142,13 @@ class Renderer {
 
         //Add to existing pipeline
         pipelinesMap.at(model3D->getShaderType())->addModel3D(model3D);
+    }
+
+    void instantiate(Model3D* model3D, BaseProject* bp,  RenderPass* rp) {
+        instantiate(model3D);
+
+        //Model descriptor set init
+        pipelinesMap.at(model3D->getShaderType())->modelDescriptorSetInit(bp, model3D);
     }
 
     void localInit(BaseProject* bp) {

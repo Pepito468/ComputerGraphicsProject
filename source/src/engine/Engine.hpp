@@ -166,9 +166,9 @@ class Engine : public BaseProject {
 
 
         // sets the size of the Descriptor Set Pool (it MUST be done before loading the scene)
-        DPSZs.uniformBlocksInPool = 20;
-        DPSZs.texturesInPool = 20;
-        DPSZs.setsInPool = 20;
+        DPSZs.uniformBlocksInPool = 40;
+        DPSZs.texturesInPool = 40;
+        DPSZs.setsInPool = 40;
 
         // to support scene
         VDRs.resize(1);
@@ -284,8 +284,8 @@ class Engine : public BaseProject {
     float Pitch = 0.0f, Yaw = 0.0f;
     // Here is where you update the uniforms.
     // Very likely this will be where you will be writing the logic of your application.
-    int i = 0;
-    bool test = true, test_ = true;
+    int i = 0, j = 0;
+    bool test = true, test_ = true, test__ = true;
     void updateUniformBuffer(uint32_t currentImage) {
         static bool debounce = false;
         static int curDebounce = 0;
@@ -295,6 +295,7 @@ class Engine : public BaseProject {
             glfwSetWindowShouldClose(window, GL_TRUE);
         }
 
+        /*
         if (glfwGetKey(window, GLFW_KEY_Q)) {
             if (test) {
                 renderer.removeObject(0);
@@ -304,12 +305,32 @@ class Engine : public BaseProject {
             }
         } else {
             test = true;
+        }*/
+
+        if (glfwGetKey(window, GLFW_KEY_Z)) {
+            if (test__) {
+                if (j%2 == 0 ) {
+                    renderer.enterScene(modelPath , {5.0f, j, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1);
+                    renderer.instantiate(renderer.sceneObjects.back().get(), this, &RP);
+                }
+                else {
+                    renderer.enterScene(modelPath , {-5.0f, j, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2);
+                    renderer.instantiate(renderer.sceneObjects.back().get(), this, &RP);
+                }
+
+                test__ = false;
+
+                j++;
+
+                submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
+            }
+        } else {
+            test__ = true;
         }
 
-        /*
         if (glfwGetKey(window, GLFW_KEY_Q)) {
             if (test) {
-                renderer.getObject(i).isVisible = false;
+                renderer.getObject(i)->isVisible = false;
                 i++;
                 test = false;
 
@@ -322,7 +343,7 @@ class Engine : public BaseProject {
         if (glfwGetKey(window, GLFW_KEY_E)) {
             if (test_) {
                 i--;
-                renderer.getObject(i).isVisible = true;
+                renderer.getObject(i)->isVisible = true;
                 test_ = false;
 
                 submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
@@ -330,7 +351,6 @@ class Engine : public BaseProject {
         } else {
             test_ = true;
         }
-        */
 
 
         /*

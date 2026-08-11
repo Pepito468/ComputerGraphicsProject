@@ -58,8 +58,13 @@ class PipelineRenderer {
 
 
         for (auto& p : pool) {
-            p->descriptorSetInit(bp, &localLayout);
+            modelDescriptorSetInit(bp, p);
         }
+    }
+
+    //TODO: non so se mi piace questa soluzione
+    void modelDescriptorSetInit(BaseProject* bp, Model3D* model) {
+        model->descriptorSetInit(bp, &localLayout);
     }
 
     void descriptorSetsCleanup() {
