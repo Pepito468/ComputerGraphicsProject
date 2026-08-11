@@ -20,6 +20,12 @@ class OrthoCamera : public Camera {
         float rightValue;
 
 
+        OrthoCamera() {
+            this->bottomValue = -10.0f;
+            this->topValue = 10.0f;
+            this->rightValue = -10.0f;
+            this->leftValue = 10.0f;
+        };
 
         OrthoCamera(const float nearValue, const float farValue, const float bottomValue, const float topValue, const float rightValue, const float leftValue) {
             this->nearValue = nearValue;
@@ -37,6 +43,33 @@ class OrthoCamera : public Camera {
                 glm::ortho(this->leftValue, this->rightValue, this->bottomValue, this->topValue, this->nearValue, this->farValue);
         }
 
+
+        static OrthoCamera* fromJSON(const nlohmann::json& json) {
+            OrthoCamera *newNode = new OrthoCamera();
+
+            if (json.contains("name")) newNode->name = json["name"].get<std::string>();
+
+            glm::vec3 position = VEC3_ZERO;
+            glm::vec3 rotation = VEC3_ZERO;
+            glm::vec3 scale = VEC3_ONE;
+            if (json.contains("position")) position = glm::vec3(json["position"][0].get<float>(), json["position"][1].get<float>(), json["position"][2].get<float>());
+            if (json.contains("rotation")) rotation = glm::vec3(json["rotation"][0].get<float>(), json["rotation"][1].get<float>(), json["rotation"][2].get<float>());
+            if (json.contains("scale")) scale = glm::vec3(json["scale"][0].get<float>(), json["scale"][1].get<float>(), json["scale"][2].get<float>());
+            newNode->localPosition = position;
+            newNode->localRotation = rotation;
+            newNode->localScale = scale;
+            newNode->localMatrix = newNode->computeLocalMatrixFromTransform(position, rotation, scale);
+            newNode->commitUpdate();
+
+            if (json.contains("nearValue")) newNode->nearValue = json["nearValue"].get<float>();
+            if (json.contains("farValue")) newNode->farValue = json["farValue"].get<float>();
+            if (json.contains("bottomValue")) newNode->bottomValue = json["bottomValue"].get<float>();
+            if (json.contains("topValue")) newNode->topValue = json["topValue"].get<float>();
+            if (json.contains("rightValue")) newNode->rightValue = json["rightValue"].get<float>();
+            if (json.contains("leftValue")) newNode->leftValue = json["leftValue"].get<float>();
+
+            return newNode;
+        }
 };
 
 #endif

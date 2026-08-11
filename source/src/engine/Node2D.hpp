@@ -48,7 +48,11 @@ class Node2D: public Node {
             this->position = this->localPosition = position;
             this->rotation = this->localRotation = rotation;
             this->scale = this->localScale = scale;
-            this->matrix = this->localMatrix =
+            this->matrix = this->localMatrix = this->computeLocalMatrixFromTransform(position, rotation, scale);
+        }
+
+        glm::mat4 computeLocalMatrixFromTransform(glm::vec2 position, float rotation, glm::vec2 scale) {
+            return
                 glm::translate(MAT4_I, glm::vec3(position, 0)) *
                 glm::rotate(MAT4_I, rotation, PLANE_ROTATION) *
                 glm::scale(MAT4_I, glm::vec3(scale, 0)) *
@@ -158,6 +162,25 @@ class Node2D: public Node {
                     );
         }
 
+        static Node2D* fromJSON(const nlohmann::json& json) {
+            Node2D *newNode = new Node2D();
+
+            if (json.contains("name")) newNode->name = json["name"].get<std::string>();
+
+            glm::vec2 position = VEC2_ZERO;
+            float rotation = 0.0f;
+            glm::vec2 scale = VEC2_ONE;
+            if (json.contains("position")) position = glm::vec2(json["position"][0].get<float>(), json["position"][1].get<float>());
+            if (json.contains("rotation")) rotation = json["rotation"].get<float>();
+            if (json.contains("scale")) scale = glm::vec2(json["scale"][0].get<float>(), json["scale"][1].get<float>());
+            newNode->localPosition = position;
+            newNode->localRotation = rotation;
+            newNode->localScale = scale;
+            newNode->localMatrix = newNode->computeLocalMatrixFromTransform(position, rotation, scale);
+            newNode->commitUpdate();
+
+            return newNode;
+        }
 };
 
 #endif

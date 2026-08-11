@@ -40,6 +40,30 @@ class PerspectiveCamera : public Camera {
             return p;
         }
 
+        static PerspectiveCamera* fromJSON(const nlohmann::json& json) {
+            PerspectiveCamera *newNode = new PerspectiveCamera();
+
+            if (json.contains("name")) newNode->name = json["name"].get<std::string>();
+
+            glm::vec3 position = VEC3_ZERO;
+            glm::vec3 rotation = VEC3_ZERO;
+            glm::vec3 scale = VEC3_ONE;
+            if (json.contains("position")) position = glm::vec3(json["position"][0].get<float>(), json["position"][1].get<float>(), json["position"][2].get<float>());
+            if (json.contains("rotation")) rotation = glm::vec3(json["rotation"][0].get<float>(), json["rotation"][1].get<float>(), json["rotation"][2].get<float>());
+            if (json.contains("scale")) scale = glm::vec3(json["scale"][0].get<float>(), json["scale"][1].get<float>(), json["scale"][2].get<float>());
+            newNode->localPosition = position;
+            newNode->localRotation = rotation;
+            newNode->localScale = scale;
+            newNode->localMatrix = newNode->computeLocalMatrixFromTransform(position, rotation, scale);
+            newNode->commitUpdate();
+
+            if (json.contains("nearValue")) newNode->nearValue = json["nearValue"].get<float>();
+            if (json.contains("farValue")) newNode->farValue = json["farValue"].get<float>();
+            if (json.contains("fov")) newNode->fov = json["fov"].get<float>();
+            if (json.contains("aspectRatio")) newNode->aspectRatio = json["aspectRatio"].get<float>();
+
+            return newNode;
+        }
 };
 
 #endif

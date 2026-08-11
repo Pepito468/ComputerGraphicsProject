@@ -66,7 +66,11 @@ class Node3D : public Node {
             this->position = this->localPosition = position;
             this->rotation = this->localRotation = rotation;
             this->scale = this->localScale = scale;
-            this->matrix = this->localMatrix =
+            this->matrix = this->localMatrix = computeLocalMatrixFromTransform(position, rotation, scale);
+        }
+
+        glm::mat4 computeLocalMatrixFromTransform(glm::vec3 position, glm::vec3 rotation, glm::vec3 scale) {
+            return
                 glm::translate(MAT4_I, position) *
                 glm::rotate(MAT4_I, rotation.y, VEC3_Y) *
                 glm::rotate(MAT4_I, rotation.x, VEC3_X) *
@@ -241,6 +245,25 @@ class Node3D : public Node {
             return glm::vec3(this->matrix * glm::vec4(point, DEFAULT_POINT_SCALE));
         }
 
+        static Node3D* fromJSON(const nlohmann::json& json) {
+            Node3D *newNode = new Node3D();
+
+            if (json.contains("name")) newNode->name = json["name"].get<std::string>();
+
+            glm::vec3 position = VEC3_ZERO;
+            glm::vec3 rotation = VEC3_ZERO;
+            glm::vec3 scale = VEC3_ONE;
+            if (json.contains("position")) position = glm::vec3(json["position"][0].get<float>(), json["position"][1].get<float>(), json["position"][2].get<float>());
+            if (json.contains("rotation")) rotation = glm::vec3(json["rotation"][0].get<float>(), json["rotation"][1].get<float>(), json["rotation"][2].get<float>());
+            if (json.contains("scale")) scale = glm::vec3(json["scale"][0].get<float>(), json["scale"][1].get<float>(), json["scale"][2].get<float>());
+            newNode->localPosition = position;
+            newNode->localRotation = rotation;
+            newNode->localScale = scale;
+            newNode->localMatrix = newNode->computeLocalMatrixFromTransform(position, rotation, scale);
+            newNode->commitUpdate();
+
+            return newNode;
+        }
 };
 
 #endif

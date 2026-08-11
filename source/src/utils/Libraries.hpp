@@ -1,7 +1,5 @@
 /* Helper file with all the libraries */
 
-// #include <Behaviour.hpp>
-
 #include <Camera.hpp>
 
 // #include <Collider.hpp>
@@ -25,3 +23,5 @@
 #include <Sprite2D.hpp>
 
 #include <Text2D.hpp>
+
+#include <UpdateNode3D.hpp>

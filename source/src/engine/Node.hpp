@@ -7,6 +7,7 @@
 #include <format>
 #include <set>
 #include <string>
+#include <json.hpp>
 
 
 /// Represents a functional element within a scene
@@ -30,10 +31,10 @@ class Node {
         /// Default constructor
         Node() {
             nodeCounter++;
-            UUID = nodeCounter;
-            name = std::format("{} {}", typeid(this).name(), UUID);
-            children = std::set<Node*>();
-            parent = nullptr;
+            this->UUID = nodeCounter;
+            this->name = std::format("{} {}", typeid(this).name(), UUID);
+            this->children = std::set<Node*>();
+            this->parent = nullptr;
         }
 
         virtual ~Node() = default;
@@ -97,6 +98,11 @@ class Node {
             return currentNode;
         }
 
+        static Node* fromJSON(const nlohmann::json& json) {
+            Node *newNode = new Node();
+            if (json.contains("name")) newNode->name = json.at("name").get<std::string>();
+            return newNode;
+        }
 };
 
 #endif
