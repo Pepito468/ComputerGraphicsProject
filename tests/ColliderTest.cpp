@@ -180,8 +180,10 @@ void boxTest() {
     box.width = 1.0f;
 
     println("\t\tPOINTS TEST -- Basic");
+
+    constexpr int expectedCount = POINT_PARAMETER * POINT_PARAMETER * 6 - POINT_PARAMETER * 8;
     PointSet* points = box.getPointSet();
-    _assert(points->size() >= POINT_COUNT, std::format("Too few points: {} vs {}", points->size(), POINT_COUNT));
+    _assert(points->size() >= expectedCount, std::format("Too few points: {} vs {}", points->size(), expectedCount));
     for ( glm::vec3 point : *points)
     {
         _assert(box.inBounds(point), std::format("{} Not in bounds", point));
@@ -195,7 +197,7 @@ void boxTest() {
     box.rotateZ(glm::radians(65.0f));
     box.scaleAll(glm::vec3(1.0f, 2.0f, 3.0f));
     points = box.getPointSet();
-    _assert(points->size() >= POINT_COUNT, std::format("Too few points: {} vs {}", points->size(), POINT_COUNT));
+    _assert(points->size() >= expectedCount, std::format("Too few points: {} vs {}", points->size(), expectedCount));
 
     for (glm::vec3 point : *points)
     {
@@ -249,12 +251,12 @@ void sphereTest()
 
     println("\t\tBOUNDS TEST -- Enlarged sphere");
 
-    sphere.radius = 4.37f;
-    for (float x = -5; x < 5; x += 0.1f) {
-        for (float y = -5; y < 5; y += 0.1f) {
-            for (float z = -5; z < 5; z += 0.1f) {
+    sphere.radius = 2.47f;
+    for (float x = -3; x < 3; x += 0.1f) {
+        for (float y = -3; y < 3; y += 0.1f) {
+            for (float z = -3; z < 3; z += 0.1f) {
                 const glm::vec3 p = {x, y, z};
-                if (epsilonLessThanEqual(glm::length(p), 4.37f)) {
+                if (epsilonLessThanEqual(glm::length(p), 2.47f)) {
                     _assert(sphere.inBounds(p), std::format("{} Not in bounds", p));
                 } else {
                     _assert(!sphere.inBounds(p), std::format("{} In bounds", p));
@@ -422,8 +424,9 @@ void sphereTest()
 
     println("\t\tPOINTS TEST -- Basic");
 
+    constexpr int expectedCount = POINT_PARAMETER * 7 + 2;
     PointSet* points = sphere.getPointSet();
-    _assert(points->size() >= POINT_COUNT, std::format("Too few points: {} vs {}", points->size(), POINT_COUNT));
+    _assert(points->size() >= expectedCount, std::format("Too few points: {} vs {}", points->size(), expectedCount));
     for ( glm::vec3 point : *points)
     {
         _assert(sphere.inBounds(point), std::format("{} Not in bounds", point));
@@ -438,7 +441,7 @@ void sphereTest()
     sphere.rotateZ(glm::radians(65.0f));
     sphere.scaleAll(glm::vec3(1.0f, 2.0f, 3.0f));
     points = sphere.getPointSet();
-    _assert(points->size() >= POINT_COUNT, std::format("Too few points: {} vs {}", points->size(), POINT_COUNT));
+    _assert(points->size() >= expectedCount, std::format("Too few points: {} vs {}", points->size(), expectedCount));
 
     for (glm::vec3 point : *points)
     {

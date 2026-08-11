@@ -18,6 +18,7 @@ struct Vec3Compare {
 };
 typedef std::set<glm::vec3, Vec3Compare> PointSet;
 #define POINT_COUNT 40
+#define POINT_PARAMETER 12
 
 /// The extents of the sphere bounds containing a collider.
 struct SphereBounds
@@ -171,27 +172,35 @@ class BoxCollider: public Collider
         {
             PointSet* res = new PointSet();
 
-            //Add the corners
-            PointSet corners = PointSet();
-            getCorners(&corners);
-            res->insert(corners.cbegin(), corners.cend());
+            //Add the box's center
+            res->insert(position);
 
-            //Add in between
-            const int countRoot3 = ceil(cbrt(POINT_COUNT));
-            const double dx = width / countRoot3;
-            const double dy = height / countRoot3;
-            const double dz = depth / countRoot3;
-            const glm::vec3 bottomCorner = glm::vec3(-halfWidth(), -halfHeight(), -halfDepth());
-
-            for (int i = 0; i <= countRoot3; i++)
+            //Add points along the faces
+            const double dx = width  / POINT_PARAMETER;
+            const double dy = height / POINT_PARAMETER;
+            const double dz = depth  / POINT_PARAMETER;
+            for (int x = 0; x < POINT_PARAMETER; x++)
             {
-                for (int j = 0; j <= countRoot3; j++)
+                for (int y = 0; y < POINT_PARAMETER; ++y)
                 {
-                    for (int k = 0; k <= countRoot3; k++)
-                    {
-                        const glm::vec3 p = bottomCorner + glm::vec3(dx * i, dy * j, dz * k);
-                        res->insert(toGlobalSpace(p));
-                    }
+                    res->insert(toGlobalSpace({-halfWidth() + dx * x, -halfHeight() + dy * y, -halfDepth()}));
+                    res->insert(toGlobalSpace({-halfWidth() + dx * x, -halfHeight() + dy * y, halfDepth()}));
+                }
+            }
+            for (int x = 0; x < POINT_PARAMETER; x++)
+            {
+                for (int z = 0; z < POINT_PARAMETER; z++)
+                {
+                    res->insert(toGlobalSpace({-halfWidth() + dx * x, -halfHeight(), -halfDepth() + dz * z}));
+                    res->insert(toGlobalSpace({-halfWidth() + dx * x, halfHeight(), -halfDepth() + dz * z}));
+                }
+            }
+            for (int y = 0; y < POINT_PARAMETER; ++y)
+            {
+                for (int z = 0; z < POINT_PARAMETER; z++)
+                {
+                    res->insert(toGlobalSpace({-halfWidth(), -halfHeight() + dy * y, -halfDepth() + dz * z}));
+                    res->insert(toGlobalSpace({halfWidth(), -halfHeight() + dy * y, -halfDepth() + dz * z}));
                 }
             }
 
@@ -241,21 +250,28 @@ class SphereCollider: public Collider
             //Add sphere center
             res->insert(position);
 
-            constexpr int loopNum = 6;
-            const int pointsPerLoop = ceil(static_cast<float>(POINT_COUNT) / loopNum);
-            const float pointsAngle = glm::radians(360.0f / pointsPerLoop); // angle between points in the same loop
-            constexpr float loopAngle = glm::radians(360.0f / loopNum); // angle between loops
-            glm::vec3 pointer = VEC3_Y * radius;
-            glm::vec3 loopAxis = VEC3_Z;
+            //Add the poles
+            res->insert(toGlobalSpace(VEC3_Y * radius));
+            res->insert(toGlobalSpace(-VEC3_Y * radius));
 
-            for (int i = 0; i < loopNum; i++)
+            //Add points along the surface
+            const float cos30Rad = radius * std::cos(M_PI / 6.0f);
+            const float sin30Rad = radius * std::sin(M_PI / 6.0f);
+            const float cos45Rad = radius * std::cos(M_PI / 4.0f);
+            glm::vec3 pointers[] = {
+                glm::vec3(radius, 0, 0),
+                glm::vec3(cos30Rad, sin30Rad, 0), glm::vec3(cos45Rad, cos45Rad, 0), glm::vec3(sin30Rad, cos30Rad, 0),
+                glm::vec3(cos30Rad, -sin30Rad, 0), glm::vec3(cos45Rad, -cos45Rad, 0), glm::vec3(sin30Rad, -cos30Rad, 0)
+            };
+            constexpr float loopAngle = glm::radians(360.0f / POINT_PARAMETER); // angle between loops
+
+            for (int i = 0; i <= POINT_PARAMETER; i++)
             {
-                for (int j = 0; j < pointsPerLoop; j++)
+                for (int j = 0; j < 7; j++)
                 {
-                    res->insert(toGlobalSpace(pointer));
-                    pointer = glm::rotate(MAT4_I, pointsAngle, loopAxis) * glm::vec4(pointer, 1.0f);
+                    res->insert(toGlobalSpace(pointers[j]));
+                    pointers[j] = glm::rotate(MAT4_I, loopAngle, VEC3_Y) * glm::vec4(pointers[j], 1.0f);
                 }
-                loopAxis = glm::rotate(MAT4_I, loopAngle, VEC3_Y) * glm::vec4(loopAxis, 1.0f);
             }
 
             return res;
@@ -268,6 +284,17 @@ class SphereCollider: public Collider
 
         AABBExtents* getAABBExtents() const override
         {
+            return getSphereExtents(radius, matrix);
+        }
+
+        /**
+         * Calculate the AABB extents of a sphere.
+         * @param radius The radius of the sphere.
+         * @param matrix The transform matrix applied to the sphere.
+         * @return A pointer to the AABB extents.
+         */
+        static AABBExtents* getSphereExtents(const float radius, const glm::mat4& matrix)
+        {
             // Method for sphere extents by Tavian Barnes
             // https://tavianator.com/2014/ellipsoid_bounding_boxes.html
             AABBExtents* res = new AABBExtents();
@@ -276,12 +303,12 @@ class SphereCollider: public Collider
             const double dY = radius * std::sqrt(glm::dot(glm::vec3(matrix[0][1], matrix[1][1], matrix[2][1]), glm::vec3(matrix[0][1], matrix[1][1], matrix[2][1])));
             const double dZ = radius * std::sqrt(glm::dot(glm::vec3(matrix[0][2], matrix[1][2], matrix[2][2]), glm::vec3(matrix[0][2], matrix[1][2], matrix[2][2])));
 
-            res->xMax = position.x + dX;
-            res->yMax = position.y + dY;
-            res->zMax = position.z + dZ;
-            res->xMin = position.x - dX;
-            res->yMin = position.y - dY;
-            res->zMin = position.z - dZ;
+            res->xMax = matrix[3][0] + dX;
+            res->yMax = matrix[3][1] + dY;
+            res->zMax = matrix[3][2] + dZ;
+            res->xMin = matrix[3][0] - dX;
+            res->yMin = matrix[3][1] - dY;
+            res->zMin = matrix[3][2] - dZ;
             return res;
         }
 };
@@ -289,6 +316,8 @@ class SphereCollider: public Collider
 /// A collider shaped like a cylinder with two hemispheres at the ends
 class CapsuleCollider: public Collider
 {
+    float halfHeight() const {return height / 2.0f;}
+
     public:
         /// The radius of the capsule
         float radius = 1.0f;
@@ -308,7 +337,7 @@ class CapsuleCollider: public Collider
         {
             const glm::vec3 p = toLocalSpace(point);
             const float dY = p.y - position.y;
-            if (-height / 2 <= dY && dY <= height / 2)
+            if (-halfHeight() <= dY && dY <= halfHeight())
             {
                 //Cylindrical
                 const float dX = std::abs(p.x - position.x);
@@ -317,23 +346,43 @@ class CapsuleCollider: public Collider
             }
 
             //Sphere caps
-            const glm::vec3 capC = position + (VEC3_Y * (height / 2) * glm::sign(dY));
+            const glm::vec3 capC = position + (VEC3_Y * halfHeight() * glm::sign(dY));
             return glm::distance(p, capC) <= radius;
         }
 
         PointSet* getPointSet() const override
         {
-            return {};
+            PointSet* res = new PointSet();
+
+            return res;
         }
 
         SphereBounds* getSphereBounds() const override
         {
-            return nullptr;
+            const float hRad = radius * std::max(scale.x, scale.z);
+            const float vRad = (halfHeight() + radius) * scale.y;
+            return new SphereBounds(position, std::max(hRad, vRad));
         }
 
         AABBExtents* getAABBExtents() const override
         {
-            return nullptr;
+            AABBExtents* res = new AABBExtents();
+
+            const AABBExtents* northCapExt = SphereCollider::getSphereExtents(radius,
+                glm::translate(MAT4_I, VEC3_Y * halfHeight()) * matrix);
+            const AABBExtents* southCapExt = SphereCollider::getSphereExtents(radius,
+                glm::translate(MAT4_I, -VEC3_Y * halfHeight()) * matrix);
+
+            res->xMax = std::max(northCapExt->xMax, southCapExt->xMax);
+            res->yMax = std::max(northCapExt->yMax, southCapExt->yMax);
+            res->zMax = std::max(northCapExt->zMax, southCapExt->zMax);
+            res->xMin = std::min(northCapExt->xMin, southCapExt->xMin);
+            res->yMin = std::min(northCapExt->yMin, southCapExt->yMin);
+            res->zMin = std::min(northCapExt->zMin, southCapExt->zMin);
+
+            delete northCapExt;
+            delete southCapExt;
+            return res;
         }
 };
 
