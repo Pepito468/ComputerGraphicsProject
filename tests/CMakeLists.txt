@@ -39,7 +39,7 @@ add_test(Node2DTest Node2DTest)
 add_executable(ColliderTest ColliderTest.cpp)
 target_link_libraries(ColliderTest PRIVATE glfw glm::glm)
 target_link_libraries(ColliderTest PRIVATE Vulkan::Vulkan)
-# add_test(ColliderTest ColliderTest)
+add_test(ColliderTest ColliderTest)
 
 add_executable(JSONTest JSONTest.cpp)
 target_link_libraries(JSONTest PRIVATE glfw glm::glm)

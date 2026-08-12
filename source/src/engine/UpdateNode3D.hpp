@@ -26,8 +26,8 @@ class UpdateNode3D: public Node3D {
             newNode->localPosition = position;
             newNode->localRotation = rotation;
             newNode->localScale = scale;
-            newNode->localMatrix = newNode->computeLocalMatrixFromTransform(position, rotation, scale);
-            newNode->commitUpdate();
+            newNode->localMatrix = newNode->computeMatrixFromTransform(position, rotation, scale);
+            newNode->commitLocalUpdate();
 
             return newNode;
         }

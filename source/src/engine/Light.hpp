@@ -62,8 +62,8 @@ class PointLight : public Light {
             newNode->localPosition = position;
             newNode->localRotation = rotation;
             newNode->localScale = scale;
-            newNode->localMatrix = newNode->computeLocalMatrixFromTransform(position, rotation, scale);
-            newNode->commitUpdate();
+            newNode->localMatrix = newNode->computeMatrixFromTransform(position, rotation, scale);
+            newNode->commitLocalUpdate();
 
             if (json.contains("color")) newNode->color = glm::vec3(json["color"][0].get<float>(), json["color"][1].get<float>(), json["color"][2].get<float>());
             if (json.contains("radiance")) newNode->radiance = json["radiance"].get<float>();
@@ -111,8 +111,8 @@ class SpotLight : public Light {
             newNode->localPosition = position;
             newNode->localRotation = rotation;
             newNode->localScale = scale;
-            newNode->localMatrix = newNode->computeLocalMatrixFromTransform(position, rotation, scale);
-            newNode->commitUpdate();
+            newNode->localMatrix = newNode->computeMatrixFromTransform(position, rotation, scale);
+            newNode->commitLocalUpdate();
 
             if (json.contains("color")) newNode->color = glm::vec3(json["color"][0].get<float>(), json["color"][1].get<float>(), json["color"][2].get<float>());
             if (json.contains("radiance")) newNode->radiance = json["radiance"].get<float>();
@@ -145,8 +145,8 @@ class DirectionalLight : public Light {
             newNode->localPosition = position;
             newNode->localRotation = rotation;
             newNode->localScale = scale;
-            newNode->localMatrix = newNode->computeLocalMatrixFromTransform(position, rotation, scale);
-            newNode->commitUpdate();
+            newNode->localMatrix = newNode->computeMatrixFromTransform(position, rotation, scale);
+            newNode->commitLocalUpdate();
 
             if (json.contains("color")) newNode->color = glm::vec3(json["color"][0].get<float>(), json["color"][1].get<float>(), json["color"][2].get<float>());
             if (json.contains("radiance")) newNode->radiance = json["radiance"].get<float>();

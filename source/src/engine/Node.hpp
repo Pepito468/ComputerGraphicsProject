@@ -50,7 +50,7 @@ class Node {
          * If the node is already a child of this node, throws a warning and does nothing.
          * @throws std::runtime_error If a null pointer is passed.
          */
-        void adopt(Node* child) {
+        virtual void adopt(Node* child) {
             if (!child)
                 error("Node::adopt(): child == NULL");
 
@@ -73,7 +73,7 @@ class Node {
          * If the node is not a child of this node, throws a warning and does nothing
          * @throws std::runtime_error If a null pointer is passed.
          */
-        void disown(Node* child) {
+        virtual void disown(Node* child) {
 
             if (!child)
                 error("Node::disown(): child == NULL");

@@ -173,7 +173,7 @@ class BoxCollider: public Collider
             PointSet* res = new PointSet();
 
             //Add the box's center
-            res->insert(position);
+            res->insert(globalPosition);
 
             //Add points along the faces
             const double dx = width  / POINT_PARAMETER;
@@ -210,7 +210,7 @@ class BoxCollider: public Collider
         SphereBounds* getSphereBounds() const override
         {
             const glm::vec3 corner = toGlobalSpace(glm::vec3(halfWidth(), halfHeight(), halfDepth()));
-            return new SphereBounds(position, glm::distance(position, corner));
+            return new SphereBounds(globalPosition, glm::distance(globalPosition, corner));
         }
 
         AABBExtents* getAABBExtents() const override
@@ -248,7 +248,7 @@ class SphereCollider: public Collider
             PointSet* res = new PointSet();
 
             //Add sphere center
-            res->insert(position);
+            res->insert(globalPosition);
 
             //Add the poles
             res->insert(toGlobalSpace(VEC3_Y * radius));
@@ -279,12 +279,12 @@ class SphereCollider: public Collider
 
         SphereBounds* getSphereBounds() const override
         {
-            return new SphereBounds(position, radius * maxComponent(scale));
+            return new SphereBounds(globalPosition, radius * maxComponent(globalScale));
         }
 
         AABBExtents* getAABBExtents() const override
         {
-            return getSphereExtents(radius, matrix);
+            return getSphereExtents(radius, globalMatrix);
         }
 
         /**
@@ -336,17 +336,17 @@ class CapsuleCollider: public Collider
         bool inBounds(const glm::vec3 point) const override
         {
             const glm::vec3 p = toLocalSpace(point);
-            const float dY = p.y - position.y;
+            const float dY = p.y - globalPosition.y;
             if (-halfHeight() <= dY && dY <= halfHeight())
             {
                 //Cylindrical
-                const float dX = std::abs(p.x - position.x);
-                const float dZ = std::abs(p.z - position.z);
+                const float dX = std::abs(p.x - globalPosition.x);
+                const float dZ = std::abs(p.z - globalPosition.z);
                 return (dX * dX + dZ * dZ) <= radius * radius;
             }
 
             //Sphere caps
-            const glm::vec3 capC = position + (VEC3_Y * halfHeight() * glm::sign(dY));
+            const glm::vec3 capC = globalPosition + (VEC3_Y * halfHeight() * glm::sign(dY));
             return glm::distance(p, capC) <= radius;
         }
 
@@ -359,9 +359,9 @@ class CapsuleCollider: public Collider
 
         SphereBounds* getSphereBounds() const override
         {
-            const float hRad = radius * std::max(scale.x, scale.z);
-            const float vRad = (halfHeight() + radius) * scale.y;
-            return new SphereBounds(position, std::max(hRad, vRad));
+            const float hRad = radius * std::max(globalScale.x, globalScale.z);
+            const float vRad = (halfHeight() + radius) * globalScale.y;
+            return new SphereBounds(globalPosition, std::max(hRad, vRad));
         }
 
         AABBExtents* getAABBExtents() const override
@@ -369,9 +369,9 @@ class CapsuleCollider: public Collider
             AABBExtents* res = new AABBExtents();
 
             const AABBExtents* northCapExt = SphereCollider::getSphereExtents(radius,
-                glm::translate(MAT4_I, VEC3_Y * halfHeight()) * matrix);
+                glm::translate(MAT4_I, VEC3_Y * halfHeight()) * globalMatrix);
             const AABBExtents* southCapExt = SphereCollider::getSphereExtents(radius,
-                glm::translate(MAT4_I, -VEC3_Y * halfHeight()) * matrix);
+                glm::translate(MAT4_I, -VEC3_Y * halfHeight()) * globalMatrix);
 
             res->xMax = std::max(northCapExt->xMax, southCapExt->xMax);
             res->yMax = std::max(northCapExt->yMax, southCapExt->yMax);
@@ -408,10 +408,10 @@ class ConeCollider : public Collider
         bool inBounds(const glm::vec3 point) const override
         {
             const glm::vec3 p = toLocalSpace(point);
-            if (!(glm::distance(p, position) <= radius)) return false;
+            if (!(glm::distance(p, globalPosition) <= radius)) return false;
 
-            const glm::vec3 toP = glm::normalize(p - position);
-            const float angle = glm::acos(glm::dot(position, toP));
+            const glm::vec3 toP = glm::normalize(p - globalPosition);
+            const float angle = glm::acos(glm::dot(globalPosition, toP));
             return angle <= aperture;
         }
 

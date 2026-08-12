@@ -46,9 +46,9 @@ int main() {
     printf("%s\n", root->name.c_str());
     assert(root->name == "Joseph");
     Node3D *root3d = dynamic_cast<Node3D*>(root);
-    printf("%f %f %f\n", root3d->position.x, root3d->position.y, root3d->position.z);
-    printf("%f %f %f\n", root3d->rotation.x, root3d->rotation.y, root3d->rotation.z);
-    printf("%f %f %f\n", root3d->scale.x, root3d->scale.y, root3d->scale.z);
+    printf("%f %f %f\n", root3d->globalPosition.x, root3d->globalPosition.y, root3d->globalPosition.z);
+    printf("%f %f %f\n", root3d->globalRotation.x, root3d->globalRotation.y, root3d->globalRotation.z);
+    printf("%f %f %f\n", root3d->globalScale.x, root3d->globalScale.y, root3d->globalScale.z);
     for (Node* child : root->children) {
         if (child->name == "Holly") {
             printf("%s\n", child->name.c_str());

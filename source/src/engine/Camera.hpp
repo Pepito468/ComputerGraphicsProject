@@ -45,7 +45,7 @@ class Camera : public Node3D
          * Returns the view matrix
          * */
         const glm::mat4 getViewMatrix() const {
-            return glm::inverse(this->matrix);
+            return glm::inverse(this->globalMatrix);
         }
 
 };

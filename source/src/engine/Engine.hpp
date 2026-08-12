@@ -56,6 +56,23 @@ class Engine : public BaseProject {
             this->mainCamera = camera;
         }
 
+        /** Recomputes the matrixes after the nodes are moved and the hierarchy has changed */
+        void recompute3DNodeHierarchy(Node* node, glm::mat4 fatherTransformMatrix) {
+
+            // Update self matrix
+            if (Node3D* node3d = dynamic_cast<Node3D*>(node)) {
+                node3d->fatherMatrix = fatherTransformMatrix;
+                node3d->updateGlobalMatrixFromLocal();
+                node3d->updateGlobalTransformPropertiesFromGlobalMatrix();
+                fatherTransformMatrix = node3d->globalMatrix;
+            }
+
+            // Propagate to children
+            for (Node *child : node->children) {
+                recompute3DNodeHierarchy(child, fatherTransformMatrix);
+            }
+        }
+
 
     // NOTE: end new
 
@@ -345,14 +362,14 @@ class Engine : public BaseProject {
             dir = 1;
         pos += dir*deltaT;
         Camera *camera = new PerspectiveCamera(nearPlane, farPlane, FOVy, Ar);
-        camera->translate({0, 0, 5});
+        camera->localTranslate({0, 0, 5});
         Node3D *father = new Node3D();
-        father->translate({0, pos, 0});
+        father->localTranslate({0, pos, 0});
         father->adopt(camera);
 
         glm::mat4 Prj = camera->getProjectionMatrix();
         rot -= deltaT * 50;
-        father->rotateY(glm::radians(-25.0f + rot));
+        father->localRotateY(glm::radians(-25.0f + rot));
         // View
         View = camera->getViewMatrix();
         delete camera;

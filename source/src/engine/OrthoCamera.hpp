@@ -58,8 +58,8 @@ class OrthoCamera : public Camera {
             newNode->localPosition = position;
             newNode->localRotation = rotation;
             newNode->localScale = scale;
-            newNode->localMatrix = newNode->computeLocalMatrixFromTransform(position, rotation, scale);
-            newNode->commitUpdate();
+            newNode->localMatrix = newNode->computeMatrixFromTransform(position, rotation, scale);
+            newNode->commitLocalUpdate();
 
             if (json.contains("nearValue")) newNode->nearValue = json["nearValue"].get<float>();
             if (json.contains("farValue")) newNode->farValue = json["farValue"].get<float>();
