@@ -21,7 +21,7 @@ int main() {
                     {
                         "type": "Node2D",
                         "name": "Jotaro",
-                        "rotation": 56.0,
+                        "globalRotation": 56.0,
                         "children": [
                             {
                                 "type": "PerspectiveCamera",
@@ -55,7 +55,7 @@ int main() {
             for (Node* child : child->children) {
                 printf("%s\n", child->name.c_str());
                 assert(child->name == "Jotaro");
-                printf("%f\n", dynamic_cast<Node2D*>(child)->rotation);
+                printf("%f\n", dynamic_cast<Node2D*>(child)->globalRotation);
                 for (Node* child : child->children) {
                     printf("%s\n", child->name.c_str());
                     assert(child->name == "Jolyne");

@@ -22,7 +22,6 @@
 #define Y_ROTATION_INDEX 1
 #define Z_ROTATION_INDEX 2
 #define POSITION_INDEX 3
-#define EPSILON 0.00001f
 #define DEFAULT_POINT_SCALE 1
 
 /**
@@ -79,6 +78,7 @@ class Node3D : public Node {
             this->fatherMatrix = MAT4_I;
         }
 
+        /** Computes the matrix from postion, rotation and scale */
         glm::mat4 computeMatrixFromTransform(glm::vec3 position, glm::vec3 rotation, glm::vec3 scale) {
             return
                 glm::translate(MAT4_I, position) *
@@ -177,17 +177,17 @@ class Node3D : public Node {
             this->commitGlobalUpdate();
         }
 
-        /// Gets the node's global X-axis
+        /// Gets the node's local X-axis
         glm::vec3 getLocalXAxis() const {
             return glm::normalize(glm::vec3(this->localMatrix[X_ROTATION_INDEX]));
         }
 
-        /// Gets the node's global Y-axis
+        /// Gets the node's local Y-axis
         glm::vec3 getLocalYAxis() const {
             return glm::normalize(glm::vec3(this->localMatrix[Y_ROTATION_INDEX]));
         }
 
-        /// Gets the node's global Z-axis
+        /// Gets the node's local Z-axis
         glm::vec3 getLocalZAxis() const {
             return glm::normalize(glm::vec3(this->localMatrix[Z_ROTATION_INDEX]));
         }
@@ -226,7 +226,7 @@ class Node3D : public Node {
         }
 
         /**
-         *  Updates the local transform properties of the node from the matrix (position, rotation, scale).
+         *  Updates the local transform properties of the node from the local matrix (position, rotation, scale).
          * */
         void updateLocalTransformPropertiesFromLocalMatrix() {
 
@@ -302,7 +302,7 @@ class Node3D : public Node {
             this->commitLocalUpdate();
         }
 
-        /// Translates the node
+        /// Translates the node locally
         void localTranslate(const glm::vec3 distance) {
             this->localMatrix = glm::translate(MAT4_I, distance) * this->localMatrix;
             this->localPosition += distance;
@@ -311,7 +311,7 @@ class Node3D : public Node {
         }
 
         /**
-         * Scales the node by the given amount
+         * Scales the node by the given amount, locally
          * */
         void localScaleAll(const glm::vec3 scale) {
             // Scale cannot be 0
@@ -342,22 +342,22 @@ class Node3D : public Node {
             this->commitLocalUpdate();
         }
 
-        /// Gets the node's local X-axis
+        /// Gets the node's X-axis
         glm::vec3 getXAxis() const {
             return glm::normalize(glm::vec3(this->globalMatrix[X_ROTATION_INDEX]));
         }
 
-        /// Gets the node's local Y-axis
+        /// Gets the node's Y-axis
         glm::vec3 getYAxis() const {
             return glm::normalize(glm::vec3(this->globalMatrix[Y_ROTATION_INDEX]));
         }
 
-        /// Gets the node's local Z-axis
+        /// Gets the node's Z-axis
         glm::vec3 getZAxis() const {
             return glm::normalize(glm::vec3(this->globalMatrix[Z_ROTATION_INDEX]));
         }
 
-        /** Commits an update from the node */
+        /** Commits a local update from the node */
         void commitLocalUpdate() {
 
             // Commit update to self and to the node's children
@@ -391,7 +391,7 @@ class Node3D : public Node {
         }
 
         /**
-         *  Updates the global transform properties of the node from the matrix (position, rotation, scale).
+         *  Updates the global transform properties of the node from the global matrix (position, rotation, scale).
          * */
         void updateGlobalTransformPropertiesFromGlobalMatrix() {
 
@@ -434,16 +434,28 @@ class Node3D : public Node {
 
             if (json.contains("name")) newNode->name = json["name"].get<std::string>();
 
-            glm::vec3 position = VEC3_ZERO;
-            glm::vec3 rotation = VEC3_ZERO;
-            glm::vec3 scale = VEC3_ONE;
-            if (json.contains("position")) position = glm::vec3(json["position"][0].get<float>(), json["position"][1].get<float>(), json["position"][2].get<float>());
-            if (json.contains("rotation")) rotation = glm::vec3(json["rotation"][0].get<float>(), json["rotation"][1].get<float>(), json["rotation"][2].get<float>());
-            if (json.contains("scale")) scale = glm::vec3(json["scale"][0].get<float>(), json["scale"][1].get<float>(), json["scale"][2].get<float>());
-            newNode->localPosition = position;
-            newNode->localRotation = rotation;
-            newNode->localScale = scale;
-            newNode->localMatrix = newNode->computeMatrixFromTransform(position, rotation, scale);
+            glm::vec3 globalPosition = VEC3_ZERO;
+            glm::vec3 globalRotation = VEC3_ZERO;
+            glm::vec3 globalScale = VEC3_ONE;
+            if (json.contains("globalPosition")) globalPosition = glm::vec3(json["globalPosition"][0].get<float>(), json["globalPosition"][1].get<float>(), json["globalPosition"][2].get<float>());
+            if (json.contains("globalRotation")) globalRotation = glm::vec3(json["globalRotation"][0].get<float>(), json["globalRotation"][1].get<float>(), json["globalRotation"][2].get<float>());
+            if (json.contains("globalScale")) globalScale = glm::vec3(json["globalScale"][0].get<float>(), json["globalScale"][1].get<float>(), json["globalScale"][2].get<float>());
+            newNode->globalPosition = globalPosition;
+            newNode->globalRotation = globalRotation;
+            newNode->globalScale = globalScale;
+            newNode->globalMatrix = newNode->computeMatrixFromTransform(globalPosition, globalRotation, globalScale);
+            newNode->commitGlobalUpdate();
+
+            glm::vec3 localPosition = VEC3_ZERO;
+            glm::vec3 localRotation = VEC3_ZERO;
+            glm::vec3 localScale = VEC3_ONE;
+            if (json.contains("localPosition")) localPosition = glm::vec3(json["localPosition"][0].get<float>(), json["localPosition"][1].get<float>(), json["localPosition"][2].get<float>());
+            if (json.contains("localRotation")) localRotation = glm::vec3(json["localRotation"][0].get<float>(), json["localRotation"][1].get<float>(), json["localRotation"][2].get<float>());
+            if (json.contains("localScale")) localScale = glm::vec3(json["localScale"][0].get<float>(), json["localScale"][1].get<float>(), json["localScale"][2].get<float>());
+            newNode->localPosition = localPosition;
+            newNode->localRotation = localRotation;
+            newNode->localScale = localScale;
+            newNode->localMatrix = newNode->computeMatrixFromTransform(localPosition, localRotation, localScale);
             newNode->commitLocalUpdate();
 
             return newNode;

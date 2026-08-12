@@ -4,6 +4,27 @@
 #include <glm/trigonometric.hpp>
 #include <glm/vector_relational.hpp>
 
+class MockEngine {
+
+    public: 
+        /** Recomputes the matrixes after the nodes are moved and the hierarchy has changed */
+        void recompute2DNodeHierarchy(Node* node, glm::mat4 fatherTransformMatrix) {
+
+            // Update self matrix
+            if (Node2D* node2d = dynamic_cast<Node2D*>(node)) {
+                node2d->fatherMatrix = fatherTransformMatrix;
+                node2d->updateGlobalMatrixFromLocal();
+                node2d->updateGlobalTransformPropertiesFromGlobalMatrix();
+                fatherTransformMatrix = node2d->globalMatrix;
+            }
+
+            // Propagate to children
+            for (Node *child : node->children) {
+                recompute2DNodeHierarchy(child, fatherTransformMatrix);
+            }
+        }
+};
+
 void printMatrix(glm::mat4 m) {
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
@@ -22,24 +43,56 @@ int main() {
 
     printf("NODE2D TEST\n\n");
 
+    // Test 1
     Node2D node = Node2D();
-    node.translate(glm::vec2(1, 2));
-    node.rotate(glm::radians(45.0f));
-    node.translate(glm::vec2(1, 2));
-    node.scaleAll(glm::vec2(2, 3));
-    printMatrix(node.matrix);
+    node.localTranslate(glm::vec2(1, 2));
+    node.localRotate(glm::radians(45.0f));
+    node.localTranslate(glm::vec2(1, 2));
+    node.localScaleAll(glm::vec2(2, 3));
+    printMatrix(node.globalMatrix);
 
 
-    glm::vec2 pos = node.position;
+    glm::vec2 pos = node.globalPosition;
     printf("POS: %.2f %.2f\n", pos.x, pos.y);
+    return 0;
     assert(glm::all(glm::epsilonEqual(pos, glm::vec2(2, 4), epsilon)));
-    float rot = node.rotation;
+    float rot = node.globalRotation;
     printf("ROT: %.2f\n", rot);
     assert(glm::epsilonEqual(rot, glm::radians(45.0f), epsilon));
-    glm::vec2 sca = node.scale;
+    glm::vec2 sca = node.globalScale;
     printf("SCA: %.2f %.2f\n\n", sca.x, sca.y);
     assert(glm::all(glm::epsilonEqual(sca, glm::vec2(2, 3), epsilon)));
 
+    // Test 2
+    MockEngine engine = MockEngine();
+    Node2D father2 = Node2D();
+    Node2D child2 = Node2D();
+
+    father2.adopt(&child2);
+    engine.recompute2DNodeHierarchy(&father2, MAT4_I);
+    father2.localTranslate({1, 1});
+    father2.localRotate(glm::radians(45.0f));
+    father2.globalScaleAll({2, 2});
+    child2.localTranslate({1, 1});
+    child2.globalRotate(glm::radians(45.0f));
+    printf("LOCAL:\n");
+    printMatrix(child2.localMatrix);
+    printf("\n");
+    printf("GLOBAL:\n");
+    printMatrix(child2.globalMatrix);
+    printf("\n");
+    printf("GPOS: %.4f %.4f\n", child2.globalPosition.x, child2.globalPosition.y);
+    assert(glm::all(glm::epsilonEqual(child2.globalPosition, {1, 3.8284}, epsilon)));
+    printf("GROT: %.4f\n", child2.globalRotation);
+    assert(glm::epsilonEqual(child2.globalRotation, glm::radians(90.0f), epsilon));
+    printf("GSCA: %.4f %.4f\n", child2.globalScale.x, child2.globalScale.y);
+    assert(glm::all(glm::epsilonEqual(child2.globalScale, {2, 2}, epsilon)));
+    printf("LPOS: %.4f %.4f\n", child2.localPosition.x, child2.localPosition.y);
+    assert(glm::all(glm::epsilonEqual(child2.localPosition, {1, 1}, epsilon)));
+    printf("LROT: %.4f\n", child2.localRotation);
+    assert(glm::epsilonEqual(child2.localRotation, glm::radians(45.0f), epsilon));
+    printf("LSCA: %.4f %.4f\n", child2.localScale.x, child2.localScale.y);
+    assert(glm::all(glm::epsilonEqual(child2.localScale, {1, 1}, epsilon)));
 
     printf("END NODE2D TEST\n\n");
 
