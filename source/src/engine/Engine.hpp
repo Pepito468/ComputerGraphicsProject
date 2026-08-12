@@ -9,39 +9,19 @@
 #include "Node.hpp"
 #include "Node3D.hpp"
 
-// The uniform buffer object used in this example
-struct UniformBufferObject {
-    alignas(16) glm::mat4 mvpMat;
-    alignas(16) glm::mat4 mMat;
-};
-
-
 class Engine : public BaseProject {
     // NOTE: new
     public:
+    Engine() : renderer(this, &RP, [this](){submitCommandBuffer("main", 0, populateCommandBufferAccess, this);}) {
 
+    }
 
     protected:
     // Here you list all the Vulkan objects you need:
 
-    //TODO
     Renderer renderer;
 
-    // Descriptor Layouts [what will be passed to the shaders]
-    DescriptorSetLayout DSLlocal, DSLglobal;
-
-    // Vertex formants, Pipelines [Shader couples] and Render passes
-    VertexDescriptor VD;
     RenderPass RP;
-    Pipeline P;
-
-    // Models, textures and Descriptors (values assigned to the uniforms)
-    DescriptorSet DSglobal;
-
-    // To support loading assets from a scene.json file
-    Scene SC;
-    std::vector<VertexDescriptorRef>  VDRs;
-    std::vector<TechniqueRef> PRs;
 
     // to provide textual feedback
     TextMaker txt;
@@ -80,7 +60,7 @@ class Engine : public BaseProject {
     // Here you also create your Descriptor set layouts and load the shaders for the pipelines
 
     //TODO
-    //LambertMaterial mat1 = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}};
+    LambertMaterial mat3 = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}};
 
     //LambertMaterial mat2 = {glm::vec3(0.0f, 0.0f, 1.0f), {1.0f,1.0f,1.0f,50.0f}};
 
@@ -107,12 +87,12 @@ class Engine : public BaseProject {
 
     void localInit() {
         // Descriptor Layouts [what will be passed to the shaders]
-        //TODO
 
-        renderer.loadSceneFromJSON();
+        //renderer.loadSceneFromJSON();
 
         //std::cout << "TEST\n";
 
+        /*
         renderer.instantiate(&m);
         renderer.instantiate(&m1);
         renderer.instantiate(&m2);
@@ -123,72 +103,20 @@ class Engine : public BaseProject {
         renderer.instantiate(&m7);
         renderer.instantiate(&m8);
         renderer.instantiate(&m9);
+        */
 
-
-        renderer.localInit(this);
-
-        DSLlocal.init(this, {
-                    // this array contains the binding:
-                    // first  element : the binding number
-                    // second element : the type of element (buffer or texture)
-                    // third  element : the pipeline stage where it will be used
-                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(UniformBufferObject), 1},
-                    {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1}
-                  });
-        DSLglobal.init(this, {
-                    // this array contains the binding:
-                    // first  element : the binding number
-                    // second element : the type of element (buffer or texture)
-                    // third  element : the pipeline stage where it will be used
-                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, sizeof(GlobalUniformBufferObject), 1}
-                  });
-        VD.init(this, {
-                  {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
-                }, {
-                  {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
-                         sizeof(glm::vec3), POSITION},
-                  {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
-                         sizeof(glm::vec2), UV}
-                });
+        renderer.localInit();
 
         // initializes the render passes
         RP.init(this);
         // sets the blue sky
         RP.properties[0].clearValue = {0.0f,0.9f,1.0f,1.0f};
 
-        // Pipelines [Shader couples]
-        // The last array, is a vector of pointer to the layouts of the sets that will
-        // be used in this pipeline. The first element will be set 0, and so on..
-        
-        P.init(this, &VD, "shaders/toChangeSimplePos.vert.spv",
-                          "shaders/toChangeBlinnFromPos.frag.spv",
-                          {&DSLglobal, &DSLlocal});
-
 
         // sets the size of the Descriptor Set Pool (it MUST be done before loading the scene)
-        DPSZs.uniformBlocksInPool = 40;
-        DPSZs.texturesInPool = 40;
-        DPSZs.setsInPool = 40;
-
-        // to support scene
-        VDRs.resize(1);
-        VDRs[0].init("VDposUV",  &VD);
-
-        PRs.resize(1);
-        PRs[0].init("BlinnPos", {
-                            {&P, {//Pipeline and DSL for the main pass
-                             /*DSLglobal*/{},
-                             /*DSLlocal*/{
-                                    /*t0*/{true,  0, {}}
-                                  }
-                                 }
-                                }
-                          }, /*TotalNtextures*/1, &VD);
-
-        if(SC.init(this, 1, VDRs, PRs, "assets/scenes/scene.json") != 0) {
-            std::cout << "ERROR LOADING THE SCENE\n";
-            exit(0);
-        }
+        DPSZs.uniformBlocksInPool = 200;
+        DPSZs.texturesInPool = 200;
+        DPSZs.setsInPool = 200;
 
         // initializes the textual output
         txt.init(this, windowWidth, windowHeight);
@@ -206,55 +134,29 @@ class Engine : public BaseProject {
     void pipelinesAndDescriptorSetsInit() {
         // creates the render passes
         RP.create();
-        
-        // This creates a new pipeline (with the current surface), using its shaders for the provided render pass
-        P.create(&RP);
-        
-        DSglobal.init(this, &DSLglobal, {});
 
-        //TODO
-        renderer.descriptorSetsInits(this, &RP);
+        renderer.descriptorSetsInits();
 
-        // Here you define the data set
-        // If the scene has textures coming from a render pass, the corresponding element of the technique must be
-        // updated before calling SC.pipelinesAndDescriptorSetsInit();
-
-        SC.pipelinesAndDescriptorSetsInit();
         txt.pipelinesAndDescriptorSetsInit();
     }
 
     // Here you destroy your pipelines and Descriptor Sets!
     void pipelinesAndDescriptorSetsCleanup() {
-        P.cleanup();
-
         RP.cleanup();
-        
-        DSglobal.cleanup();
-
-        //TODO
         renderer.descriptorSetsCleanup();
-        
-        SC.pipelinesAndDescriptorSetsCleanup();
         txt.pipelinesAndDescriptorSetsCleanup();
     }
 
     // Here you destroy all the Models, Texture and Desc. Set Layouts you created!
     // You also have to destroy the pipelines
     void localCleanup() {
-        DSLlocal.cleanup();
-        DSLglobal.cleanup();
-
-        P.destroy();
-
         RP.destroy();
 
-        //TODO
         renderer.localCleanup();
 
-        SC.localCleanup();
         txt.localCleanup();
     }
-    
+
     // Here it is the creation of the command buffer:
     // You send to the GPU all the objects you want to draw,
     // with their buffers and textures
@@ -266,20 +168,16 @@ class Engine : public BaseProject {
     }
 
     void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
-        
+
         // Offscreen pass - always required
         // begin standard pass
         RP.begin(commandBuffer, currentImage);
 
-        //SC.populateCommandBuffer(commandBuffer, 0, currentImage);
-
-        //TODO
         renderer.populateCommandBuffer(commandBuffer, currentImage);
 
         RP.end(commandBuffer);
     }
 
-    //TODO
     glm::vec3 CamPos = {0.0f, 1.0f, 4.0f};
     float Pitch = 0.0f, Yaw = 0.0f;
     // Here is where you update the uniforms.
@@ -310,12 +208,10 @@ class Engine : public BaseProject {
         if (glfwGetKey(window, GLFW_KEY_Z)) {
             if (test__) {
                 if (j%2 == 0 ) {
-                    renderer.enterScene(modelPath , {5.0f, j, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1);
-                    renderer.instantiate(renderer.sceneObjects.back().get(), this, &RP);
+                    renderer.instantiate(modelPath , {1.0f, j, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1);
                 }
                 else {
-                    renderer.enterScene(modelPath , {-5.0f, j, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2);
-                    renderer.instantiate(renderer.sceneObjects.back().get(), this, &RP);
+                    renderer.instantiate(modelPath , {-1.0f, j, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat3);
                 }
 
                 test__ = false;
@@ -330,11 +226,9 @@ class Engine : public BaseProject {
 
         if (glfwGetKey(window, GLFW_KEY_Q)) {
             if (test) {
-                renderer.getObject(i)->isVisible = false;
+                renderer.getObject(i)->setIsVisible(false);
                 i++;
                 test = false;
-
-                submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
             }
         } else {
             test = true;
@@ -343,51 +237,13 @@ class Engine : public BaseProject {
         if (glfwGetKey(window, GLFW_KEY_E)) {
             if (test_) {
                 i--;
-                renderer.getObject(i)->isVisible = true;
+                renderer.getObject(i)->setIsVisible(true);
                 test_ = false;
-
-                submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
             }
         } else {
             test_ = true;
         }
 
-
-        /*
-        // moves the view
-        float deltaT = GameLogic();
-        
-        // defines the global parameters for the uniform
-        static float lightRotationAngle = 0.0f; // Static variable to keep track of rotation
-        lightRotationAngle += -0.5f * deltaT; // Increment rotation angle based on time
-
-        const glm::mat4 lightView = glm::rotate(glm::mat4(1), glm::radians(lightRotationAngle), glm::vec3(0.0f, 1.0f, 0.0f)) * 
-                                    glm::rotate(glm::mat4(1), glm::radians(-45.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-        const glm::vec3 lightDir =  glm::vec3(lightView * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f));
-
-        GlobalUniformBufferObject gubo{};
-
-        gubo.lightDir = lightDir;
-        gubo.lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)*5.0f;
-        gubo.eyePos = glm::vec3(glm::inverse(View)[3]);
-
-        DSglobal.map(currentImage, &gubo, 0);
-
-        // defines the local parameters for the uniforms
-        UniformBufferObject ubo{};        
-
-        int instanceId;
-        // character
-        for(instanceId = 0; instanceId < SC.TI[0].InstanceCount; instanceId++) {
-            ubo.mMat = SC.TI[0].I[instanceId].Wm;
-            ubo.mvpMat = ViewPrj * ubo.mMat;
-            
-            // DS[1] = Pchar pass (main render): set0=DSLglobal, set1=DSLlocal
-            SC.TI[0].I[instanceId].DS[0][0]->map(currentImage, &gubo, 0); // global (light/camera)
-            SC.TI[0].I[instanceId].DS[0][1]->map(currentImage, &ubo, 0); // camera MVPs
-        }*/
-
-        //TODO
         glm::mat4 View, Projection;
         // Camera FOV-y, Near Plane and Far Plane
         const float FOVy = glm::radians(45.0f);

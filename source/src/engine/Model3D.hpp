@@ -7,16 +7,16 @@
 
 /// A node represented with a 3D model
 class Model3D : public Node3D {
+
     std::string modelPath;
-
-    DescriptorSet local;
-
     Material* material;
-
-    public:
-    //TODO: non si dovrebbe usare invece getter e setter?
     Model* model;
     bool isVisible;
+
+    //Vulkan variable
+    DescriptorSet local;
+
+    public:
 
     Model3D(std::string modelPath, const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale, Material* material, bool isVisible = true) :
         Node3D(position, rotation, scale)
@@ -27,14 +27,17 @@ class Model3D : public Node3D {
     }
     ~Model3D() = default;
 
+    ///This must be called inside PipelineRender.descriptorSetsInits()
     void descriptorSetInit(BaseProject* bp, DescriptorSetLayout* localLayout) {
-        local.init(bp, localLayout, {material->texture->getViewAndSampler()});
+        local.init(bp, localLayout, {material->getTexture()->getViewAndSampler()});
     }
 
+    ///This must be called inside PipelineRender.descriptorSetsCleanups()
     void descriptorSetCleanup() {
         local.cleanup();
     }
 
+    ///This must be called inside PipelineRender.populateCommandBuffer()
     void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage, Pipeline& pipeline) {
         if (isVisible) {
             //select the model
@@ -50,9 +53,10 @@ class Model3D : public Node3D {
         }
     }
 
+    ///This must be called inside PipelineRender.updateUniformBuffer()
     void updateUniformBuffer(uint32_t currentImage, glm::mat4 projection, glm::mat4 view) {
         if (isVisible) {
-            SimpleUniformBufferObject ubo;
+            UniformBufferObject ubo;
 
             glm::mat4 world = localMatrix;
 
@@ -66,16 +70,13 @@ class Model3D : public Node3D {
         }
     }
 
-    ShaderType getShaderType() const {
-        return material->getShaderType();
-    }
-
-    std::string getModelPath() const {
-        return modelPath;
-    }
-
-    Material* getMaterial() const {
-        return material;
-    }
+    //Getters and setters
+    ShaderType getShaderType() const {return material->getShaderType();}
+    std::string getModelPath() const {return modelPath;}
+    Material* getMaterial() const {return material;}
+    Model* getModel() const {return model;}
+    void setModel(Model* model) {this->model = model;}
+    bool IsVisible() const {return isVisible;}
+    void setIsVisible(bool visible) {this->isVisible = visible;}
 };
 #endif

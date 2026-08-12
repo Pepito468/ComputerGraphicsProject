@@ -10,11 +10,6 @@
 
 struct Vertex {
     glm::vec3 pos;
-    glm::vec2 UV;
-};
-
-struct SimpleVertex {
-    glm::vec3 pos;
     glm::vec3 norm;
     glm::vec2 UV;
 };
@@ -25,7 +20,7 @@ struct GlobalUniformBufferObject {
     alignas(16) glm::vec3 eyePos;
 };
 
-struct SimpleUniformBufferObject {
+struct UniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
     alignas(16) glm::mat4 mMat;
     alignas(16) glm::mat4 nMat;

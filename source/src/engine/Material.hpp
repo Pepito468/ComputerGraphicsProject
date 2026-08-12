@@ -2,6 +2,11 @@
 #define ENGINE_MATERIAL_HPP
 #include "common.h"
 
+
+///NOTE: Each time you create a new shader you must create a new material type that realize that shader.
+///      You will also need to update information inside the common.h file
+
+///A material is meant as a configuration of parameters for the associated shader
 class Material {
 
     protected:
@@ -9,19 +14,18 @@ class Material {
     glm::vec4 specular;
 
     ShaderType shaderType;
-
-
     std::string textureName;
+    Texture* texture;
+
 
     public:
 
-    //TODO: non si dovrebbe usare getter e setter?
-    Texture* texture;
-
     virtual ~Material() = default;
-    virtual void updateUBO(SimpleUniformBufferObject& ubo) = 0;
+    virtual void updateUBO(UniformBufferObject& ubo) = 0;
     ShaderType getShaderType() const {return shaderType;}
     std::string getTextureName() const {return textureName;}
+    Texture* getTexture() const {return texture;}
+    void setTexture(Texture* texture) {this->texture = texture;}
 };
 
 class LambertTexMaterial : public Material {
@@ -37,7 +41,7 @@ class LambertTexMaterial : public Material {
     }
 
     ~LambertTexMaterial() override = default;
-    void updateUBO(SimpleUniformBufferObject& ubo) override {
+    void updateUBO(UniformBufferObject& ubo) override {
         ubo.color = diffuse;
         ubo.specular = specular;
     }
@@ -55,7 +59,7 @@ class LambertMaterial : public Material {
     }
 
     ~LambertMaterial() override = default;
-    void updateUBO(SimpleUniformBufferObject& ubo) override {
+    void updateUBO(UniformBufferObject& ubo) override {
         ubo.color = diffuse;
         ubo.specular = specular;
     }
@@ -82,7 +86,7 @@ public:
     }
 
     ~ToonMaterial() override = default;
-    void updateUBO(SimpleUniformBufferObject& ubo) override {
+    void updateUBO(UniformBufferObject& ubo) override {
         ubo.color = diffuse;
         ubo.specular = specular;
         ubo.param1.x = tD;
