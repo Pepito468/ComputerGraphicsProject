@@ -45,7 +45,7 @@ class Node3D : public Node {
         /// Father's matrix
         glm::mat4 fatherMatrix;
 
-        // Node's local matrix
+        /// Node's local matrix
         glm::mat4 localMatrix;
         glm::vec3 localPosition;
         glm::vec3 localRotation;
@@ -67,7 +67,7 @@ class Node3D : public Node {
                 error(std::format("Trying to set scale for [{}] to 0", this->name));
             }
             // Check for shear
-            if (scale.x != scale.y || scale.x != scale.z || scale.y != scale.y) {
+            if (scale.x != scale.y || scale.x != scale.z || scale.y != scale.z) {
                 warning(std::format("Non uniform scale being applied to [{}]. Shear might happen to its children", this->name));
             }
 
@@ -78,8 +78,8 @@ class Node3D : public Node {
             this->fatherMatrix = MAT4_I;
         }
 
-        /** Computes the matrix from postion, rotation and scale */
-        glm::mat4 computeMatrixFromTransform(glm::vec3 position, glm::vec3 rotation, glm::vec3 scale) {
+        /** Computes the matrix from position, rotation and scale */
+        static glm::mat4 computeMatrixFromTransform(const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale) {
             return
                 glm::translate(MAT4_I, position) *
                 glm::rotate(MAT4_I, rotation.y, VEC3_Y) *
@@ -153,7 +153,7 @@ class Node3D : public Node {
             if (scale.x == 0 || scale.y == 0 or scale.z == 0)
                 error(std::format("Flattening, at leat one of the scaling factors for [{}] is 0", this->name));
             // Shear check
-            if (scale.x != scale.y || scale.x != scale.z || scale.y != scale.y) {
+            if (scale.x != scale.y || scale.x != scale.z || scale.y != scale.z) {
                 warning(std::format("Non uniform scale being applied to [{}]. Shear might happen to its children", this->name));
             }
 
@@ -193,14 +193,14 @@ class Node3D : public Node {
         }
 
         /** Commits a global update from the node */
-        void commitGlobalUpdate() {
+        virtual void commitGlobalUpdate() {
 
             // Commit update to self and to the node's children
             this->updateLocalTransformFromGlobal(this, this->fatherMatrix);
         }
 
         /** Recursively updates the node and its children and so on */
-        void updateLocalTransformFromGlobal(Node *node, glm::mat4 fatherTransformMatrix) {
+        static void updateLocalTransformFromGlobal(Node *node, glm::mat4 fatherTransformMatrix) {
 
             // Update self
             // If node id Node3D, update it, else skip to its children
@@ -220,21 +220,21 @@ class Node3D : public Node {
 
         /**
          *  Updates the local matrix from the global
-         * */
+         */
         void updateLocalMatrixFromGlobal() {
             this->localMatrix = glm::inverse(this->fatherMatrix) * this->globalMatrix;
         }
 
         /**
          *  Updates the local transform properties of the node from the local matrix (position, rotation, scale).
-         * */
+         */
         void updateLocalTransformPropertiesFromLocalMatrix() {
 
             // Position
             this->localPosition = glm::vec3(this->localMatrix[POSITION_INDEX]);
 
             // Rotation
-            // Compute rotation from the rotation matrix (the local axises) using geometry
+            // Compute rotation from the rotation matrix (the local axes) using geometry
             const glm::vec3 xAxis = this->getLocalXAxis();
             const glm::vec3 yAxis = this->getLocalYAxis();
             const glm::vec3 zAxis = this->getLocalZAxis();
@@ -318,7 +318,7 @@ class Node3D : public Node {
             if (scale.x == 0 || scale.y == 0 or scale.z == 0)
                 error(std::format("Flattening, at leat one of the scaling factors for [{}] is 0", this->name));
             // Shear might happen
-            if (scale.x != scale.y || scale.x != scale.z || scale.y != scale.y) {
+            if (scale.x != scale.y || scale.x != scale.z || scale.y != scale.z) {
                 warning(std::format("Non uniform scale being applied to [{}]. Shear might happen to its children", this->name));
             }
 
@@ -358,14 +358,14 @@ class Node3D : public Node {
         }
 
         /** Commits a local update from the node */
-        void commitLocalUpdate() {
+        virtual void commitLocalUpdate() {
 
             // Commit update to self and to the node's children
             this->updateGlobalTransformFromLocal(this, this->fatherMatrix);
         }
 
         /** Recursively updates the node and its children and so on */
-        void updateGlobalTransformFromLocal(Node *node, glm::mat4 fatherTransformMatrix) {
+        static void updateGlobalTransformFromLocal(Node *node, glm::mat4 fatherTransformMatrix) {
 
             // Update self
             // If node id Node3D, update it, else skip to its children
@@ -399,7 +399,7 @@ class Node3D : public Node {
             this->globalPosition = glm::vec3(this->globalMatrix[POSITION_INDEX]);
 
             // Rotation
-            // Compute rotation from the rotation matrix (the local axises) using geometry
+            // Compute rotation from the rotation matrix (the local axes) using geometry
             const glm::vec3 xAxis = this->getXAxis();
             const glm::vec3 yAxis = this->getYAxis();
             const glm::vec3 zAxis = this->getZAxis();

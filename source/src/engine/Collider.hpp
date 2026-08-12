@@ -17,7 +17,6 @@ struct Vec3Compare {
     }
 };
 typedef std::set<glm::vec3, Vec3Compare> PointSet;
-#define POINT_COUNT 40
 #define POINT_PARAMETER 12
 
 /// The extents of the sphere bounds containing a collider.
@@ -81,31 +80,53 @@ struct AABBExtents
     }
 };
 
+enum MovementStatus
+{
+    /// The collider is not meant to move after being loaded into the scene
+    STATIC,
+    /// The collider can move but hasn't since last it was checked
+    MOBILE_UNMOVED,
+    /// The collider has moved since last it was checked
+    MOBILE_HAS_MOVED
+};
 /// A node with a physics collider
 class Collider: public Node3D
 {
     public:
+        /// If the collider is to be used in physics checks
+        bool isActive = true;
+        /// The collider's movement status
+        MovementStatus movementStatus = MOBILE_UNMOVED;
+        /// The collider's global matrix at the start of the previous frame
+        glm::mat4 previousMatrix = MAT4_I;
         /// If the collider allows objects to pass through it
         bool isTrigger = false;
+        /// Colliders that are within this trigger's bounds
+        std::set<Collider*> collidersInTrigger = {};
 
         /// External function to call when another collider collides with this one
-        void (*onCollision)(Collider&) = nullptr;
+        void (*onCollision)(Collider*) = nullptr;
         /// External function to call when another collider enters this trigger collider
-        void (*onTriggerEnter)(Collider&) = nullptr;
+        void (*onTriggerEnter)(Collider*) = nullptr;
         /// External function to call when another collider exits this trigger collider
-        void (*onTriggerExit)(Collider&) = nullptr;
+        void (*onTriggerExit)(Collider*) = nullptr;
         /// External function to call when another collider remains in this trigger collider
-        void (*onTriggerStay)(Collider&) = nullptr;
+        void (*onTriggerStay)(Collider*) = nullptr;
 
         Collider() : Node3D() {}
-        Collider(const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale) : Node3D(position, rotation, scale) {}
+        Collider(const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale) : Node3D(position, rotation, scale)
+        {
+            previousMatrix = globalMatrix;
+        }
         explicit Collider(const bool isTrigger) : Node3D()
         {
             this->isTrigger = isTrigger;
+            previousMatrix = globalMatrix;
         }
         Collider(const bool isTrigger, const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale) : Node3D(position, rotation, scale)
         {
             this->isTrigger = isTrigger;
+            previousMatrix = globalMatrix;
         }
 
         /// @return True if the point is within the bounds of the collider.
@@ -119,6 +140,22 @@ class Collider: public Node3D
 
         /// @return The bounding box containing the collider.
         virtual AABBExtents* getAABBExtents() const = 0;
+
+        void commitGlobalUpdate() override
+        {
+            if (movementStatus == STATIC) warning(std::format("Collider {} has moved, even though it was marked static!", name));
+
+            movementStatus = MOBILE_HAS_MOVED;
+            Node3D::commitGlobalUpdate();
+        }
+
+        void commitLocalUpdate() override
+        {
+            if (movementStatus == STATIC) warning(std::format("Collider {} has moved, even though it was marked static!", name));
+
+            movementStatus = MOBILE_HAS_MOVED;
+            Node3D::commitLocalUpdate();
+        }
 };
 
 /// A collider shaped like a box

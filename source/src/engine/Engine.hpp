@@ -56,8 +56,8 @@ class Engine : public BaseProject {
             this->mainCamera = camera;
         }
 
-        /** Recomputes the matrices after the Node2Ds are moved and the hierarchy has changed */
-        void recompute3DNodeHierarchy(Node* node, glm::mat4 fatherTransformMatrix) {
+        /** Recomputes the matrices after the Node3Ds are moved and the hierarchy has changed */
+        static void recompute3DNodeHierarchy(Node* node, glm::mat4 fatherTransformMatrix) {
 
             // Update self matrix
             if (Node3D* node3d = dynamic_cast<Node3D*>(node)) {
@@ -74,7 +74,7 @@ class Engine : public BaseProject {
         }
 
         /** Recomputes the matrices after the Node3Ds are moved and the hierarchy has changed */
-        void recompute2DNodeHierarchy(Node* node, glm::mat4 fatherTransformMatrix) {
+        static void recompute2DNodeHierarchy(Node* node, glm::mat4 fatherTransformMatrix) {
 
             // Update self matrix
             if (Node2D* node2d = dynamic_cast<Node2D*>(node)) {
