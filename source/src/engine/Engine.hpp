@@ -60,6 +60,7 @@ class Engine : public BaseProject {
     // Here you also create your Descriptor set layouts and load the shaders for the pipelines
 
     //TODO
+
     LambertMaterial mat3 = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}};
 
     //LambertMaterial mat2 = {glm::vec3(0.0f, 0.0f, 1.0f), {1.0f,1.0f,1.0f,50.0f}};
@@ -88,7 +89,19 @@ class Engine : public BaseProject {
     void localInit() {
         // Descriptor Layouts [what will be passed to the shaders]
 
-        //renderer.loadSceneFromJSON();
+        renderer.loadSceneFromJSON();
+
+        renderer.createDirectionalLight(0.01f, glm::vec3(1.0f, 0.95f, 0.8f), glm::normalize(glm::vec3(0.4f, 0.8f, 0.4f)));
+
+        renderer.addPointLight(glm::vec3(-1.0f, 2.0f, -5.0f), 0.1f, glm::vec3(1.0f, 1.0f, 1.0f), 5.0f, 2.0f);
+        renderer.addPointLight(glm::vec3(-3.0f, 2.0f, 4.0f), 0.1f, glm::vec3(0.0f, 0.0f, 1.0f), 5.0f, 2.0f);
+        renderer.addPointLight(glm::vec3(2.0f, 2.0f, -1.0f), 0.1f, glm::vec3(1.0f, 0.0f, 0.0f), 5.0f, 2.0f);
+        renderer.addPointLight(glm::vec3(4.0f, 4.0f, -3.0f), 0.1f, glm::vec3(0.0f, 1.0f, 0.0f), 5.0f, 2.0f);
+
+        renderer.addSpotLight(glm::vec3(0.0f, 7.0f, 0.0f), 0.1f, glm::vec3(1.0f, 1.0f, 1.0f), 5.0f, 10.0f, glm::normalize(glm::vec3(0.0f, 1.0f,0.0f)));
+        renderer.addSpotLight(glm::vec3(3.0f, 7.0f, 0.0f), 0.1f, glm::vec3(1.0f, 1.0f, 0.0f), 5.0f, 10.0f, glm::normalize(glm::vec3(0.0f, 1.0f,0.0f)));
+        renderer.addSpotLight(glm::vec3(-3.0f, 7.0f, 0.0f), 0.1f, glm::vec3(1.0f, 0.0f, 1.0f), 5.0f, 10.0f, glm::normalize(glm::vec3(0.0f, 1.0f,0.0f)));
+        renderer.addSpotLight(glm::vec3(-3.0f, 7.0f, 4.0f), 0.1f, glm::vec3(0.0f, 0.0f, 1.0f), 5.0f, 10.0f, glm::normalize(glm::vec3(0.0f, 1.0f,0.0f)));
 
         //std::cout << "TEST\n";
 
@@ -110,7 +123,7 @@ class Engine : public BaseProject {
         // initializes the render passes
         RP.init(this);
         // sets the blue sky
-        RP.properties[0].clearValue = {0.0f,0.9f,1.0f,1.0f};
+        RP.properties[0].clearValue = {0.0f,0.0f,0.0f,0.0f};
 
 
         // sets the size of the Descriptor Set Pool (it MUST be done before loading the scene)
@@ -156,6 +169,7 @@ class Engine : public BaseProject {
 
         txt.localCleanup();
     }
+
 
     // Here it is the creation of the command buffer:
     // You send to the GPU all the objects you want to draw,
@@ -204,21 +218,19 @@ class Engine : public BaseProject {
         } else {
             test = true;
         }*/
-
+int n;
         if (glfwGetKey(window, GLFW_KEY_Z)) {
             if (test__) {
                 if (j%2 == 0 ) {
-                    renderer.instantiate(modelPath , {1.0f, j, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1);
+                    renderer.instantiate(modelPath , {1.0f, j, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2);
                 }
                 else {
-                    renderer.instantiate(modelPath , {-1.0f, j, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat3);
+                    renderer.instantiate(modelPath , {-1.0f, j, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2);
                 }
 
                 test__ = false;
 
                 j++;
-
-                submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
             }
         } else {
             test__ = true;
@@ -226,7 +238,7 @@ class Engine : public BaseProject {
 
         if (glfwGetKey(window, GLFW_KEY_Q)) {
             if (test) {
-                renderer.getObject(i)->setIsVisible(false);
+                renderer.setObjectVisibility(i, false);
                 i++;
                 test = false;
             }
@@ -237,7 +249,11 @@ class Engine : public BaseProject {
         if (glfwGetKey(window, GLFW_KEY_E)) {
             if (test_) {
                 i--;
-                renderer.getObject(i)->setIsVisible(true);
+                if (i < 0)
+                    i = 0;
+
+                renderer.setObjectVisibility(i, true);
+
                 test_ = false;
             }
         } else {
@@ -259,7 +275,7 @@ class Engine : public BaseProject {
         Projection[1][1] *= -1;
 
         // update the camera position and direction with the inputs
-        CamPos += m * deltaT;
+        CamPos += m * 2.0f * deltaT;
         Pitch -= r.x * deltaT;
         Yaw   -= r.y * deltaT;
 

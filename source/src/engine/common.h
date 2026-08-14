@@ -15,9 +15,23 @@ struct Vertex {
 };
 
 struct GlobalUniformBufferObject {
-    alignas(16) glm::vec3 lightDir;
+    alignas(16) glm::vec4 lightDir;
     alignas(16) glm::vec4 lightColor;
-    alignas(16) glm::vec3 eyePos;
+    alignas(16) glm::vec4 eyePos;
+
+    // --- Point Light ---
+    alignas(16)glm::vec4 pointLightPos[8];     // xyz = world position
+    alignas(16)glm::vec4 pointLightColor[8];   // xyz = color * intensity
+    alignas(16)glm::vec4 pointLightParams[8];  // x = beta (decay exponent), y = g (target distance)
+    alignas(4) int pointInstanceCount;
+
+    // --- Spotlight ---
+    alignas(16)glm::vec4 spotLightPos[8];      // xyz = world position
+    alignas(16)glm::vec4 spotLightDir[8];      // xyz = cone direction (normalized)
+    alignas(16)glm::vec4 spotLightColor[8];    // xyz = color * intensity
+    alignas(16)glm::vec4 spotLightParams[8];   // x = cIN = cos(alpha_IN/2), y = cOUT = cos(alpha_OUT/2)
+    alignas(4) int spotInstanceCount;
+
 };
 
 struct UniformBufferObject {

@@ -3,6 +3,7 @@
 #include <unordered_map>
 
 #include "common.h"
+#include "Light.hpp"
 #include "Model3D.hpp"
 
 /** This class simplifies 3D object rendering
@@ -131,6 +132,10 @@ class Renderer {
     std::unordered_map <std::string, Texture> textureAssets;
     std::unordered_map <std::string, std::unique_ptr<Material>> materialAssets;
     std::vector<std::unique_ptr<Model3D>> sceneObjects; //stores all the models assigned to Renderer
+
+    DirectionalLight directionalLight;
+    std::vector<std::unique_ptr<PointLight>> pointlights;
+    std::vector<std::unique_ptr<Spotlight>> spotlights;
 
     //Lambda function taken from Engine
     std::function<void()> screenUpdate;
@@ -273,6 +278,21 @@ class Renderer {
         screenUpdate();
     }
 
+    ///add a new point light on screen
+    void addPointLight(glm::vec3 position ,float radiance, glm::vec3 color, float radius, float decay) {
+        pointlights.emplace_back(std::make_unique<PointLight>(position,radiance,color,radius, decay));
+    }
+
+    ///add a new spotlight on screen
+    void addSpotLight(glm::vec3 position ,float radiance, glm::vec3 color, float aperture, float decay, glm::vec3 direction) {
+        spotlights.emplace_back(std::make_unique<Spotlight>(position, radiance,color,aperture, decay, direction));
+    }
+
+    ///Create the directional light (Only one directional light can exists)
+    void createDirectionalLight( float radiance, glm::vec3 color, glm::vec3 direction) {
+        directionalLight = DirectionalLight(radiance, color, direction);
+    }
+
     /** Add a new model on the scene
      *
      * NOTE:
@@ -295,6 +315,12 @@ class Renderer {
 
         //Add to existing pipeline
         pipelinesMap.at(model3D->getShaderType())->addModel3D(model3D);
+    }
+
+    void setObjectVisibility(int i, bool visible) {
+        sceneObjects[i]->setIsVisible(visible);
+
+        screenUpdate();
     }
 
 
@@ -320,6 +346,7 @@ class Renderer {
             // third  element : the pipeline stage where it will be used
             {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, sizeof(GlobalUniformBufferObject), 1}
           });
+
 
         for (auto& m : modelAssets) {
             if (m.first.find(".obj") != std::string::npos)
@@ -388,14 +415,35 @@ class Renderer {
 
     ///This method prepare stuff for Vulkan, must be called inside Engine.updateUniformBuffer()
     void updateUniformBuffer(uint32_t currentImage,  glm::vec3 CamPos, glm::mat4 Projection, glm::mat4 View) {
-        //TODO: provvisoro per test
         GlobalUniformBufferObject gubo;
 
-        // fills with the relevant data
-        gubo.lightDir = glm::vec3(0.5656854, 0.7071068, 0.4242641);
-        gubo.lightColor = glm::vec4(1.0, 1.0, 1.0, 0.0);
+        gubo.lightDir   = glm::vec4(directionalLight.direction, 0.0f);
+        gubo.lightColor = glm::vec4(directionalLight.color, 0.0f) * directionalLight.radiance;
+
+        for (int i = 0; i < pointlights.size(); i++) {
+            gubo.pointLightPos[i]    = glm::vec4(pointlights[i].get()->position, 0.0f);
+            gubo.pointLightColor[i]  = glm::vec4(pointlights[i].get()->color, 0.0f) * pointlights[i].get()->radiance;
+            gubo.pointLightParams[i] = glm::vec4(pointlights[i].get()->decay, pointlights[i].get()->radius, 0.0f, 0.0f);
+        }
+
+        gubo.pointInstanceCount = pointlights.size();
+
+        for (int i = 0; i < spotlights.size(); i++) {
+            gubo.spotLightPos[0]    = glm::vec4(spotlights[i].get()->position, 0.0f);
+            gubo.spotLightDir[0]    = glm::vec4(spotlights[i].get()->direction,0.0f);
+            gubo.spotLightColor[0]  = glm::vec4(spotlights[i].get()->color, 0.0f) * spotlights[i].get()->radiance;
+            gubo.spotLightParams[0] = glm::vec4(
+                cos(glm::radians(spotlights[i].get()->aperture)),   // cIN  = cos(alpha_IN/2)
+                cos(glm::radians(spotlights[i].get()->decay)),    // cOUT = cos(alpha_OUT/2)
+                0.0f,
+                0.0f
+                );
+        }
+
+        gubo.spotInstanceCount = spotlights.size();
+
         // now the eye position corresponds to the position of the camera
-        gubo.eyePos = CamPos;
+        gubo.eyePos = glm::vec4(CamPos,0.0f);
 
         // transfers the data to the GPU, by mapping it to its
         // descriptor set
