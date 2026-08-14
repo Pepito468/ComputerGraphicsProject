@@ -429,10 +429,10 @@ class Renderer {
         gubo.pointInstanceCount = pointlights.size();
 
         for (int i = 0; i < spotlights.size(); i++) {
-            gubo.spotLightPos[0]    = glm::vec4(spotlights[i].get()->position, 0.0f);
-            gubo.spotLightDir[0]    = glm::vec4(spotlights[i].get()->direction,0.0f);
-            gubo.spotLightColor[0]  = glm::vec4(spotlights[i].get()->color, 0.0f) * spotlights[i].get()->radiance;
-            gubo.spotLightParams[0] = glm::vec4(
+            gubo.spotLightPos[i]    = glm::vec4(spotlights[i].get()->position, 0.0f);
+            gubo.spotLightDir[i]    = glm::vec4(spotlights[i].get()->direction,0.0f);
+            gubo.spotLightColor[i]  = glm::vec4(spotlights[i].get()->color, 0.0f) * spotlights[i].get()->radiance;
+            gubo.spotLightParams[i] = glm::vec4(
                 cos(glm::radians(spotlights[i].get()->aperture)),   // cIN  = cos(alpha_IN/2)
                 cos(glm::radians(spotlights[i].get()->decay)),    // cOUT = cos(alpha_OUT/2)
                 0.0f,
