@@ -41,7 +41,7 @@ int main() {
 
     const float epsilon = 0.01f;
 
-    printf("NODE2D TEST\n\n");
+    info("STARTING NODE2D TEST");
 
     // Test 1
     Node2D node = Node2D();
@@ -54,7 +54,6 @@ int main() {
 
     glm::vec2 pos = node.globalPosition;
     printf("POS: %.2f %.2f\n", pos.x, pos.y);
-    return 0;
     assert(glm::all(glm::epsilonEqual(pos, glm::vec2(2, 4), epsilon)));
     float rot = node.globalRotation;
     printf("ROT: %.2f\n", rot);
@@ -94,7 +93,7 @@ int main() {
     printf("LSCA: %.4f %.4f\n", child2.localScale.x, child2.localScale.y);
     assert(glm::all(glm::epsilonEqual(child2.localScale, {1, 1}, epsilon)));
 
-    printf("END NODE2D TEST\n\n");
+    info("END OF NODE2D TEST");
 
     return 0;
 }

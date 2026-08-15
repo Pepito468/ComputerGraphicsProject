@@ -3,7 +3,7 @@
 #include <iostream>
 
 int main() {
-    std::cout << "NODE TEST" << std::endl << std::endl;
+    info("STARTING NODE TEST");
 
     Node *parent = new Light();
     Node *child = new Node();
@@ -30,5 +30,6 @@ int main() {
     delete parent;
     delete child;
 
+    info("END OF NODE TEST");
     return 0;
 }

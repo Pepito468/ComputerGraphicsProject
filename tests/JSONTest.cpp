@@ -6,6 +6,8 @@
 
 int main() {
 
+    info("START OF JSON TEST");
+
     std::string json = R"(
     {
         "type": "Node3D",
@@ -69,6 +71,7 @@ int main() {
         }
     }
 
+    info("END OF JSON TEST");
 
     return 0;
 }

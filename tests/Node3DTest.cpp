@@ -37,7 +37,8 @@ void printMatrix(glm::mat4 m) {
 }
 
 int main() {
-    std::cout << std::endl << "TRANSFORM TEST" << std::endl << std::endl;
+
+    info("STARTING NODE3D TEST");
 
     // Set approx
     const float epsilon = 0.01f;
@@ -101,9 +102,12 @@ int main() {
     // Test 3: children
     MockEngine engine = MockEngine();
     Node3D father = Node3D();
+    father.name = "father";
     Node3D child = Node3D();
+    child.name = "child";
     Node between = Node();
     Node3D grandchild = Node3D();
+    grandchild.name = "grandchild";
     father.adopt(&child);
     child.adopt(&between);
     // between will be adopted later
@@ -119,7 +123,6 @@ int main() {
     // !!! Late adoption !!!
     between.adopt(&grandchild);
     engine.recompute3DNodeHierarchy(&father, MAT4_I);
-
 
     printf("FATHER\n");
     for (int i = 0; i < 4; i++) {
@@ -142,6 +145,9 @@ int main() {
         printf("\n");
     }
     printf("\n\n");
+    printf("Father: %.4f %.4f %.4f\n", father.globalPosition.x, father.globalPosition.y, father.globalPosition.z);
+    printf("Child: %.4f %.4f %.4f\n", child.globalPosition.x, child.globalPosition.y, child.globalPosition.z);
+    printf("Grandchild: %.4f %.4f %.4f\n", grandchild.globalPosition.x, grandchild.globalPosition.y, grandchild.globalPosition.z);
     assert(glm::all(glm::epsilonEqual(father.globalPosition, glm::vec3(1, 0, 0), epsilon)));
     assert(glm::all(glm::epsilonEqual(child.globalPosition, glm::vec3(1, 2, 0), epsilon)));
     assert(glm::all(glm::epsilonEqual(grandchild.globalPosition, glm::vec3(1, 2, 1), epsilon)));
@@ -190,5 +196,5 @@ int main() {
     assert(glm::all(glm::epsilonEqual(child2.localScale, {1, 1, 1}, epsilon)));
 
 
-    std::cout << "END TRANSFORM TEST" << std::endl;
+    info("END OF NODE3D TEST");
 }

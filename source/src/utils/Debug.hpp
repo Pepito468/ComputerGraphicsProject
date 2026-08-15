@@ -8,26 +8,37 @@
 #include <string>
 #include <iostream>
 
+#define COLOR_DEFAULT "\033[0m"
+#define COLOR_LIGHT_BLUE "\033[94m"
+#define COLOR_YELLOW "\033[93m"
+#define COLOR_RED "\033[91m"
+#define COLOR_MAGENTA "\033[35m"
+
 /// Prints a string to stdout
 inline void println(const std::string& string)
 {
     std::cout << string << std::endl;
 }
 
+/// Prints info to stdout. Should be used to print info about the system while it is running
+inline void info(const std::string& string) {
+    std::cout << COLOR_LIGHT_BLUE << "[INFO] " << COLOR_DEFAULT << string << std::endl;
+}
+
 /// Prints a log to stdout
 inline void log(const std::string& string)
 {
-    std::cout << "LOG: " << string << std::endl;
+    std::cout << COLOR_MAGENTA << "[LOG] " << COLOR_DEFAULT << string << std::endl;
 }
 
 /// Prints a warning to stdout
 inline void warning(const std::string& string) {
-    std::cout << "WARNING: " << string << std::endl;
+    std::cout << COLOR_YELLOW << "[WARNING] " << COLOR_DEFAULT << string << std::endl;
 }
 
 /// Prints an error to console and then throws the error itself
 inline void error(const std::string& string) {
-    std::cout << "ERROR: " << string << std::endl;
+    std::cout << COLOR_RED << "[ERROR] " << COLOR_DEFAULT << string << std::endl;
     throw std::runtime_error(string);
 }
 
