@@ -78,7 +78,7 @@ int main() {
     printf("LOCAL: %.2f %.2f %.2f\n\n", localPos.x, localPos.y, localPos.z);
 
     // Test local point
-    assert(glm::all(glm::epsilonEqual(localPos, glm::vec3(1.41, 0.18, 0.46), epsilon)));
+    assert(glm::all(glm::epsilonEqual(localPos, glm::vec3(-0.37, 0.71, 0.46), epsilon)));
 
     // Test2: transform 2
     Node3D a = Node3D(glm::vec3(1, 1, 0), glm::vec3(0, 0, 0), glm::vec3(1, 1, 1));
@@ -94,7 +94,7 @@ int main() {
     printf("POS: %.2f %.2f %.2f\n", a.globalPosition.x, a.globalPosition.y, a.globalPosition.z);
     assert(glm::all(glm::epsilonEqual(a.globalPosition, glm::vec3(1, 1, 0), epsilon)));
     printf("ROT: %.2f %.2f %.2f\n", a.globalRotation.x, a.globalRotation.y, a.globalRotation.z);
-    assert(glm::all(glm::epsilonEqual(a.globalRotation, glm::vec3(0, 0, -std::numbers::pi/4), epsilon)));
+    assert(glm::all(glm::epsilonEqual(a.globalRotation, glm::vec3(0, 0, -3*std::numbers::pi/4), epsilon)));
     printf("SCA: %.2f %.2f %.2f\n\n", a.globalScale.x, a.globalScale.y, a.globalScale.z);
     assert(glm::all(glm::epsilonEqual(a.globalScale, glm::vec3(2, 1, 1), epsilon)));
 
@@ -149,8 +149,8 @@ int main() {
     printf("Child: %.4f %.4f %.4f\n", child.globalPosition.x, child.globalPosition.y, child.globalPosition.z);
     printf("Grandchild: %.4f %.4f %.4f\n", grandchild.globalPosition.x, grandchild.globalPosition.y, grandchild.globalPosition.z);
     assert(glm::all(glm::epsilonEqual(father.globalPosition, glm::vec3(1, 0, 0), epsilon)));
-    assert(glm::all(glm::epsilonEqual(child.globalPosition, glm::vec3(1, 2, 0), epsilon)));
-    assert(glm::all(glm::epsilonEqual(grandchild.globalPosition, glm::vec3(1, 2, 1), epsilon)));
+    assert(glm::all(glm::epsilonEqual(child.globalPosition, glm::vec3(1, 0, -2), epsilon)));
+    assert(glm::all(glm::epsilonEqual(grandchild.globalPosition, glm::vec3(0, 0, -2), epsilon)));
 
     // Test 4: Collider
 
@@ -195,6 +195,10 @@ int main() {
     printf("LSCA: %.4f %.4f %.4f\n", child2.localScale.x, child2.localScale.y, child2.localScale.z);
     assert(glm::all(glm::epsilonEqual(child2.localScale, {1, 1, 1}, epsilon)));
 
+    // Test 6: gimbal lock
+    Node3D gimbal = Node3D();
+    // Should throw a gimbal lock warning
+    gimbal.localRotateX(glm::radians(90.0f));
 
     info("END OF NODE3D TEST");
 }

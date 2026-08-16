@@ -117,6 +117,10 @@ class Node2D: public Node {
                 this->globalMatrix;
             this->globalScale *= scale;
 
+            // Handle reflections
+            if (scale.x < 0 || scale.y < 0)
+                this->updateGlobalTransformPropertiesFromGlobalMatrix();
+
             this->commitGlobalUpdate();
         }
 
@@ -137,27 +141,13 @@ class Node2D: public Node {
         /** Commits a global update from the node */
         void commitGlobalUpdate() {
 
-            // Commit update to self and to the node's children
-            this->updateLocalTransformFromGlobal(this, this->fatherMatrix);
-        }
-
-        /** Recursively updates the node and its children and so on */
-        void updateLocalTransformFromGlobal(Node *node, glm::mat4 fatherTransformMatrix) {
-
-            // Update self
-            // If node id Node2D, update it, else skip to its children
-            if (Node2D* node2d = dynamic_cast<Node2D*>(node)) {
-                node2d->fatherMatrix = fatherTransformMatrix;
-                node2d->updateLocalMatrixFromGlobal();
-                node2d->updateLocalTransformPropertiesFromLocallMatrix();
-                fatherTransformMatrix = node2d->globalMatrix;
-            }
+            // Commit update to self
+            this->updateLocalMatrixFromGlobal();
+            this->updateLocalTransformPropertiesFromLocallMatrix();
 
             // Propagate to children
-            for (Node *child : node->children) {
-                updateGlobalTransformFromLocal(child, fatherTransformMatrix);
-            }
-
+            for (Node *child: this->children)
+                this->updateGlobalTransformFromLocal(child, this->globalMatrix);
         }
 
         /**
@@ -228,6 +218,10 @@ class Node2D: public Node {
                 glm::translate(MAT4_I, glm::vec3(-this->localPosition, 0)) *
                 this->localMatrix;
             this->localScale *= scale;
+
+            // Handle reflections
+            if (scale.x < 0 || scale.y < 0)
+                this->updateGlobalTransformPropertiesFromGlobalMatrix();
 
             this->commitLocalUpdate();
         }

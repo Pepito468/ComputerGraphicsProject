@@ -31,7 +31,7 @@
  * A Node that has a place in 3D space
  *
  * NOTES:
- *      the rotation convention is ZYX
+ *      the rotation convention is YXZ
  *      the rotation angles are in radians
  *
  */
@@ -85,9 +85,9 @@ class Node3D : public Node {
         static glm::mat4 computeMatrixFromTransform(const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale) {
             return
                 glm::translate(MAT4_I, position) *
+                glm::rotate(MAT4_I, rotation.z, VEC3_Z) *
                 glm::rotate(MAT4_I, rotation.x, VEC3_X) *
                 glm::rotate(MAT4_I, rotation.y, VEC3_Y) *
-                glm::rotate(MAT4_I, rotation.z, VEC3_Z) *
                 glm::scale(MAT4_I, scale) *
                 MAT4_I;
         }
@@ -96,7 +96,9 @@ class Node3D : public Node {
         void globalRotateX(const float angle) {
             this->globalMatrix =
                 glm::translate(MAT4_I, this->globalPosition) *
+                glm::rotate(MAT4_I, this->globalRotation.z, VEC3_Z) *
                 glm::rotate(MAT4_I, angle, VEC3_X) *
+                glm::rotate(MAT4_I, -this->globalRotation.z, VEC3_Z) *
                 glm::translate(MAT4_I, -this->globalPosition) *
                 this->globalMatrix;
             this->globalRotation.x += angle;
@@ -108,9 +110,11 @@ class Node3D : public Node {
         void globalRotateY(const float angle) {
             this->globalMatrix =
                 glm::translate(MAT4_I, this->globalPosition) *
+                glm::rotate(MAT4_I, this->globalRotation.z, VEC3_Z) *
                 glm::rotate(MAT4_I, this->globalRotation.x, VEC3_X) *
                 glm::rotate(MAT4_I, angle, VEC3_Y) *
                 glm::rotate(MAT4_I, -this->globalRotation.x, VEC3_X) *
+                glm::rotate(MAT4_I, -this->globalRotation.z, VEC3_Z) *
                 glm::translate(MAT4_I, -this->globalPosition) *
                 this->globalMatrix;
             this->globalRotation.y += angle;
@@ -122,11 +126,7 @@ class Node3D : public Node {
         void globalRotateZ(const float angle) {
             this->globalMatrix =
                 glm::translate(MAT4_I, this->globalPosition) *
-                glm::rotate(MAT4_I, this->globalRotation.x, VEC3_X) *
-                glm::rotate(MAT4_I, this->globalRotation.y, VEC3_Y) *
                 glm::rotate(MAT4_I, angle, VEC3_Z) *
-                glm::rotate(MAT4_I, -this->globalRotation.y, VEC3_Y) *
-                glm::rotate(MAT4_I, -this->globalRotation.x, VEC3_X) *
                 glm::translate(MAT4_I, -this->globalPosition) *
                 this->globalMatrix;
             this->globalRotation.z += angle;
@@ -156,13 +156,13 @@ class Node3D : public Node {
 
             this->globalMatrix =
                 glm::translate(MAT4_I, this->globalPosition) *
+                glm::rotate(MAT4_I, this->globalRotation.z, VEC3_Z) *
                 glm::rotate(MAT4_I, this->globalRotation.x, VEC3_X) *
                 glm::rotate(MAT4_I, this->globalRotation.y, VEC3_Y) *
-                glm::rotate(MAT4_I, this->globalRotation.z, VEC3_Z) *
                 glm::scale(MAT4_I, scale) *
-                glm::rotate(MAT4_I, -this->globalRotation.z, VEC3_Z) *
                 glm::rotate(MAT4_I, -this->globalRotation.y, VEC3_Y) *
                 glm::rotate(MAT4_I, -this->globalRotation.x, VEC3_X) *
+                glm::rotate(MAT4_I, -this->globalRotation.z, VEC3_Z) *
                 glm::translate(MAT4_I, -this->globalPosition) *
                 this->globalMatrix;
             this->globalScale *= scale;
@@ -192,27 +192,13 @@ class Node3D : public Node {
         /** Commits a global update from the node */
         virtual void commitGlobalUpdate() {
 
-            // Commit update to self and to the node's children
-            this->updateLocalTransformFromGlobal(this, this->fatherMatrix);
-        }
+            // Commit update to self
+            this->updateLocalMatrixFromGlobal();
+            this->updateLocalTransformPropertiesFromLocalMatrix();
 
-        /** Recursively updates the node and its children and so on */
-        static void updateLocalTransformFromGlobal(Node *node, glm::mat4 fatherTransformMatrix) {
-
-            // Update self
-            // If node id Node3D, update it, else skip to its children
-            if (Node3D* node3d = dynamic_cast<Node3D*>(node)) {
-                node3d->fatherMatrix = fatherTransformMatrix;
-                node3d->updateLocalMatrixFromGlobal();
-                node3d->updateLocalTransformPropertiesFromLocalMatrix();
-                fatherTransformMatrix = node3d->globalMatrix;
-            }
-
-            // Propagate to children
-            for (Node *child : node->children) {
-                updateGlobalTransformFromLocal(child, fatherTransformMatrix);
-            }
-
+            // Propagate to children (updates local since their global doesn't change, father does)
+            for (Node *child : this->children)
+                this->updateGlobalTransformFromLocal(child, this->globalMatrix);
         }
 
         /**
@@ -235,13 +221,13 @@ class Node3D : public Node {
             const glm::vec3 xAxis = this->getLocalXAxis();
             const glm::vec3 yAxis = this->getLocalYAxis();
             const glm::vec3 zAxis = this->getLocalZAxis();
-            if (glm::epsilonEqual(std::abs(zAxis[0]), 1.0f, NODE3D_EPSILON)) {
+            if (glm::epsilonEqual(std::abs(yAxis[2]), 1.0f, NODE3D_EPSILON)) {
                 warning(std::format("Gimbal Lock on [{}] (local)", this->name));
             }
             this->localRotation =  glm::vec3(
-                    -std::atan2(zAxis[1], zAxis[2]),
-                    std::asin(zAxis[0]),
-                    -std::atan2(yAxis[0], xAxis[0])
+                    std::asin(yAxis[2]),
+                    std::atan2(-xAxis[2], zAxis[2]),
+                    std::atan2(-yAxis[0], yAxis[1])
                     );
 
             // Scale
@@ -258,7 +244,9 @@ class Node3D : public Node {
         void localRotateX(const float angle) {
             this->localMatrix =
                 glm::translate(MAT4_I, this->localPosition) *
+                glm::rotate(MAT4_I, this->localRotation.z, VEC3_Z) *
                 glm::rotate(MAT4_I, angle, VEC3_X) *
+                glm::rotate(MAT4_I, -this->localRotation.z, VEC3_Z) *
                 glm::translate(MAT4_I, -this->localPosition) *
                 this->localMatrix;
             this->localRotation.x += angle;
@@ -270,9 +258,11 @@ class Node3D : public Node {
         void localRotateY(const float angle) {
             this->localMatrix =
                 glm::translate(MAT4_I, this->localPosition) *
+                glm::rotate(MAT4_I, this->localRotation.z, VEC3_Z) *
                 glm::rotate(MAT4_I, this->localRotation.x, VEC3_X) *
                 glm::rotate(MAT4_I, angle, VEC3_Y) *
                 glm::rotate(MAT4_I, -this->localRotation.x, VEC3_X) *
+                glm::rotate(MAT4_I, -this->localRotation.z, VEC3_Z) *
                 glm::translate(MAT4_I, -this->localPosition) *
                 this->localMatrix;
             this->localRotation.y += angle;
@@ -284,11 +274,7 @@ class Node3D : public Node {
         void localRotateZ(const float angle) {
             this->localMatrix =
                 glm::translate(MAT4_I, this->localPosition) *
-                glm::rotate(MAT4_I, this->localRotation.x, VEC3_X) *
-                glm::rotate(MAT4_I, this->localRotation.y, VEC3_Y) *
                 glm::rotate(MAT4_I, angle, VEC3_Z) *
-                glm::rotate(MAT4_I, -this->localRotation.y, VEC3_Y) *
-                glm::rotate(MAT4_I, -this->localRotation.x, VEC3_X) *
                 glm::translate(MAT4_I, -this->localPosition) *
                 this->localMatrix;
             this->localRotation.z += angle;
@@ -318,13 +304,13 @@ class Node3D : public Node {
 
             this->localMatrix =
                 glm::translate(MAT4_I, this->localPosition) *
+                glm::rotate(MAT4_I, this->localRotation.z, VEC3_Z) *
                 glm::rotate(MAT4_I, this->localRotation.x, VEC3_X) *
                 glm::rotate(MAT4_I, this->localRotation.y, VEC3_Y) *
-                glm::rotate(MAT4_I, this->localRotation.z, VEC3_Z) *
                 glm::scale(MAT4_I, scale) *
-                glm::rotate(MAT4_I, -this->localRotation.z, VEC3_Z) *
                 glm::rotate(MAT4_I, -this->localRotation.y, VEC3_Y) *
                 glm::rotate(MAT4_I, -this->localRotation.x, VEC3_X) *
+                glm::rotate(MAT4_I, -this->localRotation.z, VEC3_Z) *
                 glm::translate(MAT4_I, -this->localPosition) *
                 this->localMatrix;
             this->localScale *= scale;
@@ -397,13 +383,13 @@ class Node3D : public Node {
             const glm::vec3 xAxis = this->getXAxis();
             const glm::vec3 yAxis = this->getYAxis();
             const glm::vec3 zAxis = this->getZAxis();
-            if (glm::epsilonEqual(std::abs(zAxis[0]), 1.0f, NODE3D_EPSILON)) {
+            if (glm::epsilonEqual(std::abs(yAxis[2]), 1.0f, NODE3D_EPSILON)) {
                 warning(std::format("Gimbal Lock on [{}] (global)", this->name));
             }
             this->globalRotation =  glm::vec3(
-                    -std::atan2(zAxis[1], zAxis[2]),
-                    std::asin(zAxis[0]),
-                    -std::atan2(yAxis[0], xAxis[0])
+                    std::asin(yAxis[2]),
+                    std::atan2(-xAxis[2], zAxis[2]),
+                    std::atan2(-yAxis[0], yAxis[1])
                     );
 
             // Scale
