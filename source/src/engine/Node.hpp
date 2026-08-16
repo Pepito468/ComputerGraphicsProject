@@ -32,9 +32,10 @@ class Node {
         Node() {
             nodeCounter++;
             this->UUID = nodeCounter;
-            this->name = std::format("{} {}", typeid(this).name(), UUID);
+            this->name = std::format("Node-{}", UUID);
             this->children = std::set<Node*>();
             this->parent = nullptr;
+            log(std::format("Spawning Node [{}]", this->UUID));
         }
 
         virtual ~Node() = default;

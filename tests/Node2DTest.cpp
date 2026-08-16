@@ -46,9 +46,9 @@ int main() {
     // Test 1
     Node2D node = Node2D();
     node.localTranslate(glm::vec2(1, 2));
-    node.localRotate(glm::radians(45.0f));
+    node.setGlobalRotation(glm::radians(45.0f));
     node.localTranslate(glm::vec2(1, 2));
-    node.localScaleAll(glm::vec2(2, 3));
+    node.setLocalScale(glm::vec2(2, 3));
     printMatrix(node.globalMatrix);
 
 
@@ -72,7 +72,7 @@ int main() {
     father2.localTranslate({1, 1});
     father2.localRotate(glm::radians(45.0f));
     father2.globalScaleAll({2, 2});
-    child2.localTranslate({1, 1});
+    child2.setLocalPosition({1, 1});
     child2.globalRotate(glm::radians(45.0f));
     printf("LOCAL:\n");
     printMatrix(child2.localMatrix);
