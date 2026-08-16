@@ -30,6 +30,8 @@
     ]
   },
   "instances": [
-      {"model": "Plane.gltf", "material": "mat1", "position": [0.0, 0.0, 0.0], "rotation": [0.0, 0.0, 0.0] ,"scale": [20, 20, 20]}
+      {"model": "Plane.gltf", "material": "mat1", "position": [0.0, 0.0, 0.0], "rotation": [0.0, 0.0, 0.0] ,"scale": [20, 20, 20]},
+      {"model": "SuzanneUV.obj", "material": "mat1", "position": [-3.0, -1.0, 2.0], "rotation": [0.0, 0.0, 0.0] ,"scale": [2, 2, 2]},
+      {"model": "SuzanneUV.obj", "material": "mat1", "position": [3.0, -1.0, -2.0], "rotation": [0.0, 0.0, 0.0] ,"scale": [2, 2, 2]}
   ]
 }

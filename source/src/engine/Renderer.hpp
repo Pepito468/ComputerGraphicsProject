@@ -6,6 +6,11 @@
 #include "Light.hpp"
 #include "Model3D.hpp"
 
+
+struct ShadowMapUniformBufferObject {
+    alignas(16) glm::mat4 mvpMat;
+};
+
 /** This class simplifies 3D object rendering
  *
  * First you need to configure a render object inside the Engine class,then this class will offer:
@@ -29,44 +34,36 @@ class Renderer {
         std::vector <Model3D*> pool;
 
         //Vulkan variables
-        DescriptorSetLayout localLayout;
+        DescriptorSetLayout* localLayout;
         Pipeline pipeline;
 
         public:
 
-        PipelineRenderer(ShaderType type = ShaderType::LAMBERT_BLINN) : shaderType(type) {
+        PipelineRenderer(DescriptorSetLayout* localLayout, ShaderType type = ShaderType::LAMBERT_BLINN) : shaderType(type) {
             vertShader = "shaders/" + getShaderVertName(shaderType) + ".vert.spv";
             fragShader = "shaders/" + getShaderFragName(shaderType) + ".frag.spv";
+
+            this->localLayout = localLayout;
         }
         ~PipelineRenderer() = default;
 
         ///Must be called inside Renderer.localInit()
-        void localInit(BaseProject* bp, DescriptorSetLayout& globalLayout, VertexDescriptor& vertexDescriptor) {
-
-            localLayout.init(bp, {
-                        // this array contains the binding:
-                        // first  element : the binding number
-                        // second element : the type of element (buffer or texture)
-                        // third  element : the pipeline stage where it will be used
-                        {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, sizeof(UniformBufferObject), 1},
-                        {1,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,VK_SHADER_STAGE_ALL_GRAPHICS,0,1}
-                      });
-
-            pipeline.init(bp, &vertexDescriptor, vertShader, fragShader, {&globalLayout, &localLayout});
+        void localInit(BaseProject* bp, DescriptorSetLayout& globalLayout, DescriptorSetLayout& offScreenLayout, VertexDescriptor& vertexDescriptor) {
+            pipeline.init(bp, &vertexDescriptor, vertShader, fragShader, {&globalLayout, localLayout, &offScreenLayout});
         }
 
         ///Must be called inside Renderer.descriptorSetsInits()
-        void descriptorSetsInits(BaseProject* bp, RenderPass* rp) {
+        void descriptorSetsInits(BaseProject* bp, RenderPass* rp, RenderPass* RPoffScreen) {
             pipeline.create(rp);
 
             for (auto& p : pool) {
-                modelDescriptorSetInit(bp, p);
+                modelDescriptorSetInit(bp, p, RPoffScreen);
             }
         }
 
         //TODO: non so se mi piace questa soluzione
-        void modelDescriptorSetInit(BaseProject* bp, Model3D* model) {
-            model->descriptorSetInit(bp, &localLayout);
+        void modelDescriptorSetInit(BaseProject* bp, Model3D* model, RenderPass* RPoffScreen) {
+            model->descriptorSetInit(bp, localLayout, RPoffScreen);
         }
 
         ///Must be called inside Renderer.descriptorSetsCleanup()
@@ -80,13 +77,14 @@ class Renderer {
         ///Must be called inside Renderer.localCleanup()
         void localCleanup() {
             pipeline.destroy();
-            localLayout.cleanup();
         }
 
         ///Must be called inside Renderer.populateCommandBuffer()
-        void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage, DescriptorSet& global) {
+        void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage, DescriptorSet& global, DescriptorSet& offScreen) {
             pipeline.bind(commandBuffer);
             global.bind(commandBuffer, pipeline, 0, currentImage);
+            offScreen.bind(commandBuffer, pipeline, 2, currentImage);
+
             for (auto& p : pool) {
                     p->populateCommandBuffer(commandBuffer, currentImage, pipeline);
             }
@@ -118,7 +116,7 @@ class Renderer {
     };
 
     //Vulkan variables
-    DescriptorSetLayout globalLayout;
+    DescriptorSetLayout globalLayout, localLayout;
     DescriptorSet global;
     VertexDescriptor vertexDescriptor;
 
@@ -137,6 +135,12 @@ class Renderer {
     std::vector<std::unique_ptr<PointLight>> pointlights;
     std::vector<std::unique_ptr<Spotlight>> spotlights;
 
+    //Shadow map
+    DescriptorSetLayout offScreenLayout;
+    DescriptorSet offScreen;
+    RenderPass RPoffScreen;
+    Pipeline PoffScreen;
+
     //Lambda function taken from Engine
     std::function<void()> screenUpdate;
 
@@ -153,9 +157,8 @@ class Renderer {
         this->rp = rp;
         this->screenUpdate = std::move(screenUpdate);
 
-
         for (auto t : allShadersTypes) {
-            pipelinesMap.insert({t, std::make_unique<PipelineRenderer>(t)});
+            pipelinesMap.insert({t, std::make_unique<PipelineRenderer>(&localLayout, t)});
             std::cout << getShaderFragName(t) << std::endl;
         }
 
@@ -273,19 +276,19 @@ class Renderer {
         pipelinesMap.at(model3D->getShaderType())->addModel3D(model3D);
 
         //Model local descriptor set init
-        pipelinesMap.at(model3D->getShaderType())->modelDescriptorSetInit(bp, model3D);
+        pipelinesMap.at(model3D->getShaderType())->modelDescriptorSetInit(bp, model3D, &RPoffScreen);
 
         screenUpdate();
     }
 
     ///add a new point light on screen
-    void addPointLight(glm::vec3 position ,float radiance, glm::vec3 color, float radius, float decay) {
-        pointlights.emplace_back(std::make_unique<PointLight>(position,radiance,color,radius, decay));
+    void addPointLight(glm::vec3 position ,float radiance, glm::vec3 color, float radius, float decay, bool isOn = true) {
+        pointlights.emplace_back(std::make_unique<PointLight>(position,radiance,color,radius, decay, isOn));
     }
 
     ///add a new spotlight on screen
-    void addSpotLight(glm::vec3 position ,float radiance, glm::vec3 color, float aperture, float decay, glm::vec3 direction) {
-        spotlights.emplace_back(std::make_unique<Spotlight>(position, radiance,color,aperture, decay, direction));
+    void addSpotLight(glm::vec3 position ,float radiance, glm::vec3 color, float aperture, float decay, glm::vec3 direction, bool isOn = true) {
+        spotlights.emplace_back(std::make_unique<Spotlight>(position, radiance,color,aperture, decay, direction, isOn));
     }
 
     ///Create the directional light (Only one directional light can exists)
@@ -339,6 +342,16 @@ class Renderer {
                      sizeof(glm::vec2), UV}
            });
 
+        localLayout.init(bp, {
+            // this array contains the binding:
+            // first  element : the binding number
+            // second element : the type of element (buffer or texture)
+            // third  element : the pipeline stage where it will be used
+            {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, sizeof(UniformBufferObject), 1},
+            {1,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,VK_SHADER_STAGE_ALL_GRAPHICS,0,1},
+            {2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1} //shadowMap
+          });
+
         globalLayout.init(bp, {
             // this array contains the binding:
             // first  element : the binding number
@@ -346,6 +359,10 @@ class Renderer {
             // third  element : the pipeline stage where it will be used
             {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, sizeof(GlobalUniformBufferObject), 1}
           });
+
+        offScreenLayout.init(bp, {
+                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(ShadowMapUniformBufferObject), 1}
+                    });
 
 
         for (auto& m : modelAssets) {
@@ -363,17 +380,29 @@ class Renderer {
 
 
         for (auto& p : pipelinesMap) {
-            p.second->localInit(bp, globalLayout, vertexDescriptor);
+            p.second->localInit(bp, globalLayout, offScreenLayout, vertexDescriptor);
         }
+
+        float shadowMapSize = 2048;
+        RPoffScreen.init(bp, shadowMapSize, shadowMapSize, 1,
+                    RenderPass::getStandardAttchmentsProperties(AT_DEPTH_ONLY, bp),
+                    RenderPass::getStandardDependencies(ATDEP_DEPTH_TRANS), true);
+
+
+        PoffScreen.init(bp, &vertexDescriptor, "shaders/ShadowMap.vert.spv", "shaders/ShadowMap.frag.spv", {&offScreenLayout, &localLayout});
     }
 
     ///This method prepare stuff for Vulkan, must be called inside Engine.descriptorSetsInits()
     void descriptorSetsInits() {
 
-        global.init(bp, &globalLayout, {});
+        RPoffScreen.create();
 
+        global.init(bp, &globalLayout, {});
+        offScreen.init(bp, &offScreenLayout, {});
+
+        PoffScreen.create(&RPoffScreen);
         for (auto& p : pipelinesMap) {
-            p.second->descriptorSetsInits(bp, rp);
+            p.second->descriptorSetsInits(bp, rp, &RPoffScreen);
         }
     }
 
@@ -381,6 +410,10 @@ class Renderer {
     void descriptorSetsCleanup() {
 
         global.cleanup();
+        offScreen.cleanup();
+
+        RPoffScreen.cleanup();
+        PoffScreen.cleanup();
 
         for (auto& p : pipelinesMap) {
             p.second->descriptorSetsCleanup();
@@ -391,6 +424,9 @@ class Renderer {
     void localCleanup() {
 
         globalLayout.cleanup();
+        offScreenLayout.cleanup();
+
+        localLayout.cleanup();
 
         for (auto& m : modelAssets) {
             m.second.cleanup();
@@ -400,16 +436,29 @@ class Renderer {
             t.second.cleanup();
         }
 
+        PoffScreen.destroy();
         for (auto& p : pipelinesMap) {
             p.second->localCleanup();
         }
 
     }
 
+    void populateShadowCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
+        RPoffScreen.begin(commandBuffer, 0);
+        PoffScreen.bind(commandBuffer);
+        offScreen.bind(commandBuffer, PoffScreen, 0, currentImage);
+
+        for (auto& o : sceneObjects) {
+            o->populateCommandBuffer(commandBuffer, currentImage, PoffScreen);
+        }
+
+        RPoffScreen.end(commandBuffer);
+    }
+
     ///This method prepare stuff for Vulkan, must be called inside Engine.populateCommandBuffer()
     void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
         for (auto& p : pipelinesMap) {
-            p.second->populateCommandBuffer(commandBuffer, currentImage, global);
+            p.second->populateCommandBuffer(commandBuffer, currentImage, global, offScreen);
         }
     }
 
@@ -420,27 +469,35 @@ class Renderer {
         gubo.lightDir   = glm::vec4(directionalLight.direction, 0.0f);
         gubo.lightColor = glm::vec4(directionalLight.color, 0.0f) * directionalLight.radiance;
 
+        int j = 0;
         for (int i = 0; i < pointlights.size(); i++) {
-            gubo.pointLightPos[i]    = glm::vec4(pointlights[i].get()->position, 0.0f);
-            gubo.pointLightColor[i]  = glm::vec4(pointlights[i].get()->color, 0.0f) * pointlights[i].get()->radiance;
-            gubo.pointLightParams[i] = glm::vec4(pointlights[i].get()->decay, pointlights[i].get()->radius, 0.0f, 0.0f);
+            if (pointlights[i]->isOn) {
+                gubo.pointLightPos[j]    = glm::vec4(pointlights[i].get()->position, 0.0f);
+                gubo.pointLightColor[j]  = glm::vec4(pointlights[i].get()->color, 0.0f) * pointlights[i].get()->radiance;
+                gubo.pointLightParams[j] = glm::vec4(pointlights[i].get()->decay, pointlights[i].get()->radius, 0.0f, 0.0f);
+                j++;
+            }
         }
 
-        gubo.pointInstanceCount = pointlights.size();
+        gubo.pointInstanceCount = j;
 
+        j = 0;
         for (int i = 0; i < spotlights.size(); i++) {
-            gubo.spotLightPos[i]    = glm::vec4(spotlights[i].get()->position, 0.0f);
-            gubo.spotLightDir[i]    = glm::vec4(spotlights[i].get()->direction,0.0f);
-            gubo.spotLightColor[i]  = glm::vec4(spotlights[i].get()->color, 0.0f) * spotlights[i].get()->radiance;
-            gubo.spotLightParams[i] = glm::vec4(
-                cos(glm::radians(spotlights[i].get()->aperture)),   // cIN  = cos(alpha_IN/2)
-                cos(glm::radians(spotlights[i].get()->decay)),    // cOUT = cos(alpha_OUT/2)
-                0.0f,
-                0.0f
-                );
+            if (spotlights[i]->isOn) {
+                gubo.spotLightPos[j]    = glm::vec4(spotlights[i].get()->position, 0.0f);
+                gubo.spotLightDir[j]    = glm::vec4(spotlights[i].get()->direction,0.0f);
+                gubo.spotLightColor[j]  = glm::vec4(spotlights[i].get()->color, 0.0f) * spotlights[i].get()->radiance;
+                gubo.spotLightParams[j] = glm::vec4(
+                    cos(glm::radians(spotlights[i].get()->aperture)),   // cIN  = cos(alpha_IN/2)
+                    cos(glm::radians(spotlights[i].get()->decay)),    // cOUT = cos(alpha_OUT/2)
+                    0.0f,
+                    0.0f
+                    );
+                j++;
+            }
         }
 
-        gubo.spotInstanceCount = spotlights.size();
+        gubo.spotInstanceCount = j;
 
         // now the eye position corresponds to the position of the camera
         gubo.eyePos = glm::vec4(CamPos,0.0f);
@@ -448,6 +505,24 @@ class Renderer {
         // transfers the data to the GPU, by mapping it to its
         // descriptor set
         global.map(currentImage, &gubo, 0);
+
+        // compute shadow MVP early so it's available for the character shadow pass
+
+        const glm::mat4 lightView = glm::rotate(glm::mat4(1), glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
+                                    glm::rotate(glm::mat4(1), glm::radians(-45.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        const glm::vec3 lightDir =  glm::vec3(lightView * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f));
+
+
+        ShadowMapUniformBufferObject subo{};
+        const float hw = 24.0f;
+        const float vw = 24.0f;
+        const float lightN = -24.0f;
+        const float lightF =  24.0f;
+        const glm::mat4 offVP =
+                      glm::ortho(-hw, hw, vw, -vw, lightN, lightF) *
+                      glm::inverse(lightView);
+        subo.mvpMat = offVP;
+        offScreen.map(currentImage, &subo, 0);
 
         for (auto& p : pipelinesMap) {
             p.second->updateUniformBuffer(currentImage, CamPos, Projection, View);

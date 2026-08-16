@@ -48,14 +48,14 @@ class PointLight : public Light {
             radius = 0.0f;
         }
 
-        PointLight(glm::vec3 position, float radiance, glm::vec3 color, float radius, float decay) {
+        PointLight(glm::vec3 position, float radiance, glm::vec3 color, float radius, float decay, bool isOn = true) {
             this->position = position;
             this->radiance = radiance;
             this->color = color;
             this->radius = radius;
             this->decay = decay;
 
-            this->isOn = true;
+            this->isOn = isOn;
         }
 };
 
@@ -80,7 +80,7 @@ class Spotlight : public Light {
             decay = 0.0f;
         }
 
-        Spotlight(glm::vec3 position, float radiance, glm::vec3 color, float aperture, float decay, glm::vec3 direction) {
+        Spotlight(glm::vec3 position, float radiance, glm::vec3 color, float aperture, float decay, glm::vec3 direction, bool isOn = true) {
             this->position = position;
             this->radiance = radiance;
             this->color = color;
@@ -88,7 +88,7 @@ class Spotlight : public Light {
             this->decay = decay;
             this->direction = direction;
 
-            this->isOn = true;
+            this->isOn = isOn;
         }
 };
 
@@ -102,7 +102,7 @@ class DirectionalLight : public Light {
     /*Default constructor*/
     DirectionalLight() : Light() {}
 
-    DirectionalLight(float radiance, glm::vec3 color, glm::vec3 direction) {
+    DirectionalLight(float radiance, glm::vec3 color, glm::vec3 direction, bool isOn = true) {
         this->radiance = radiance;
         this->color = color;
         this->direction = direction;

@@ -28,8 +28,8 @@ class Model3D : public Node3D {
     ~Model3D() = default;
 
     ///This must be called inside PipelineRender.descriptorSetsInits()
-    void descriptorSetInit(BaseProject* bp, DescriptorSetLayout* localLayout) {
-        local.init(bp, localLayout, {material->getTexture()->getViewAndSampler()});
+    void descriptorSetInit(BaseProject* bp, DescriptorSetLayout* localLayout, RenderPass* RPoffScreen) {
+        local.init(bp, localLayout, {material->getTexture()->getViewAndSampler(), RPoffScreen->attachments[0].getViewAndSampler()});
     }
 
     ///This must be called inside PipelineRender.descriptorSetsCleanups()
