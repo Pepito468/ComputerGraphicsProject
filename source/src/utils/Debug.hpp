@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 #include <iostream>
+#include <set>
 
 #define COLOR_DEFAULT "\033[0m"
 #define COLOR_LIGHT_BLUE "\033[94m"
@@ -73,6 +74,28 @@ struct std::formatter<glm::mat4> : std::formatter<std::string> {
     auto format(glm::mat4 m, format_context& ctx) const {
         return formatter<string>::format(
           std::format("|{}||{}||{}||{}|", m[0], m[1], m[2], m[3]), ctx);
+    }
+};
+
+template <typename T>
+std::string setToString (const std::set<T>& s)
+{
+    if (s.empty()) return "[]";
+
+    std::string res = "[";
+    for (const T& i : s)
+    {
+        res.append(std::format("{}, ", i));
+    }
+    res.pop_back();
+    res.pop_back();
+    res.append("]");
+    return res;
+}
+template <typename T>
+struct std::formatter<std::set<T>> : std::formatter<std::string> {
+    auto format(std::set<T> s, format_context& ctx) const {
+        return formatter<string>::format(setToString(s), ctx);
     }
 };
 #endif

@@ -94,13 +94,12 @@ void boxTest() {
     box.localTranslate(glm::vec3(-0.5f));
 
     println("\t\tSPHERE BOUNDS TEST -- Basic");
-    SphereBounds* sB = box.getSphereBounds();
+    SphereBounds sB = box.getSphereBounds();
     glm::vec3 v = glm::vec3(box.width, box.height, box.depth) * box.globalScale * glm::vec3(0.5f);
     float expectedR = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
 
-    _assert(epsilonEqual(sB->center, box.globalPosition), std::format("Wrong center: {} vs {}", sB->center, box.globalPosition));
-    _assert(epsilonEqual(sB->radius, expectedR), std::format("Wrong radius: {} vs {}", sB->radius, expectedR));
-    delete sB;
+    _assert(epsilonEqual(sB.center, box.globalPosition), std::format("Wrong center: {} vs {}", sB.center, box.globalPosition));
+    _assert(epsilonEqual(sB.radius, expectedR), std::format("Wrong radius: {} vs {}", sB.radius, expectedR));
 
     println("\t\tSPHERE BOUNDS TEST -- Rotated and translated box");
     //Radius shouldn't change
@@ -109,9 +108,8 @@ void boxTest() {
     box.localTranslate(glm::vec3(18, 46, -0.57f));
     sB = box.getSphereBounds();
 
-    _assert(epsilonEqual(sB->center, box.globalPosition), std::format("Wrong center: {} vs {}", sB->center, box.globalPosition));
-    _assert(epsilonEqual(sB->radius, expectedR), std::format("Wrong radius: {} vs {}", sB->radius, expectedR));
-    delete sB;
+    _assert(epsilonEqual(sB.center, box.globalPosition), std::format("Wrong center: {} vs {}", sB.center, box.globalPosition));
+    _assert(epsilonEqual(sB.radius, expectedR), std::format("Wrong radius: {} vs {}", sB.radius, expectedR));
     box.localTranslate(-glm::vec3(18, 46, -0.57f));
     box.localRotateX(glm::radians(64.0f));
     box.localRotateY(glm::radians(-45.0f));
@@ -124,71 +122,65 @@ void boxTest() {
     v = glm::vec3(box.width, box.height, box.depth) * box.globalScale * glm::vec3(0.5f);
     expectedR = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
 
-    _assert(epsilonEqual(sB->center, box.globalPosition), std::format("Wrong center: {} vs {}", sB->center, box.globalPosition));
-    _assert(epsilonEqual(sB->radius, expectedR), std::format("Wrong radius: {} vs {}", sB->radius, expectedR));
-    delete sB;
+    _assert(epsilonEqual(sB.center, box.globalPosition), std::format("Wrong center: {} vs {}", sB.center, box.globalPosition));
+    _assert(epsilonEqual(sB.radius, expectedR), std::format("Wrong radius: {} vs {}", sB.radius, expectedR));
     box.width = 1;
     box.depth = 1;
     box.localScaleAll(glm::vec3(1/16.3f, 1/0.42f, 1/61.54f));
 
     println("\t\tAABB TEST -- Basic");
-    AABBExtents* aabb = box.getAABBExtents();
-    _assert(epsilonEqual(aabb->xMax, 0.5f), std::format("Wrong xMax: {} vs {}", aabb->xMax, 0.5f));
-    _assert(epsilonEqual(aabb->yMax, 0.5f), std::format("Wrong yMax: {} vs {}", aabb->yMax, 0.5f));
-    _assert(epsilonEqual(aabb->zMax, 0.5f), std::format("Wrong zMax: {} vs {}", aabb->zMax, 0.5f));
-    _assert(epsilonEqual(aabb->xMin, -0.5f), std::format("Wrong xMin: {} vs {}", aabb->xMin, -0.5f));
-    _assert(epsilonEqual(aabb->yMin, -0.5f), std::format("Wrong yMin: {} vs {}", aabb->yMin, -0.5f));
-    _assert(epsilonEqual(aabb->zMin, -0.5f), std::format("Wrong zMin: {} vs {}", aabb->zMin, -0.5f));
-    delete aabb;
+    AABBExtents aabb = box.getAABBExtents();
+    _assert(epsilonEqual(aabb.xMax, 0.5f), std::format("Wrong xMax: {} vs {}", aabb.xMax, 0.5f));
+    _assert(epsilonEqual(aabb.yMax, 0.5f), std::format("Wrong yMax: {} vs {}", aabb.yMax, 0.5f));
+    _assert(epsilonEqual(aabb.zMax, 0.5f), std::format("Wrong zMax: {} vs {}", aabb.zMax, 0.5f));
+    _assert(epsilonEqual(aabb.xMin, -0.5f), std::format("Wrong xMin: {} vs {}", aabb.xMin, -0.5f));
+    _assert(epsilonEqual(aabb.yMin, -0.5f), std::format("Wrong yMin: {} vs {}", aabb.yMin, -0.5f));
+    _assert(epsilonEqual(aabb.zMin, -0.5f), std::format("Wrong zMin: {} vs {}", aabb.zMin, -0.5f));
 
     println("\t\tAABB TEST -- Translated box");
     box.localTranslate(glm::vec3(1, 2, -3));
     aabb = box.getAABBExtents();
-    _assert(epsilonEqual(aabb->xMax, 1.5f), std::format("Wrong xMax: {} vs {}", aabb->xMax, 1.5f));
-    _assert(epsilonEqual(aabb->yMax, 2.5f), std::format("Wrong yMax: {} vs {}", aabb->yMax, 2.5f));
-    _assert(epsilonEqual(aabb->zMax, -2.5f), std::format("Wrong zMax: {} vs {}", aabb->zMax, -2.5f));
-    _assert(epsilonEqual(aabb->xMin, 0.5f), std::format("Wrong xMin: {} vs {}", aabb->xMin, 0.5f));
-    _assert(epsilonEqual(aabb->yMin, 1.5f), std::format("Wrong yMin: {} vs {}", aabb->yMin, 1.5f));
-    _assert(epsilonEqual(aabb->zMin, -3.5f), std::format("Wrong zMin: {} vs {}", aabb->zMin, -3.5f));
-    delete aabb;
+    _assert(epsilonEqual(aabb.xMax, 1.5f), std::format("Wrong xMax: {} vs {}", aabb.xMax, 1.5f));
+    _assert(epsilonEqual(aabb.yMax, 2.5f), std::format("Wrong yMax: {} vs {}", aabb.yMax, 2.5f));
+    _assert(epsilonEqual(aabb.zMax, -2.5f), std::format("Wrong zMax: {} vs {}", aabb.zMax, -2.5f));
+    _assert(epsilonEqual(aabb.xMin, 0.5f), std::format("Wrong xMin: {} vs {}", aabb.xMin, 0.5f));
+    _assert(epsilonEqual(aabb.yMin, 1.5f), std::format("Wrong yMin: {} vs {}", aabb.yMin, 1.5f));
+    _assert(epsilonEqual(aabb.zMin, -3.5f), std::format("Wrong zMin: {} vs {}", aabb.zMin, -3.5f));
     box.localTranslate(-glm::vec3(1, 2, -3));
 
     println("\t\tAABB TEST -- Rotated box");
     box.localRotateY(glm::radians(45.0f));
     aabb = box.getAABBExtents();
-    _assert(epsilonEqual(aabb->xMax, 0.5f * (float)sqrt(2)), std::format("Wrong xMax: {} vs {}", aabb->xMax, 0.5f * (float)sqrt(2)));
-    _assert(epsilonEqual(aabb->yMax, 0.5f), std::format("Wrong yMax: {} vs {}", aabb->yMax, 0.5f));
-    _assert(epsilonEqual(aabb->zMax, 0.5f * (float)sqrt(2)), std::format("Wrong zMax: {} vs {}", aabb->zMax, 0.5f));
-    _assert(epsilonEqual(aabb->xMin, -0.5f * (float)sqrt(2)), std::format("Wrong xMin: {} vs {}", aabb->xMin, -0.5f * (float)sqrt(2)));
-    _assert(epsilonEqual(aabb->yMin, -0.5f), std::format("Wrong yMin: {} vs {}", aabb->yMin, -0.5f));
-    _assert(epsilonEqual(aabb->zMin, -0.5f * (float)sqrt(2)), std::format("Wrong zMin: {} vs {}", aabb->zMin, -0.5f * (float)sqrt(2)));
-    delete aabb;
+    _assert(epsilonEqual(aabb.xMax, 0.5f * (float)sqrt(2)), std::format("Wrong xMax: {} vs {}", aabb.xMax, 0.5f * (float)sqrt(2)));
+    _assert(epsilonEqual(aabb.yMax, 0.5f), std::format("Wrong yMax: {} vs {}", aabb.yMax, 0.5f));
+    _assert(epsilonEqual(aabb.zMax, 0.5f * (float)sqrt(2)), std::format("Wrong zMax: {} vs {}", aabb.zMax, 0.5f));
+    _assert(epsilonEqual(aabb.xMin, -0.5f * (float)sqrt(2)), std::format("Wrong xMin: {} vs {}", aabb.xMin, -0.5f * (float)sqrt(2)));
+    _assert(epsilonEqual(aabb.yMin, -0.5f), std::format("Wrong yMin: {} vs {}", aabb.yMin, -0.5f));
+    _assert(epsilonEqual(aabb.zMin, -0.5f * (float)sqrt(2)), std::format("Wrong zMin: {} vs {}", aabb.zMin, -0.5f * (float)sqrt(2)));
     box.localRotateY(glm::radians(-45.0f));
 
     println("\t\tAABB TEST -- Scaled box");
     box.localScaleAll(glm::vec3(1.0f, 2.0f, 3.0f));
     box.width = 1.5f;
     aabb = box.getAABBExtents();
-    _assert(epsilonEqual(aabb->xMax, 0.5f * 1.5f), std::format("Wrong xMax: {} vs {}", aabb->xMax, 0.5f * 1.5f));
-    _assert(epsilonEqual(aabb->yMax, 0.5f * 2), std::format("Wrong yMax: {} vs {}", aabb->yMax, 0.5f * 2));
-    _assert(epsilonEqual(aabb->zMax, 0.5f * 3), std::format("Wrong zMax: {} vs {}", aabb->zMax, 0.5f * 3));
-    _assert(epsilonEqual(aabb->xMin, -0.5f * 1.5f), std::format("Wrong xMin: {} vs {}", aabb->xMin, -0.5f * 1.5f));
-    _assert(epsilonEqual(aabb->yMin, -0.5f * 2), std::format("Wrong yMin: {} vs {}", aabb->yMin, -0.5f * 2));
-    _assert(epsilonEqual(aabb->zMin, -0.5f * 3), std::format("Wrong zMin: {} vs {}", aabb->zMin, -0.5f * 3));
-    delete aabb;
+    _assert(epsilonEqual(aabb.xMax, 0.5f * 1.5f), std::format("Wrong xMax: {} vs {}", aabb.xMax, 0.5f * 1.5f));
+    _assert(epsilonEqual(aabb.yMax, 0.5f * 2), std::format("Wrong yMax: {} vs {}", aabb.yMax, 0.5f * 2));
+    _assert(epsilonEqual(aabb.zMax, 0.5f * 3), std::format("Wrong zMax: {} vs {}", aabb.zMax, 0.5f * 3));
+    _assert(epsilonEqual(aabb.xMin, -0.5f * 1.5f), std::format("Wrong xMin: {} vs {}", aabb.xMin, -0.5f * 1.5f));
+    _assert(epsilonEqual(aabb.yMin, -0.5f * 2), std::format("Wrong yMin: {} vs {}", aabb.yMin, -0.5f * 2));
+    _assert(epsilonEqual(aabb.zMin, -0.5f * 3), std::format("Wrong zMin: {} vs {}", aabb.zMin, -0.5f * 3));
     box.localScaleAll(glm::vec3(1.0f, 1/2.0f, 1/3.0f));
     box.width = 1.0f;
 
     println("\t\tPOINTS TEST -- Basic");
 
     constexpr int expectedCount = POINT_PARAMETER * POINT_PARAMETER * 6 - POINT_PARAMETER * 8;
-    PointSet* points = box.getPointSet();
-    _assert(points->size() >= expectedCount, std::format("Too few points: {} vs {}", points->size(), expectedCount));
-    for ( glm::vec3 point : *points)
+    PointSet points = box.getPointSet();
+    _assert(points.size() >= expectedCount, std::format("Too few points: {} vs {}", points.size(), expectedCount));
+    for ( glm::vec3 point : points)
     {
         _assert(box.inBounds(point), std::format("{} Not in bounds", point));
     }
-    delete points;
 
     println("\t\tPOINTS TEST -- Funky");
     box.localTranslate(glm::vec3(1.0f, 2.0f, 3.0f));
@@ -197,13 +189,12 @@ void boxTest() {
     box.localRotateZ(glm::radians(65.0f));
     box.localScaleAll(glm::vec3(1.0f, 2.0f, 3.0f));
     points = box.getPointSet();
-    _assert(points->size() >= expectedCount, std::format("Too few points: {} vs {}", points->size(), expectedCount));
+    _assert(points.size() >= expectedCount, std::format("Too few points: {} vs {}", points.size(), expectedCount));
 
-    for (glm::vec3 point : *points)
+    for (glm::vec3 point : points)
     {
         _assert(box.inBounds(point), std::format("{} Not in bounds", point));
     }
-    delete points;
 
     println("\tEND BOX COLLIDER TEST");
 }
@@ -308,10 +299,9 @@ void sphereTest()
 
     println("\t\tSPHERE BOUNDS TEST -- Basic");
 
-    SphereBounds* sB = sphere.getSphereBounds();
-    _assert(epsilonEqual(sB->center, sphere.globalPosition), std::format("Wrong center: {} vs {}", sB->center, sphere.globalPosition));
-    _assert(epsilonEqual(sB->radius, sphere.radius), std::format("Wrong radius: {} vs {}", sB->radius, sphere.radius));
-    delete sB;
+    SphereBounds sB = sphere.getSphereBounds();
+    _assert(epsilonEqual(sB.center, sphere.globalPosition), std::format("Wrong center: {} vs {}", sB.center, sphere.globalPosition));
+    _assert(epsilonEqual(sB.radius, sphere.radius), std::format("Wrong radius: {} vs {}", sB.radius, sphere.radius));
 
     println("\t\tSPHERE BOUNDS TEST -- Rotated and translated sphere");
 
@@ -320,9 +310,8 @@ void sphereTest()
     sphere.localTranslate({-4, 16.79f, 9});
 
     sB = sphere.getSphereBounds();
-    _assert(epsilonEqual(sB->center, sphere.globalPosition), std::format("Wrong center: {} vs {}", sB->center, sphere.globalPosition));
-    _assert(epsilonEqual(sB->radius, sphere.radius), std::format("Wrong radius: {} vs {}", sB->radius, sphere.radius));
-    delete sB;
+    _assert(epsilonEqual(sB.center, sphere.globalPosition), std::format("Wrong center: {} vs {}", sB.center, sphere.globalPosition));
+    _assert(epsilonEqual(sB.radius, sphere.radius), std::format("Wrong radius: {} vs {}", sB.radius, sphere.radius));
 
     sphere.localTranslate({4, -16.79f, -9});
     sphere.localRotateX(glm::radians(86.42));
@@ -334,22 +323,20 @@ void sphereTest()
     sphere.localScaleAll(scaling);
 
     sB = sphere.getSphereBounds();
-    _assert(epsilonEqual(sB->center, sphere.globalPosition), std::format("Wrong center: {} vs {}", sB->center, sphere.globalPosition));
-    _assert(epsilonEqual(sB->radius, sphere.radius * maxComponent(scaling)), std::format("Wrong radius: {} vs {}", sB->radius, sphere.radius * maxComponent(scaling)));
-    delete sB;
+    _assert(epsilonEqual(sB.center, sphere.globalPosition), std::format("Wrong center: {} vs {}", sB.center, sphere.globalPosition));
+    _assert(epsilonEqual(sB.radius, sphere.radius * maxComponent(scaling)), std::format("Wrong radius: {} vs {}", sB.radius, sphere.radius * maxComponent(scaling)));
 
     sphere.localScaleAll(glm::vec3(1) / scaling);
 
     println("\t\tAABB TEST -- Basic");
 
-    AABBExtents* aabb = sphere.getAABBExtents();
-    _assert(epsilonEqual(aabb->xMax, 1), std::format("Wrong xMax: {} vs {}", aabb->xMax, 1));
-    _assert(epsilonEqual(aabb->yMax, 1), std::format("Wrong yMax: {} vs {}", aabb->yMax, 1));
-    _assert(epsilonEqual(aabb->zMax, 1), std::format("Wrong zMax: {} vs {}", aabb->zMax, 1));
-    _assert(epsilonEqual(aabb->xMin, -1), std::format("Wrong xMin: {} vs {}", aabb->xMin, -1));
-    _assert(epsilonEqual(aabb->yMin, -1), std::format("Wrong yMin: {} vs {}", aabb->yMin, -1));
-    _assert(epsilonEqual(aabb->zMin, -1), std::format("Wrong zMin: {} vs {}", aabb->zMin, -1));
-    delete aabb;
+    AABBExtents aabb = sphere.getAABBExtents();
+    _assert(epsilonEqual(aabb.xMax, 1), std::format("Wrong xMax: {} vs {}", aabb.xMax, 1));
+    _assert(epsilonEqual(aabb.yMax, 1), std::format("Wrong yMax: {} vs {}", aabb.yMax, 1));
+    _assert(epsilonEqual(aabb.zMax, 1), std::format("Wrong zMax: {} vs {}", aabb.zMax, 1));
+    _assert(epsilonEqual(aabb.xMin, -1), std::format("Wrong xMin: {} vs {}", aabb.xMin, -1));
+    _assert(epsilonEqual(aabb.yMin, -1), std::format("Wrong yMin: {} vs {}", aabb.yMin, -1));
+    _assert(epsilonEqual(aabb.zMin, -1), std::format("Wrong zMin: {} vs {}", aabb.zMin, -1));
 
     println("\t\tAABB TEST -- Translated sphere");
 
@@ -357,13 +344,12 @@ void sphereTest()
     sphere.localTranslate(move);
 
     aabb = sphere.getAABBExtents();
-    _assert(epsilonEqual(aabb->xMax, 1 + move.x), std::format("Wrong xMax: {} vs {}", aabb->xMax, 1 + move.x));
-    _assert(epsilonEqual(aabb->yMax, 1 + move.y), std::format("Wrong yMax: {} vs {}", aabb->yMax, 1 + move.y));
-    _assert(epsilonEqual(aabb->zMax, 1 + move.z), std::format("Wrong zMax: {} vs {}", aabb->zMax, 1 + move.z));
-    _assert(epsilonEqual(aabb->xMin, -1 + move.x), std::format("Wrong xMin: {} vs {}", aabb->xMin, -1 + move.x));
-    _assert(epsilonEqual(aabb->yMin, -1 + move.y), std::format("Wrong yMin: {} vs {}", aabb->yMin, -1 + move.y));
-    _assert(epsilonEqual(aabb->zMin, -1 + move.z), std::format("Wrong zMin: {} vs {}", aabb->zMin, -1 + move.z));
-    delete aabb;
+    _assert(epsilonEqual(aabb.xMax, 1 + move.x), std::format("Wrong xMax: {} vs {}", aabb.xMax, 1 + move.x));
+    _assert(epsilonEqual(aabb.yMax, 1 + move.y), std::format("Wrong yMax: {} vs {}", aabb.yMax, 1 + move.y));
+    _assert(epsilonEqual(aabb.zMax, 1 + move.z), std::format("Wrong zMax: {} vs {}", aabb.zMax, 1 + move.z));
+    _assert(epsilonEqual(aabb.xMin, -1 + move.x), std::format("Wrong xMin: {} vs {}", aabb.xMin, -1 + move.x));
+    _assert(epsilonEqual(aabb.yMin, -1 + move.y), std::format("Wrong yMin: {} vs {}", aabb.yMin, -1 + move.y));
+    _assert(epsilonEqual(aabb.zMin, -1 + move.z), std::format("Wrong zMin: {} vs {}", aabb.zMin, -1 + move.z));
 
     sphere.localTranslate(-move);
 
@@ -374,13 +360,12 @@ void sphereTest()
     sphere.localRotateZ(glm::radians(174.77f));
 
     aabb = sphere.getAABBExtents();
-    _assert(epsilonEqual(aabb->xMax, 1), std::format("Wrong xMax: {} vs {}", aabb->xMax, 1));
-    _assert(epsilonEqual(aabb->yMax, 1), std::format("Wrong yMax: {} vs {}", aabb->yMax, 1));
-    _assert(epsilonEqual(aabb->zMax, 1), std::format("Wrong zMax: {} vs {}", aabb->zMax, 1));
-    _assert(epsilonEqual(aabb->xMin, -1), std::format("Wrong xMin: {} vs {}", aabb->xMin, -1));
-    _assert(epsilonEqual(aabb->yMin, -1), std::format("Wrong yMin: {} vs {}", aabb->yMin, -1));
-    _assert(epsilonEqual(aabb->zMin, -1), std::format("Wrong zMin: {} vs {}", aabb->zMin, -1));
-    delete aabb;
+    _assert(epsilonEqual(aabb.xMax, 1), std::format("Wrong xMax: {} vs {}", aabb.xMax, 1));
+    _assert(epsilonEqual(aabb.yMax, 1), std::format("Wrong yMax: {} vs {}", aabb.yMax, 1));
+    _assert(epsilonEqual(aabb.zMax, 1), std::format("Wrong zMax: {} vs {}", aabb.zMax, 1));
+    _assert(epsilonEqual(aabb.xMin, -1), std::format("Wrong xMin: {} vs {}", aabb.xMin, -1));
+    _assert(epsilonEqual(aabb.yMin, -1), std::format("Wrong yMin: {} vs {}", aabb.yMin, -1));
+    _assert(epsilonEqual(aabb.zMin, -1), std::format("Wrong zMin: {} vs {}", aabb.zMin, -1));
 
     sphere.localRotateZ(glm::radians(-174.77f));
     sphere.localRotateY(glm::radians(18.54f));
@@ -393,13 +378,12 @@ void sphereTest()
     sphere.radius = 2;
 
     aabb = sphere.getAABBExtents();
-    _assert(epsilonEqual(aabb->xMax, scaling.x * 2), std::format("Wrong xMax: {} vs {}", aabb->xMax, scaling.x * 2));
-    _assert(epsilonEqual(aabb->yMax, scaling.y * 2), std::format("Wrong yMax: {} vs {}", aabb->yMax, scaling.y * 2));
-    _assert(epsilonEqual(aabb->zMax, scaling.z * 2), std::format("Wrong zMax: {} vs {}", aabb->zMax, scaling.z * 2));
-    _assert(epsilonEqual(aabb->xMin, -scaling.x * 2), std::format("Wrong xMin: {} vs {}", aabb->xMin,-scaling.x * 2));
-    _assert(epsilonEqual(aabb->yMin, -scaling.y * 2), std::format("Wrong yMin: {} vs {}", aabb->yMin,-scaling.y * 2));
-    _assert(epsilonEqual(aabb->zMin, -scaling.z * 2), std::format("Wrong zMin: {} vs {}", aabb->zMin,-scaling.z * 2));
-    delete aabb;
+    _assert(epsilonEqual(aabb.xMax, scaling.x * 2), std::format("Wrong xMax: {} vs {}", aabb.xMax, scaling.x * 2));
+    _assert(epsilonEqual(aabb.yMax, scaling.y * 2), std::format("Wrong yMax: {} vs {}", aabb.yMax, scaling.y * 2));
+    _assert(epsilonEqual(aabb.zMax, scaling.z * 2), std::format("Wrong zMax: {} vs {}", aabb.zMax, scaling.z * 2));
+    _assert(epsilonEqual(aabb.xMin, -scaling.x * 2), std::format("Wrong xMin: {} vs {}", aabb.xMin,-scaling.x * 2));
+    _assert(epsilonEqual(aabb.yMin, -scaling.y * 2), std::format("Wrong yMin: {} vs {}", aabb.yMin,-scaling.y * 2));
+    _assert(epsilonEqual(aabb.zMin, -scaling.z * 2), std::format("Wrong zMin: {} vs {}", aabb.zMin,-scaling.z * 2));
 
     sphere.radius = 1;
     sphere.localScaleAll(glm::vec3(1) / scaling);
@@ -411,13 +395,12 @@ void sphereTest()
 
     //Values found through manual testing in geogebra
     aabb = sphere.getAABBExtents();
-    _assert(epsilonEqual(aabb->xMax, 1.581137f), std::format("Wrong xMax: {} vs {}", aabb->xMax, 1.581137f));
-    _assert(epsilonEqual(aabb->yMax, 1), std::format("Wrong yMax: {} vs {}", aabb->yMax, 1));
-    _assert(epsilonEqual(aabb->zMax, 1.581137f), std::format("Wrong zMax: {} vs {}", aabb->zMax, 1.581137f));
-    _assert(epsilonEqual(aabb->xMin, -1.581137f), std::format("Wrong xMin: {} vs {}", aabb->xMin, -1.581137f));
-    _assert(epsilonEqual(aabb->yMin, -1), std::format("Wrong yMin: {} vs {}", aabb->yMin, -1));
-    _assert(epsilonEqual(aabb->zMin, -1.581137f), std::format("Wrong zMin: {} vs {}", aabb->zMin, -1.581137f));
-    delete aabb;
+    _assert(epsilonEqual(aabb.xMax, 1.581137f), std::format("Wrong xMax: {} vs {}", aabb.xMax, 1.581137f));
+    _assert(epsilonEqual(aabb.yMax, 1), std::format("Wrong yMax: {} vs {}", aabb.yMax, 1));
+    _assert(epsilonEqual(aabb.zMax, 1.581137f), std::format("Wrong zMax: {} vs {}", aabb.zMax, 1.581137f));
+    _assert(epsilonEqual(aabb.xMin, -1.581137f), std::format("Wrong xMin: {} vs {}", aabb.xMin, -1.581137f));
+    _assert(epsilonEqual(aabb.yMin, -1), std::format("Wrong yMin: {} vs {}", aabb.yMin, -1));
+    _assert(epsilonEqual(aabb.zMin, -1.581137f), std::format("Wrong zMin: {} vs {}", aabb.zMin, -1.581137f));
 
     sphere.localRotateY(glm::radians(-45.0f));
     sphere.localScaleAll({0.5f, 1, 1});
@@ -425,13 +408,12 @@ void sphereTest()
     println("\t\tPOINTS TEST -- Basic");
 
     constexpr int expectedCount = POINT_PARAMETER * 7 + 2;
-    PointSet* points = sphere.getPointSet();
-    _assert(points->size() >= expectedCount, std::format("Too few points: {} vs {}", points->size(), expectedCount));
-    for ( glm::vec3 point : *points)
+    PointSet points = sphere.getPointSet();
+    _assert(points.size() >= expectedCount, std::format("Too few points: {} vs {}", points.size(), expectedCount));
+    for ( glm::vec3 point : points)
     {
         _assert(sphere.inBounds(point), std::format("{} Not in bounds", point));
     }
-    delete points;
 
     println("\t\tPOINTS TEST -- Funky");
 
@@ -441,13 +423,12 @@ void sphereTest()
     sphere.localRotateZ(glm::radians(65.0f));
     sphere.localScaleAll(glm::vec3(1.0f, 2.0f, 3.0f));
     points = sphere.getPointSet();
-    _assert(points->size() >= expectedCount, std::format("Too few points: {} vs {}", points->size(), expectedCount));
+    _assert(points.size() >= expectedCount, std::format("Too few points: {} vs {}", points.size(), expectedCount));
 
-    for (glm::vec3 point : *points)
+    for (glm::vec3 point : points)
     {
         _assert(sphere.inBounds(point), std::format("{} Not in bounds", point));
     }
-    delete points;
 
     println("\tEND SPHERE COLLIDER TEST");
 }

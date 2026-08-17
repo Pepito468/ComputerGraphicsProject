@@ -446,4 +446,11 @@ class Node3D : public Node {
         }
 };
 
+/// Specialization to make Node3D compatible with std::format
+template <>
+struct std::formatter<Node3D> : std::formatter<Node> {};
+
+/// Specialization to make Node3D* compatible with std::format
+template <>
+struct std::formatter<Node3D*> : std::formatter<Node*> {};
 #endif

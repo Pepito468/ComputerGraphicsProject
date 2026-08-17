@@ -105,4 +105,21 @@ class Node {
         }
 };
 
+/// Specialization to make Node compatible with std::format
+template <>
+struct std::formatter<Node> : std::formatter<std::string> {
+    auto format(Node n, format_context& ctx) const {
+        return formatter<string>::format(
+          std::format("{}", n.name), ctx);
+    }
+};
+
+/// Specialization to make Node* compatible with std::format
+template <>
+struct std::formatter<Node*> : std::formatter<std::string> {
+    auto format(Node* n, format_context& ctx) const {
+        return formatter<string>::format(
+          std::format("{}", n->name), ctx);
+    }
+};
 #endif

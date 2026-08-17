@@ -45,3 +45,8 @@ add_executable(JSONTest JSONTest.cpp)
 target_link_libraries(JSONTest PRIVATE glfw glm::glm)
 target_link_libraries(JSONTest PRIVATE Vulkan::Vulkan)
 add_test(JSONTest JSONTest)
+
+add_executable(PhysicsTest PhysicsTest.cpp)
+target_link_libraries(PhysicsTest PRIVATE glfw glm::glm)
+target_link_libraries(PhysicsTest PRIVATE Vulkan::Vulkan)
+add_test(PhysicsTest PhysicsTest)
