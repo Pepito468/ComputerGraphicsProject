@@ -25,7 +25,7 @@
 #define Z_ROTATION_INDEX 2
 #define POSITION_INDEX 3
 #define DEFAULT_POINT_SCALE 1
-#define NODE3D_EPSILON 0.01f
+#define NODE3D_EPSILON 0.001f
 
 /**
  * A Node that has a place in 3D space
@@ -557,18 +557,6 @@ class Node3D : public Node {
             newNode->globalScale = globalScale;
             newNode->globalMatrix = newNode->computeMatrixFromTransform(globalPosition, globalRotation, globalScale);
             newNode->commitGlobalUpdate();
-
-            glm::vec3 localPosition = VEC3_ZERO;
-            glm::vec3 localRotation = VEC3_ZERO;
-            glm::vec3 localScale = VEC3_ONE;
-            if (json.contains("localPosition")) localPosition = glm::vec3(json["localPosition"][0].get<float>(), json["localPosition"][1].get<float>(), json["localPosition"][2].get<float>());
-            if (json.contains("localRotation")) localRotation = glm::vec3(json["localRotation"][0].get<float>(), json["localRotation"][1].get<float>(), json["localRotation"][2].get<float>());
-            if (json.contains("localScale")) localScale = glm::vec3(json["localScale"][0].get<float>(), json["localScale"][1].get<float>(), json["localScale"][2].get<float>());
-            newNode->localPosition = localPosition;
-            newNode->localRotation = localRotation;
-            newNode->localScale = localScale;
-            newNode->localMatrix = newNode->computeMatrixFromTransform(localPosition, localRotation, localScale);
-            newNode->commitLocalUpdate();
 
             return newNode;
         }

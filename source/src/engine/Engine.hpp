@@ -87,7 +87,7 @@ class Engine : public BaseProject {
 
             // Propagate to children
             for (Node *child : node->children) {
-                recompute3DNodeHierarchy(child, fatherTransformMatrix);
+                recompute2DNodeHierarchy(child, fatherTransformMatrix);
             }
         }
 
@@ -358,7 +358,6 @@ class Engine : public BaseProject {
     float pos = 0;
     float dir = 1;
     Camera *camera = NULL;
-    Node3D *father = NULL;
 
 
     float GameLogic() {
@@ -374,24 +373,18 @@ class Engine : public BaseProject {
         bool fire = false;
         getSixAxis(deltaT, m, r, fire);
 
-        // Projection
-        if (pos >= 2)
-            dir = -1;
-        else if (pos <= 0)
-            dir = 1;
-        pos += dir*deltaT;
         if (!camera) {
             camera = new PerspectiveCamera(nearPlane, farPlane, FOVy, Ar);
-            father = new Node3D();
-            father->adopt(camera);
-            this->recompute3DNodeHierarchy(father, MAT4_I);
+            camera->setGlobalPosition({0, 5, 0});
+            camera->globalRotateX(glm::radians(-10.f));
         }
 
-        father->setGlobalPosition({0, pos, 0});
-        camera->setLocalPosition({0, 0, 5});
+        camera->globalTranslate(m * deltaT);
+        camera->globalRotateX(r.x * deltaT);
+        camera->globalRotateY(r.y * deltaT);
+        camera->globalRotateZ(r.z * deltaT);
         glm::mat4 Prj = camera->getProjectionMatrix();
         rot -= deltaT * 50;
-        father->setLocalRotation({0, glm::radians(-25.0f + rot), 0});
         // View
         View = camera->getViewMatrix();
 
