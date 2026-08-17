@@ -48,7 +48,7 @@ int main() {
 
     // Apply transform
     node3d.localTranslate(glm::vec3(2, 2, 0));
-    node3d.localRotateX(glm::radians(45.0f));
+    node3d.setLocalRotation({glm::radians(45.0f), 0, 0});
     node3d.localRotateY(glm::radians(15.0f));
     node3d.localRotateZ(glm::radians(90.0f));
     node3d.localScaleAll(glm::vec3(1, 2, 3));
@@ -114,7 +114,7 @@ int main() {
 
     // The transform itself is very easy to visualize even mentally
     father.globalTranslate(glm::vec3(1, 0, 0));
-    child.localTranslate(glm::vec3(2, 0, 0));
+    child.setLocalPosition(glm::vec3(2, 0, 0));
     grandchild.localTranslate(glm::vec3(1, 0, 0));
     father.localRotateY(glm::radians(90.0f));
     child.localRotateZ(glm::radians(90.0f));
@@ -173,7 +173,7 @@ int main() {
     engine.recompute3DNodeHierarchy(&father2, MAT4_I);
     father2.localTranslate({1, 1, 0});
     father2.localRotateZ(glm::radians(45.0f));
-    father2.globalScaleAll({2, 2, 2});
+    father2.setGlobalScale({2, 2, 2});
     child2.localTranslate({1, 1, 0});
     child2.globalRotateZ(glm::radians(45.0f));
     printf("LOCAL:\n");

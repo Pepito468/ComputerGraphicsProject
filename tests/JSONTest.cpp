@@ -12,9 +12,9 @@ int main() {
     {
         "type": "Node3D",
         "name": "Joseph",
-        "position": [56.3, 21, 21e3],
-        "rotation": [1, 2, 4],
-        "scale": [56, 71, 19],
+        "globalPosition": [56.3, 21, 21e3],
+        "globalRotation": [1, 2, 4],
+        "globalScale": [56, 71, 19],
         "children": [
             {
                 "type": "Model3D",

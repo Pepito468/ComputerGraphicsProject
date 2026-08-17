@@ -25,7 +25,7 @@
 #define Z_ROTATION_INDEX 2
 #define POSITION_INDEX 3
 #define DEFAULT_POINT_SCALE 1
-#define NODE3D_EPSILON 0.01f
+#define NODE3D_EPSILON 0.001f
 
 /**
  * A Node that has a place in 3D space
@@ -67,11 +67,11 @@ class Node3D : public Node {
         Node3D(const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale) : Node() {
             if (scale.x == 0 || scale.y == 0 || scale.z == 0) {
                 // A scale of 0 produces nan after a rotation
-                error(std::format("Trying to set scale for [{}] to 0", this->name));
+                error(std::format("Trying to set scale for [{}] to 0", this->UUID));
             }
             // Check for shear
             if (scale.x != scale.y || scale.x != scale.z || scale.y != scale.z) {
-                warning(std::format("Non uniform scale being applied to [{}]. This may cause shear to its children", this->name));
+                warning(std::format("Non uniform scale being applied to [{}]. This may cause shear to its children", this->UUID));
             }
 
             this->globalPosition = this->localPosition = position;
@@ -148,10 +148,10 @@ class Node3D : public Node {
         void globalScaleAll(const glm::vec3 scale) {
             // Scale cannot be 0
             if (scale.x == 0 || scale.y == 0 or scale.z == 0)
-                error(std::format("Flattening, at leat one of the scaling factors for [{}] is 0", this->name));
+                error(std::format("Flattening, at leat one of the scaling factors for [{}] is 0", this->UUID));
             // Shear check
             if (scale.x != scale.y || scale.x != scale.z || scale.y != scale.z) {
-                warning(std::format("Non uniform scale being applied to [{}]. This may cause shear to its children", this->name));
+                warning(std::format("Non uniform scale being applied to [{}]. This may cause shear to its children", this->UUID));
             }
 
             this->globalMatrix =
@@ -166,6 +166,65 @@ class Node3D : public Node {
                 glm::translate(MAT4_I, -this->globalPosition) *
                 this->globalMatrix;
             this->globalScale *= scale;
+
+            // Handle reflections
+            if (scale.x < 0 || scale.y < 0 || scale.z < 0)
+                this->updateGlobalTransformPropertiesFromGlobalMatrix();
+
+            this->commitGlobalUpdate();
+        }
+
+        /** Sets the node's global position */
+        void setGlobalPosition(const glm::vec3 position) {
+            this->globalMatrix = 
+                glm::translate(MAT4_I, position) *
+                glm::translate(MAT4_I, -this->globalPosition) *
+                this->globalMatrix;
+            this->globalPosition = position;
+
+            this->commitGlobalUpdate();
+        }
+
+        /** Sets the node's global rotation */
+        void setGlobalRotation(const glm::vec3 rotation) {
+            this->globalMatrix =
+                glm::translate(MAT4_I, this->globalPosition) *
+                glm::rotate(MAT4_I, rotation.z, VEC3_Z) *
+                glm::rotate(MAT4_I, rotation.x, VEC3_X) *
+                glm::rotate(MAT4_I, rotation.y, VEC3_Y) *
+                glm::rotate(MAT4_I, -this->globalRotation.y, VEC3_Y) *
+                glm::rotate(MAT4_I, -this->globalRotation.x, VEC3_X) *
+                glm::rotate(MAT4_I, -this->globalRotation.z, VEC3_Z) *
+                glm::translate(MAT4_I, -this->globalPosition) *
+                this->globalMatrix;
+            this->globalRotation = rotation;
+
+            this->commitGlobalUpdate();
+        }
+
+        /** Sets the node's global scale */
+        void setGlobalScale(const glm::vec3 scale) {
+            // Scale cannot be 0
+            if (scale.x == 0 || scale.y == 0 or scale.z == 0)
+                error(std::format("Flattening, at leat one of the scaling factors for [{}] is 0", this->UUID));
+            // Shear check
+            if (scale.x != scale.y || scale.x != scale.z || scale.y != scale.z) {
+                warning(std::format("Non uniform scale being applied to [{}]. This may cause shear to its children", this->UUID));
+            }
+
+            this->globalMatrix =
+                glm::translate(MAT4_I, this->globalPosition) *
+                glm::rotate(MAT4_I, this->globalRotation.z, VEC3_Z) *
+                glm::rotate(MAT4_I, this->globalRotation.x, VEC3_X) *
+                glm::rotate(MAT4_I, this->globalRotation.y, VEC3_Y) *
+                glm::scale(MAT4_I, scale) *
+                glm::scale(MAT4_I, 1.0f / this->globalScale) *
+                glm::rotate(MAT4_I, -this->globalRotation.y, VEC3_Y) *
+                glm::rotate(MAT4_I, -this->globalRotation.x, VEC3_X) *
+                glm::rotate(MAT4_I, -this->globalRotation.z, VEC3_Z) *
+                glm::translate(MAT4_I, -this->globalPosition) *
+                this->globalMatrix;
+            this->globalScale = scale;
 
             // Handle reflections
             if (scale.x < 0 || scale.y < 0 || scale.z < 0)
@@ -222,7 +281,7 @@ class Node3D : public Node {
             const glm::vec3 yAxis = this->getLocalYAxis();
             const glm::vec3 zAxis = this->getLocalZAxis();
             if (glm::epsilonEqual(std::abs(yAxis[2]), 1.0f, NODE3D_EPSILON)) {
-                warning(std::format("Gimbal Lock on [{}] (local)", this->name));
+                warning(std::format("Gimbal Lock on [{}] (local)", this->UUID));
             }
             this->localRotation =  glm::vec3(
                     std::asin(yAxis[2]),
@@ -296,10 +355,10 @@ class Node3D : public Node {
         void localScaleAll(const glm::vec3 scale) {
             // Scale cannot be 0
             if (scale.x == 0 || scale.y == 0 or scale.z == 0)
-                error(std::format("Flattening, at leat one of the scaling factors for [{}] is 0", this->name));
+                error(std::format("Flattening, at leat one of the scaling factors for [{}] is 0", this->UUID));
             // Shear might happen
             if (scale.x != scale.y || scale.x != scale.z || scale.y != scale.z) {
-               warning(std::format("Non uniform scale being applied to [{}]. This may cause shear to its children", this->name));
+               warning(std::format("Non uniform scale being applied to [{}]. This may cause shear to its children", this->UUID));
             }
 
             this->localMatrix =
@@ -314,6 +373,65 @@ class Node3D : public Node {
                 glm::translate(MAT4_I, -this->localPosition) *
                 this->localMatrix;
             this->localScale *= scale;
+
+            // Handle reflections
+            if (scale.x < 0 || scale.y < 0 || scale.z < 0)
+                this->updateLocalTransformPropertiesFromLocalMatrix();
+
+            this->commitLocalUpdate();
+        }
+
+        /** Sets the node's local position */
+        void setLocalPosition(const glm::vec3 position) {
+            this->localMatrix = 
+                glm::translate(MAT4_I, position) *
+                glm::translate(MAT4_I, -this->localPosition) *
+                this->localMatrix;
+            this->localPosition = position;
+
+            this->commitLocalUpdate();
+        }
+
+        /** Sets the node's local rotation */
+        void setLocalRotation(const glm::vec3 rotation) {
+            this->localMatrix =
+                glm::translate(MAT4_I, this->localPosition) *
+                glm::rotate(MAT4_I, rotation.z, VEC3_Z) *
+                glm::rotate(MAT4_I, rotation.x, VEC3_X) *
+                glm::rotate(MAT4_I, rotation.y, VEC3_Y) *
+                glm::rotate(MAT4_I, -this->globalRotation.y, VEC3_Y) *
+                glm::rotate(MAT4_I, -this->localRotation.x, VEC3_X) *
+                glm::rotate(MAT4_I, -this->localRotation.z, VEC3_Z) *
+                glm::translate(MAT4_I, -this->localPosition) *
+                this->localMatrix;
+            this->localRotation = rotation;
+
+            this->commitLocalUpdate();
+        }
+
+        /** Sets the node's local scale */
+        void setLocalScale(const glm::vec3 scale) {
+            // Scale cannot be 0
+            if (scale.x == 0 || scale.y == 0 or scale.z == 0)
+                error(std::format("Flattening, at leat one of the scaling factors for [{}] is 0", this->UUID));
+            // Shear check
+            if (scale.x != scale.y || scale.x != scale.z || scale.y != scale.z) {
+                warning(std::format("Non uniform scale being applied to [{}]. This may cause shear to its children", this->UUID));
+            }
+
+            this->localMatrix =
+                glm::translate(MAT4_I, this->localPosition) *
+                glm::rotate(MAT4_I, this->localRotation.z, VEC3_Z) *
+                glm::rotate(MAT4_I, this->localRotation.x, VEC3_X) *
+                glm::rotate(MAT4_I, this->localRotation.y, VEC3_Y) *
+                glm::scale(MAT4_I, scale) *
+                glm::scale(MAT4_I, 1.0f / this->localScale) *
+                glm::rotate(MAT4_I, -this->localRotation.y, VEC3_Y) *
+                glm::rotate(MAT4_I, -this->localRotation.x, VEC3_X) *
+                glm::rotate(MAT4_I, -this->localRotation.z, VEC3_Z) *
+                glm::translate(MAT4_I, -this->localPosition) *
+                this->localMatrix;
+            this->localScale = scale;
 
             // Handle reflections
             if (scale.x < 0 || scale.y < 0 || scale.z < 0)
@@ -384,7 +502,7 @@ class Node3D : public Node {
             const glm::vec3 yAxis = this->getYAxis();
             const glm::vec3 zAxis = this->getZAxis();
             if (glm::epsilonEqual(std::abs(yAxis[2]), 1.0f, NODE3D_EPSILON)) {
-                warning(std::format("Gimbal Lock on [{}] (global)", this->name));
+                warning(std::format("Gimbal Lock on [{}] (global)", this->UUID));
             }
             this->globalRotation =  glm::vec3(
                     std::asin(yAxis[2]),
@@ -412,6 +530,16 @@ class Node3D : public Node {
             return glm::vec3(this->globalMatrix * glm::vec4(point, DEFAULT_POINT_SCALE));
         }
 
+        /** Returns true if the node has a global reflection */
+        bool isReflectedGlobal() {
+            return glm::determinant(this->globalMatrix) < 0.0f;
+        }
+
+        /** Returns true if the node has a local reflection */
+        bool isReflectedLocal() {
+            return glm::determinant(this->localMatrix) < 0.0f;
+        }
+
         static Node3D* fromJSON(const nlohmann::json& json) {
             Node3D *newNode = new Node3D();
 
@@ -429,18 +557,6 @@ class Node3D : public Node {
             newNode->globalScale = globalScale;
             newNode->globalMatrix = newNode->computeMatrixFromTransform(globalPosition, globalRotation, globalScale);
             newNode->commitGlobalUpdate();
-
-            glm::vec3 localPosition = VEC3_ZERO;
-            glm::vec3 localRotation = VEC3_ZERO;
-            glm::vec3 localScale = VEC3_ONE;
-            if (json.contains("localPosition")) localPosition = glm::vec3(json["localPosition"][0].get<float>(), json["localPosition"][1].get<float>(), json["localPosition"][2].get<float>());
-            if (json.contains("localRotation")) localRotation = glm::vec3(json["localRotation"][0].get<float>(), json["localRotation"][1].get<float>(), json["localRotation"][2].get<float>());
-            if (json.contains("localScale")) localScale = glm::vec3(json["localScale"][0].get<float>(), json["localScale"][1].get<float>(), json["localScale"][2].get<float>());
-            newNode->localPosition = localPosition;
-            newNode->localRotation = localRotation;
-            newNode->localScale = localScale;
-            newNode->localMatrix = newNode->computeMatrixFromTransform(localPosition, localRotation, localScale);
-            newNode->commitLocalUpdate();
 
             return newNode;
         }

@@ -35,18 +35,6 @@ class Text2D : public Node2D {
             newNode->globalMatrix = newNode->computeMatrixFromTransform(globalPosition, globalRotation, globalScale);
             newNode->commitGlobalUpdate();
 
-            glm::vec2 localPosition = VEC2_ZERO;
-            float localRotation = 0.0f;
-            glm::vec2 localScale = VEC2_ONE;
-            if (json.contains("position")) localPosition = glm::vec2(json["localPosition"][0].get<float>(), json["localPosition"][1].get<float>());
-            if (json.contains("localRotation")) localRotation = json["localRotation"].get<float>();
-            if (json.contains("localScale")) localScale = glm::vec2(json["localScale"][0].get<float>(), json["localScale"][1].get<float>());
-            newNode->localPosition = localPosition;
-            newNode->localRotation = localRotation;
-            newNode->localScale = localScale;
-            newNode->localMatrix = newNode->computeMatrixFromTransform(localPosition, localRotation, localScale);
-            newNode->commitLocalUpdate();
-
             if (json.contains("text")) newNode->text = json["text"].get<std::string>();
 
             return newNode;

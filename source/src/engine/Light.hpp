@@ -65,18 +65,6 @@ class PointLight : public Light {
             newNode->globalMatrix = newNode->computeMatrixFromTransform(globalPosition, globalRotation, globalScale);
             newNode->commitGlobalUpdate();
 
-            glm::vec3 localPosition = VEC3_ZERO;
-            glm::vec3 localRotation = VEC3_ZERO;
-            glm::vec3 localScale = VEC3_ONE;
-            if (json.contains("localPosition")) localPosition = glm::vec3(json["localPosition"][0].get<float>(), json["localPosition"][1].get<float>(), json["localPosition"][2].get<float>());
-            if (json.contains("localRotation")) localRotation = glm::vec3(json["localRotation"][0].get<float>(), json["localRotation"][1].get<float>(), json["localRotation"][2].get<float>());
-            if (json.contains("localScale")) localScale = glm::vec3(json["localScale"][0].get<float>(), json["localScale"][1].get<float>(), json["localScale"][2].get<float>());
-            newNode->localPosition = localPosition;
-            newNode->localRotation = localRotation;
-            newNode->localScale = localScale;
-            newNode->localMatrix = newNode->computeMatrixFromTransform(localPosition, localRotation, localScale);
-            newNode->commitLocalUpdate();
-
             if (json.contains("color")) newNode->color = glm::vec3(json["color"][0].get<float>(), json["color"][1].get<float>(), json["color"][2].get<float>());
             if (json.contains("radiance")) newNode->radiance = json["radiance"].get<float>();
             if (json.contains("isOn")) newNode->isOn = json["radiance"].get<bool>();
@@ -126,18 +114,6 @@ class SpotLight : public Light {
             newNode->globalMatrix = newNode->computeMatrixFromTransform(globalPosition, globalRotation, globalScale);
             newNode->commitGlobalUpdate();
 
-            glm::vec3 localPosition = VEC3_ZERO;
-            glm::vec3 localRotation = VEC3_ZERO;
-            glm::vec3 localScale = VEC3_ONE;
-            if (json.contains("localPosition")) localPosition = glm::vec3(json["localPosition"][0].get<float>(), json["localPosition"][1].get<float>(), json["localPosition"][2].get<float>());
-            if (json.contains("localRotation")) localRotation = glm::vec3(json["localRotation"][0].get<float>(), json["localRotation"][1].get<float>(), json["localRotation"][2].get<float>());
-            if (json.contains("localScale")) localScale = glm::vec3(json["localScale"][0].get<float>(), json["localScale"][1].get<float>(), json["localScale"][2].get<float>());
-            newNode->localPosition = localPosition;
-            newNode->localRotation = localRotation;
-            newNode->localScale = localScale;
-            newNode->localMatrix = newNode->computeMatrixFromTransform(localPosition, localRotation, localScale);
-            newNode->commitLocalUpdate();
-
             if (json.contains("color")) newNode->color = glm::vec3(json["color"][0].get<float>(), json["color"][1].get<float>(), json["color"][2].get<float>());
             if (json.contains("radiance")) newNode->radiance = json["radiance"].get<float>();
             if (json.contains("isOn")) newNode->isOn = json["radiance"].get<bool>();
@@ -171,18 +147,6 @@ class DirectionalLight : public Light {
             newNode->globalScale = globalScale;
             newNode->globalMatrix = newNode->computeMatrixFromTransform(globalPosition, globalRotation, globalScale);
             newNode->commitGlobalUpdate();
-
-            glm::vec3 localPosition = VEC3_ZERO;
-            glm::vec3 localRotation = VEC3_ZERO;
-            glm::vec3 localScale = VEC3_ONE;
-            if (json.contains("localPosition")) localPosition = glm::vec3(json["localPosition"][0].get<float>(), json["localPosition"][1].get<float>(), json["localPosition"][2].get<float>());
-            if (json.contains("localRotation")) localRotation = glm::vec3(json["localRotation"][0].get<float>(), json["localRotation"][1].get<float>(), json["localRotation"][2].get<float>());
-            if (json.contains("localScale")) localScale = glm::vec3(json["localScale"][0].get<float>(), json["localScale"][1].get<float>(), json["localScale"][2].get<float>());
-            newNode->localPosition = localPosition;
-            newNode->localRotation = localRotation;
-            newNode->localScale = localScale;
-            newNode->localMatrix = newNode->computeMatrixFromTransform(localPosition, localRotation, localScale);
-            newNode->commitLocalUpdate();
 
             if (json.contains("color")) newNode->color = glm::vec3(json["color"][0].get<float>(), json["color"][1].get<float>(), json["color"][2].get<float>());
             if (json.contains("radiance")) newNode->radiance = json["radiance"].get<float>();
