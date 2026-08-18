@@ -2,6 +2,7 @@
 #define ENGINE_PERSPECTIVECAMERA_H
 
 #include "Camera.hpp"
+#include "glm/trigonometric.hpp"
 #include <glm/ext/matrix_clip_space.hpp>
 
 class PerspectiveCamera : public Camera {
@@ -13,7 +14,7 @@ class PerspectiveCamera : public Camera {
 
 
         PerspectiveCamera() : Camera() {
-            this->fov = 90;
+            this->fov = glm::radians(90.0f);
             this->aspectRatio = 1.0f;
         }
 

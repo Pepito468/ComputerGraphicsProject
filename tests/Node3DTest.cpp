@@ -198,7 +198,9 @@ int main() {
     // Test 6: gimbal lock
     Node3D gimbal = Node3D();
     // Should throw a gimbal lock warning
+    printf("GIMBAL LOCK SHOULD BE THROWN NOW:\n");
     gimbal.localRotateX(glm::radians(90.0f));
+    printf("GIMBAL LOCK SHOULD HAVE BEEN THROWN\n");
 
     info("END OF NODE3D TEST");
 }

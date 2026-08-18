@@ -407,7 +407,6 @@ class Node2D: public Node {
 
             if (json.contains("name")) newNode->name = json["name"].get<std::string>();
 
-            // if both global and local are present, local have priority
             glm::vec2 globalPosition = VEC2_ZERO;
             float globalRotation = 0.0f;
             glm::vec2 globalScale = VEC2_ONE;
