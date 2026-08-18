@@ -19,8 +19,8 @@ layout (binding = 0, set = 1) uniform UniformBufferObject {
 
 // and also the global
 layout(binding = 0, set = 0) uniform GlobalUniformBufferObject {
-    vec3 lightDir;
-    vec3 lightColor;
+    vec4 lightDir;
+    vec4 lightColor;
     vec3 eyePos;
 } gubo;
 
@@ -30,7 +30,7 @@ void main() {
 	// returns a color computed with lambert + blinn
 	vec3 N = normalize(fragNorm);
 	vec3 V = normalize(gubo.eyePos - fragPos);
-	vec3 L = gubo.lightDir;
+	vec3 L = gubo.lightDir.xyz;
 
 	// lambert diffuse
 	float kD = max(dot(N, L), 0.0);
@@ -40,7 +40,7 @@ void main() {
 	float kS = pow(max(dot(H, N), 0.0), ubo.specular.w);
 	
 	// final color
-	vec3 color = (kD * ubo.diffuse + kS * ubo.specular.rgb) * gubo.lightColor;
+	vec3 color = (kD * ubo.diffuse + kS * ubo.specular.rgb) * gubo.lightColor.rgb;
 	
 	outColor = vec4(color, 1.0f);
 }

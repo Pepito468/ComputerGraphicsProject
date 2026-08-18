@@ -86,13 +86,14 @@ class Engine : public BaseProject {
     Model3D m8 = {modelPath, {-1.0f, 3.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
     Model3D m9 = {modelPath, {-1.0f, 4.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
 
+    Model3D plane = {"Plane.gltf", {0.0f, 0.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(10.0f), &mat3};
+
     void localInit() {
         // Descriptor Layouts [what will be passed to the shaders]
 
         renderer.loadSceneFromJSON();
 
         renderer.createDirectionalLight(0.01f, glm::vec3(1.0f, 0.95f, 0.8f), glm::normalize(glm::vec3(0.4f, 0.8f, 0.4f)));
-
 
         renderer.addPointLight(glm::vec3(-1.0f, 2.0f, -5.0f), 0.1f, glm::vec3(1.0f, 1.0f, 1.0f), 5.0f, 2.0f);
         renderer.addPointLight(glm::vec3(-3.0f, 2.0f, 4.0f), 0.1f, glm::vec3(0.0f, 0.0f, 1.0f), 5.0f, 2.0f);
@@ -105,6 +106,8 @@ class Engine : public BaseProject {
         renderer.addSpotLight(glm::vec3(-3.0f, 7.0f, 4.0f), 0.1f, glm::vec3(0.0f, 0.0f, 1.0f), 5.0f, 10.0f, glm::normalize(glm::vec3(0.0f, 1.0f,0.0f)));
 
         //std::cout << "TEST\n";
+
+        //renderer.preLoadModel(&plane);
 
         /*
         renderer.instantiate(&m);
@@ -287,6 +290,8 @@ int n;
                glm::translate(glm::mat4(1), -CamPos);
 
         renderer.updateUniformBuffer(currentImage, CamPos, Projection, View);
+
+        renderer.updateLightCulling(CamPos, 10.0f);
 
         
         // updates the FPS

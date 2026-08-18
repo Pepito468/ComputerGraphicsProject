@@ -296,6 +296,16 @@ class Renderer {
         directionalLight = DirectionalLight(radiance, color, direction);
     }
 
+    void updateLightCulling(glm::vec3 camPos, float maxDist) {
+        for (auto& o : pointlights) {
+            o->isOn = glm::distance(o->position, camPos) < maxDist;
+        }
+
+        for (auto& o : spotlights) {
+            o->isOn = glm::distance(o->position, camPos) < maxDist;
+        }
+    }
+
     /** Add a new model on the scene
      *
      * NOTE:
