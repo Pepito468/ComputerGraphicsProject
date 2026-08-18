@@ -5,13 +5,19 @@
         "id": "mat1",
         "diffuse": [1.0, 1.0, 1.0],
         "specular": [1.0, 1.0, 1.0, 100.0],
-        "texture": "toChange.jpg"
+        "texture": "orbed_plastic.png"
       },
       {
         "id": "mat2",
         "diffuse": [1.0, 1.0, 1.0],
         "specular": [1.0, 1.0, 1.0, 100.0],
         "texture": "Default.png"
+      },
+      {
+        "id": "mat3",
+        "diffuse": [1.0, 1.0, 1.0],
+        "specular": [1.0, 1.0, 1.0, 100.0],
+        "texture": "rock.png"
       }
     ],
     "Toon": [
@@ -31,7 +37,7 @@
   },
   "instances": [
       {"model": "Plane.gltf", "material": "mat1", "position": [0.0, 0.0, 0.0], "rotation": [0.0, 0.0, 0.0] ,"scale": [10, 10, 10]},
-      {"model": "SuzanneUV.obj", "material": "mat1", "position": [-3.0, -1.0, 2.0], "rotation": [0.0, 0.0, 0.0] ,"scale": [2, 2, 2]},
-      {"model": "SuzanneUV.obj", "material": "mat1", "position": [3.0, -1.0, -2.0], "rotation": [0.0, 0.0, 0.0] ,"scale": [2, 2, 2]}
+      {"model": "Statue.gltf", "material": "mat3", "position": [-3.0, 0.0, 2.0], "rotation": [0.0, 0.0, 0.0] ,"scale": [3, 3, 3]},
+      {"model": "Statue.gltf", "material": "mat3", "position": [3.0, 0.0, -2.0], "rotation": [0.0, 0.0, 0.0] ,"scale": [3, 3, 3]}
   ]
 }

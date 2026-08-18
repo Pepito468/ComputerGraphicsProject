@@ -29,7 +29,12 @@ class Model3D : public Node3D {
 
     ///This must be called inside PipelineRender.descriptorSetsInits()
     void descriptorSetInit(BaseProject* bp, DescriptorSetLayout* localLayout, RenderPass* RPoffScreen) {
-        local.init(bp, localLayout, {material->getTexture()->getViewAndSampler(), RPoffScreen->attachments[0].getViewAndSampler()});
+        local.init(bp, localLayout, {material->getAlbedoTex()->getViewAndSampler(),
+            material->getAmbientOcclusionTex()->getViewAndSampler(),
+            material->getMetallicTex()->getViewAndSampler(),
+            material->getNormalTex()->getViewAndSampler(),
+            material->getRoughnessTex()->getViewAndSampler(),
+            RPoffScreen->attachments[0].getViewAndSampler()});
     }
 
     ///This must be called inside PipelineRender.descriptorSetsCleanups()
