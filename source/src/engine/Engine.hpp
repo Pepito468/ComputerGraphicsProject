@@ -379,9 +379,26 @@ class Engine : public BaseProject {
             camera->globalRotateX(glm::radians(-10.f));
         }
 
-        camera->globalTranslate(m * deltaT);
+        glm::vec3 xdir = glm::normalize(glm::vec3(camera->getXAxis().x, 0, camera->getXAxis().z));
+        glm::vec3 zdir = glm::normalize(glm::vec3(camera->getZAxis().x, 0, camera->getZAxis().z));
+
+        if (m.x == 1)
+            camera->globalTranslate(xdir * deltaT);
+        if (m.x == -1)
+            camera->globalTranslate(xdir * deltaT * -1.0f);
+        // Z axis is positive on the back
+        if (m.z == 1)
+            camera->globalTranslate(zdir * deltaT);
+        if (m.z == -1)
+            camera->globalTranslate(zdir * deltaT * -1.0f);
+        if (glfwGetKey(window, GLFW_KEY_SPACE))
+            camera->globalTranslate({0, 1*deltaT, 0});
+        if (glfwGetKey(window, GLFW_KEY_Z))
+            camera->globalTranslate({0, -1*deltaT, 0});
+
         camera->globalRotateX(r.x * deltaT);
         camera->globalRotateY(r.y * deltaT);
+
         glm::mat4 Prj = camera->getProjectionMatrix();
         rot -= deltaT * 50;
         // View
