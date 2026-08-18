@@ -3,4 +3,6 @@ build/*
 # Local config
 .clangd
 .idea
-temp.txt
+# Temp files
+*.txt
+!*CMakeLists.txt
