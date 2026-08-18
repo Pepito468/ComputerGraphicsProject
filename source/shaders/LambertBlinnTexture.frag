@@ -25,7 +25,7 @@ layout (binding = 1, set = 1) uniform sampler2D tex;
 layout (binding = 2, set = 1) uniform sampler2D ambientOcclusionTex;
 layout (binding = 3, set = 1) uniform sampler2D metallicTex;
 layout (binding = 4, set = 1) uniform sampler2D normalTex;
-layout (binding = 4, set = 1) uniform sampler2D roughnessTex;
+layout (binding = 5, set = 1) uniform sampler2D roughnessTex;
 layout (binding = 6, set = 1) uniform sampler2D shadowMap;
 
 // and also the global
@@ -55,7 +55,7 @@ mat3 computeTBN(vec3 N, vec3 T, float tangentW) {
    vec3 n = normalize(N);
    vec3 t = normalize(T);
    t = normalize(t - dot(t,n) * n);
-   vec3 b = cross(n, t);
+   vec3 b = cross(n, t) * tangentW;
 
    return mat3(t, b, n);
 }
@@ -203,6 +203,7 @@ void main() {
     }
     notInShadow /= 9.0f;*/
 
+    //TODO: non si implementa così l'ambient occlusion
 	color += notInShadow * Lc * cookTorranceBRDF(L, N, V, diffuseColor, metallic, roughness) + ao*0.0001;
 
     for (int i = 0; i < gubo.pointInstanceCount; i++){

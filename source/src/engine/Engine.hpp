@@ -68,7 +68,7 @@ class Engine : public BaseProject {
     //ToonMaterial mat1 = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
     ToonMaterial mat2 = {glm::vec3(0.9f, 0.45f, 0.9f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
 
-    LambertTexMaterial mat1 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "toChange.jpg"};
+    LambertTexMaterial mat1 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "rock.png"};
 
     //LambertTexMaterial mat2 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "VChecker.png"};
 
@@ -87,6 +87,7 @@ class Engine : public BaseProject {
     Model3D m9 = {modelPath, {-1.0f, 4.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
 
     Model3D plane = {"Plane.gltf", {0.0f, 0.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(10.0f), &mat3};
+
 
     void localInit() {
         // Descriptor Layouts [what will be passed to the shaders]
@@ -228,10 +229,10 @@ int n;
         if (glfwGetKey(window, GLFW_KEY_Z)) {
             if (test__) {
                 if (j%2 == 0 ) {
-                    renderer.instantiate(modelPath , {1.0f, j, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2);
+                    renderer.instantiate("Statue.gltf" , {1.0f, j, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(1.0f), &mat2);
                 }
                 else {
-                    renderer.instantiate(modelPath , {-1.0f, j, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2);
+                    renderer.instantiate("Statue.gltf" , {-1.0f, j, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(1.0f), &mat2);
                 }
 
                 test__ = false;
