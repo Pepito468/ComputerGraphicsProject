@@ -103,9 +103,7 @@ class Physics
         if (!coll->isTrigger && hasHardCollision)
         {
             //Reverse collider's movements
-            coll->globalMatrix = coll->previousMatrix;
-            coll->updateGlobalTransformPropertiesFromGlobalMatrix();
-            coll->commitGlobalUpdate();
+            coll->setGlobalMatrix(coll->previousMatrix);
         }
 
         for (const Bounds b : collisions)
@@ -186,7 +184,7 @@ class Physics
 
                 //Reset flag values
                 coll->movementStatus = MOBILE_UNMOVED;
-                coll->previousMatrix = coll->globalMatrix;
+                coll->previousMatrix = coll->getGlobalMatrix();
             }
         }
 

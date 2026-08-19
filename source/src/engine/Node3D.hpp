@@ -217,6 +217,14 @@ class Node3D : public Node {
             this->commitGlobalUpdate();
         }
 
+        /// Sets the node's global matrix
+        void setGlobalMatrix(glm::mat4 mat)
+        {
+            globalMatrix = mat;
+            updateGlobalTransformPropertiesFromGlobalMatrix();
+            commitGlobalUpdate();
+        }
+
         /// Translates the node globally
         void globalTranslate(const glm::vec3 distance) {
             this->globalMatrix = glm::translate(MAT4_I, distance) * this->globalMatrix;

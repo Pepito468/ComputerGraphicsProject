@@ -90,7 +90,7 @@ int main()
     _assert(box.movementStatus == MOBILE_HAS_MOVED, "Box marked as unmoved");
     Physics::checkCollisions();
     _assert(box.movementStatus == MOBILE_UNMOVED, "Box marked as moved");
-    _assert(box.globalPosition.x == 2, "Box movement not reversed");
+    _assert(box.getGlobalPosition().x == 2, "Box movement not reversed");
     _assert(!boxColl, "Box collided");
     _assert(w1ColID == box.name, std::format("Wall1 collided with {} instead ox box", w1ColID));
     _assert(!w1Trig, "Wall1 triggered");

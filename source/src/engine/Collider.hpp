@@ -2,10 +2,10 @@
 #define ENGINE_COLLIDER_HPP
 
 #define GLM_ENABLE_EXPERIMENTAL
+#define GLM_FORCE_RADIANS
 #include <set>
 #include <glm/glm.hpp>
 #include <glm/vec3.hpp>
-#include <glm/gtc/epsilon.hpp>
 #include "Node3D.hpp"
 #include "Relations.hpp"
 
@@ -303,7 +303,7 @@ class SphereCollider: public Collider
 
             for (int i = 0; i <= POINT_PARAMETER; i++)
             {
-                for (int j = 0; j < 7; j++)
+                for (int j = 0; j < std::size(pointers); j++)
                 {
                     res.insert(toGlobalSpace(pointers[j]));
                     pointers[j] = glm::rotate(MAT4_I, loopAngle, VEC3_Y) * glm::vec4(pointers[j], 1.0f);
@@ -388,6 +388,55 @@ class CapsuleCollider: public Collider
 
         PointSet getPointSet() const override
         {
+            PointSet res = PointSet();
+
+            //Add points along the cylinder
+            const float cos30Rad = radius * std::cos(M_PI / 6.0f);
+            const float sin30Rad = radius * std::sin(M_PI / 6.0f);
+            const float cos45Rad = radius * std::cos(M_PI / 4.0f);
+            const float dy = height / POINT_PARAMETER;
+            for (int i = 0; i <= POINT_PARAMETER; i++)
+            {
+                const float y = -halfHeight() + dy * i;
+                res.insert(toGlobalSpace({radius, y, 0}));
+                res.insert(toGlobalSpace({-radius, y, 0}));
+                res.insert(toGlobalSpace({0, y, radius}));
+                res.insert(toGlobalSpace({0, y, -radius}));
+                res.insert(toGlobalSpace({cos30Rad, y, sin30Rad}));
+                res.insert(toGlobalSpace({cos30Rad, y, -sin30Rad}));
+                res.insert(toGlobalSpace({-cos30Rad, y, sin30Rad}));
+                res.insert(toGlobalSpace({-cos30Rad, y, -sin30Rad}));
+                res.insert(toGlobalSpace({sin30Rad, y, cos30Rad}));
+                res.insert(toGlobalSpace({sin30Rad, y, -cos30Rad}));
+                res.insert(toGlobalSpace({-sin30Rad, y, cos30Rad}));
+                res.insert(toGlobalSpace({-sin30Rad, y, -cos30Rad}));
+                res.insert(toGlobalSpace({cos45Rad, y, cos45Rad}));
+                res.insert(toGlobalSpace({cos45Rad, y, -cos45Rad}));
+                res.insert(toGlobalSpace({-cos45Rad, y, cos45Rad}));
+                res.insert(toGlobalSpace({-cos45Rad, y, -cos45Rad}));
+            }
+
+            //Add points along sphere caps
+            const float sqrt3rdRad = std::sqrt(1 / 3.0f) * radius;
+            res.insert(toGlobalSpace({0, halfHeight() + radius, 0}));
+            res.insert(toGlobalSpace({cos45Rad, halfHeight() + cos45Rad, 0}));
+            res.insert(toGlobalSpace({-cos45Rad, halfHeight() + cos45Rad, 0}));
+            res.insert(toGlobalSpace({0, halfHeight() + cos45Rad, cos45Rad}));
+            res.insert(toGlobalSpace({0, halfHeight() + cos45Rad, -cos45Rad}));
+            res.insert(toGlobalSpace({sqrt3rdRad, halfHeight() + sqrt3rdRad, sqrt3rdRad}));
+            res.insert(toGlobalSpace({sqrt3rdRad, halfHeight() + sqrt3rdRad, -sqrt3rdRad}));
+            res.insert(toGlobalSpace({-sqrt3rdRad, halfHeight() + sqrt3rdRad, sqrt3rdRad}));
+            res.insert(toGlobalSpace({-sqrt3rdRad, halfHeight() + sqrt3rdRad, -sqrt3rdRad}));
+            res.insert(toGlobalSpace({0, -(halfHeight() + radius), 0}));
+            res.insert(toGlobalSpace({cos45Rad, -(halfHeight() + cos45Rad), 0}));
+            res.insert(toGlobalSpace({-cos45Rad, -(halfHeight() + cos45Rad), 0}));
+            res.insert(toGlobalSpace({0, -(halfHeight() + cos45Rad), cos45Rad}));
+            res.insert(toGlobalSpace({0, -(halfHeight() + cos45Rad), -cos45Rad}));
+            res.insert(toGlobalSpace({sqrt3rdRad, -(halfHeight() + sqrt3rdRad), sqrt3rdRad}));
+            res.insert(toGlobalSpace({sqrt3rdRad, -(halfHeight() + sqrt3rdRad), -sqrt3rdRad}));
+            res.insert(toGlobalSpace({-sqrt3rdRad, -(halfHeight() + sqrt3rdRad), sqrt3rdRad}));
+            res.insert(toGlobalSpace({-sqrt3rdRad, -(halfHeight() + sqrt3rdRad), -sqrt3rdRad}));
+
             return PointSet();
         }
 
@@ -421,11 +470,28 @@ class CapsuleCollider: public Collider
 /// A collider shaped like a spherical cone
 class ConeCollider : public Collider
 {
+    private:
+        PointSet getOBBCorners() const
+        {
+            PointSet res = PointSet();
+
+            const float endRad = radius * std::sin(aperture);
+            res.insert(toGlobalSpace({endRad, endRad, 0}));
+            res.insert(toGlobalSpace({endRad, -endRad, 0}));
+            res.insert(toGlobalSpace({-endRad, endRad, 0}));
+            res.insert(toGlobalSpace({-endRad, -endRad, 0}));
+            res.insert(toGlobalSpace({endRad, endRad, radius}));
+            res.insert(toGlobalSpace({endRad, -endRad, radius}));
+            res.insert(toGlobalSpace({-endRad, endRad, radius}));
+            res.insert(toGlobalSpace({-endRad, -endRad, radius}));
+            return res;
+        }
+
     public:
         /// The radius of the cone along the Z-axis
         float radius = 1.0f;
 
-        /// The angle of the sector, in radians
+        /// The angle between the Z-axis of the cone and its extremes, in radians [0, PI]
         float aperture = M_PI / 6;
 
         ConeCollider() : Collider() {}
@@ -443,23 +509,63 @@ class ConeCollider : public Collider
             if (!(glm::distance(p, getGlobalPosition()) <= radius)) return false;
 
             const glm::vec3 toP = glm::normalize(p - getGlobalPosition());
-            const float angle = glm::acos(glm::dot(getGlobalPosition(), toP));
+            const float angle = glm::acos(glm::dot(getZAxis(), toP));
             return angle <= aperture;
         }
 
         PointSet getPointSet() const override
         {
-            return PointSet();
+            PointSet res = PointSet();
+
+            //Add origin and cap peak
+            res.insert(getGlobalPosition());
+            res.insert(toGlobalSpace({0, 0, radius}));
+
+            glm::vec3 sidePointer = glm::rotate(MAT4_I, aperture, VEC3_X) * glm::vec4(VEC3_Z, 1);
+            const float delta = radius / POINT_PARAMETER;
+            constexpr float loopAngle = glm::radians(360.0f / POINT_PARAMETER);
+            glm::vec3 capPointers[] = {
+                glm::rotate(MAT4_I, aperture / 4, VEC3_X) * glm::vec4(VEC3_Z, 1),
+                glm::rotate(MAT4_I, aperture / 2, VEC3_X) * glm::vec4(VEC3_Z, 1),
+                glm::rotate(MAT4_I, aperture * 3 / 4, VEC3_X) * glm::vec4(VEC3_Z, 1)
+            };
+
+            for (int i = 0; i < POINT_PARAMETER; i++)
+            {
+                //Add points along sides
+                for (int j = 1; j < POINT_PARAMETER; j++)
+                {
+                    res.insert(toGlobalSpace(sidePointer * (delta * j)));
+                }
+                sidePointer = glm::rotate(MAT4_I, loopAngle, VEC3_Z) * glm::vec4(sidePointer, 1);
+
+                //Add points on cap
+                for (int j = 0; j < std::size(capPointers); j++)
+                {
+                    res.insert(toGlobalSpace(capPointers[j]));
+                    capPointers[j] = glm::rotate(MAT4_I, loopAngle, VEC3_Z) * glm::vec4(capPointers[j], 1);
+                }
+            }
+
+            return res;
         }
 
         SphereBounds getSphereBounds() const override
         {
-            return SphereBounds();
+            const PointSet corners = getOBBCorners();
+            glm::vec3 center = VEC3_ZERO;
+            for (const auto corner : corners)
+            {
+                center += corner;
+            }
+            center /= std::size(corners);
+
+            return SphereBounds(center, glm::distance(center, *corners.begin()));
         }
 
         AABBExtents getAABBExtents() const override
         {
-            return AABBExtents();
+            return AABBExtents(getOBBCorners());
         }
 };
 

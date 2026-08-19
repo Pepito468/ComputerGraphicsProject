@@ -160,7 +160,7 @@ int main() {
     box2.localRotateY(glm::radians(-45.0f));
     box2.localScaleAll({16.3f, 0.42f, 61.54f});
     // Should have the same scale
-    assert(glm::all(glm::epsilonEqual(box.globalScale, box2.globalScale, epsilon)));
+    assert(glm::all(glm::epsilonEqual(box.getGlobalScale(), box2.getGlobalScale(), epsilon)));
 
     // Test 5: global and local
     Node3D father2 = Node3D();
