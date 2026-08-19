@@ -358,7 +358,7 @@ class Engine : public BaseProject {
 
     float GameLogic() {
         // Camera FOV-y, Near Plane and Far Plane
-        const float FOVy = glm::radians(45.0f);
+        const float FOVy = glm::radians(90.0f);
         const float nearPlane = 0.1f;
         const float farPlane = 100.f;
         // const float FOVy = 45.0f;
@@ -394,6 +394,7 @@ class Engine : public BaseProject {
 
         camera->globalRotateX(r.x * deltaT);
         camera->globalRotateY(r.y * deltaT);
+        // dynamic_cast<PerspectiveCamera*>(camera)->setFOV(dynamic_cast<PerspectiveCamera*>(camera)->getFOV() + deltaT);
 
         glm::mat4 Prj = camera->getProjectionMatrix();
         rot -= deltaT * 50;

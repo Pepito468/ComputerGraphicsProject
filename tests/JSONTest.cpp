@@ -61,7 +61,7 @@ int main() {
                 for (Node* child : child->children) {
                     printf("%s\n", child->name.c_str());
                     assert(child->name == "Jolyne");
-                    printf("%f\n", dynamic_cast<PerspectiveCamera*>(child)->nearValue);
+                    printf("%f\n", dynamic_cast<PerspectiveCamera*>(child)->getNearPlane());
                 }
             }
         } else {

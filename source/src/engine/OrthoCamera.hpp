@@ -6,41 +6,75 @@
 
 class OrthoCamera : public Camera {
 
-    public:
+    protected:
+
         /// Camera lower bound
-        float bottomValue;
+        float bottomBound;
 
         /// Camera higher bound
-        float topValue;
+        float topBound;
 
         /// Camera leftmost bound
-        float leftValue;
+        float leftBound;
 
         /// Camera rightmost bound
-        float rightValue;
+        float rightBound;
 
+    public:
 
         OrthoCamera() {
-            this->bottomValue = -10.0f;
-            this->topValue = 10.0f;
-            this->rightValue = -10.0f;
-            this->leftValue = 10.0f;
+            this->bottomBound = -10.0f;
+            this->topBound = 10.0f;
+            this->rightBound = -10.0f;
+            this->leftBound = 10.0f;
         };
 
-        OrthoCamera(const float nearValue, const float farValue, const float bottomValue, const float topValue, const float rightValue, const float leftValue) {
-            this->nearValue = nearValue;
-            this->farValue = farValue;
-            this->bottomValue = bottomValue;
-            this->topValue = topValue;
-            this->rightValue = rightValue;
-            this->leftValue = leftValue;
+        OrthoCamera(const float nearPlane, const float farPlane, const float bottomBound, const float topBound, const float rightBound, const float leftBound) {
+            this->nearPlane = nearPlane;
+            this->farPlane = farPlane;
+            this->bottomBound = bottomBound;
+            this->topBound = topBound;
+            this->rightBound = rightBound;
+            this->leftBound = leftBound;
+        }
+
+        float getBottomBound() const {
+            return this->bottomBound;
+        }
+
+        float getTopBound() const {
+            return this->bottomBound;
+        }
+
+        float getLeftBound() const {
+            return this->leftBound;
+        }
+
+        float getRightBound() const {
+            return this->rightBound;
+        }
+
+        const void setBottomBound(const float bottomBound) {
+            this->bottomBound = bottomBound;
+        }
+
+        const void setTopBound(const float bottomBound) {
+            this->bottomBound = bottomBound;
+        }
+
+        const void setLeftBound(const float leftBound) {
+            this->leftBound = leftBound;
+        }
+
+        const void setRightBound(const float rightBound) {
+            this->rightBound = rightBound;
         }
 
         virtual const glm::mat4 getProjectionMatrix() override {
-            // Apply scale because the ortho function was made for OpenGL
+            // Apply reflection because the ortho function was made for OpenGL
             return
                 glm::scale(MAT4_I, glm::vec3(1, -1, 1)) *
-                glm::ortho(this->leftValue, this->rightValue, this->bottomValue, this->topValue, this->nearValue, this->farValue);
+                glm::ortho(this->leftBound, this->rightBound, this->bottomBound, this->topBound, this->nearPlane, this->farPlane);
         }
 
 
@@ -59,12 +93,12 @@ class OrthoCamera : public Camera {
             newNode->setGlobalRotation(globalRotation);
             newNode->setGlobalScale(globalScale);
 
-            if (json.contains("nearValue")) newNode->nearValue = json["nearValue"].get<float>();
-            if (json.contains("farValue")) newNode->farValue = json["farValue"].get<float>();
-            if (json.contains("bottomValue")) newNode->bottomValue = json["bottomValue"].get<float>();
-            if (json.contains("topValue")) newNode->topValue = json["topValue"].get<float>();
-            if (json.contains("rightValue")) newNode->rightValue = json["rightValue"].get<float>();
-            if (json.contains("leftValue")) newNode->leftValue = json["leftValue"].get<float>();
+            if (json.contains("nearValue")) newNode->nearPlane = json["nearValue"].get<float>();
+            if (json.contains("farValue")) newNode->farPlane = json["farValue"].get<float>();
+            if (json.contains("bottomValue")) newNode->bottomBound = json["bottomValue"].get<float>();
+            if (json.contains("topValue")) newNode->topBound = json["topValue"].get<float>();
+            if (json.contains("rightValue")) newNode->rightBound = json["rightValue"].get<float>();
+            if (json.contains("leftValue")) newNode->leftBound = json["leftValue"].get<float>();
 
             return newNode;
         }
