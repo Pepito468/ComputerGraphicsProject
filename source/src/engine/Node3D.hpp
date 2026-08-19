@@ -450,9 +450,6 @@ class Node3D : public Node {
 
         /** Updates the father matrix and all that depends on it (updates global from local) */
         void updateFatherMatrix(glm::mat4 newFatherMatrix) {
-            // If father didn't change, do nothing
-            if (newFatherMatrix == this->fatherMatrix)
-                return;
             this->updateGlobalTransformFromLocal(this, newFatherMatrix);
         }
 

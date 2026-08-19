@@ -74,8 +74,12 @@ int main() {
     glm::vec3 localPos = node3d.toLocalSpace(point);
     printf("LOCAL: %.2f %.2f %.2f\n\n", localPos.x, localPos.y, localPos.z);
 
+    glm::vec3 oldGlobal = node3d.toGlobalSpace(localPos);
+    printf("OLDGLOBAL: %.2f %.2f %.2f\n\n", oldGlobal.x, oldGlobal.y, oldGlobal.z);
+
     // Test local point
-    assert(glm::all(glm::epsilonEqual(localPos, glm::vec3(-0.37, 0.71, 0.46), epsilon)));
+    assert(glm::all(glm::epsilonEqual(localPos, glm::vec3(1.37, 0.26, 0.46), epsilon)));
+    assert(glm::all(glm::epsilonEqual(oldGlobal, glm::vec3(2, 2, 2), epsilon)));
 
     // Test2: transform 2
     Node3D a = Node3D(glm::vec3(1, 1, 0), glm::vec3(0, 0, 0), glm::vec3(1, 1, 1));
@@ -91,7 +95,7 @@ int main() {
     printf("POS: %.2f %.2f %.2f\n", a.getGlobalPosition().x, a.getGlobalPosition().y, a.getGlobalPosition().z);
     assert(glm::all(glm::epsilonEqual(a.getGlobalPosition(), glm::vec3(1, 1, 0), epsilon)));
     printf("ROT: %.2f %.2f %.2f\n", a.getGlobalRotation().x, a.getGlobalRotation().y, a.getGlobalRotation().z);
-    assert(glm::all(glm::epsilonEqual(a.getGlobalRotation(), glm::vec3(0, 0, -3*std::numbers::pi/4), epsilon)));
+    assert(glm::all(glm::epsilonEqual(a.getGlobalRotation(), glm::vec3(0, 0, 3*std::numbers::pi/4), epsilon)));
     printf("SCA: %.2f %.2f %.2f\n\n", a.getGlobalScale().x, a.getGlobalScale().y, a.getGlobalScale().z);
     assert(glm::all(glm::epsilonEqual(a.getGlobalScale(), glm::vec3(2, 1, 1), epsilon)));
 
@@ -146,8 +150,8 @@ int main() {
     printf("Child: %.4f %.4f %.4f\n", child.getGlobalPosition().x, child.getGlobalPosition().y, child.getGlobalPosition().z);
     printf("Grandchild: %.4f %.4f %.4f\n", grandchild.getGlobalPosition().x, grandchild.getGlobalPosition().y, grandchild.getGlobalPosition().z);
     assert(glm::all(glm::epsilonEqual(father.getGlobalPosition(), glm::vec3(1, 0, 0), epsilon)));
-    assert(glm::all(glm::epsilonEqual(child.getGlobalPosition(), glm::vec3(1, 0, -2), epsilon)));
-    assert(glm::all(glm::epsilonEqual(grandchild.getGlobalPosition(), glm::vec3(0, 0, -2), epsilon)));
+    assert(glm::all(glm::epsilonEqual(child.getGlobalPosition(), glm::vec3(1, 2, 0), epsilon)));
+    assert(glm::all(glm::epsilonEqual(grandchild.getGlobalPosition(), glm::vec3(1, 2, 1), epsilon)));
 
     // Test 4: Collider
 
