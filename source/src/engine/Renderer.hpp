@@ -138,6 +138,7 @@ class Renderer {
     DirectionalLight directionalLight;
     std::vector<std::unique_ptr<PointLight>> pointlights;
     std::vector<std::unique_ptr<Spotlight>> spotlights;
+    AmbientLight ambientLight;
 
     //Shadow map
     DescriptorSetLayout offScreenLayout;
@@ -329,6 +330,18 @@ class Renderer {
         directionalLight = DirectionalLight(radiance, color, direction);
     }
 
+    /**Set ambient light parameters
+     *<li>upper: sky color</li>
+     *<li>lower: ground reflection</li>
+     *<li>dir: world direction</li>
+     */
+    void setAmbientLight(glm::vec3 upper, glm::vec3 lower, glm::vec3 dir) {
+        ambientLight.upper = glm::vec4(upper, 0.0f);
+        ambientLight.lower = glm::vec4(lower, 0.0f);
+        ambientLight.dir = glm::vec4(dir, 0.0f);
+    }
+
+    ///Turn off light that are too far away
     void updateLightCulling(glm::vec3 camPos, float maxDist) {
         for (auto& o : pointlights) {
             o->isOn = glm::distance(o->position, camPos) < maxDist;
@@ -573,6 +586,10 @@ class Renderer {
     ///This method prepare stuff for Vulkan, must be called inside Engine.updateUniformBuffer()
     void updateUniformBuffer(uint32_t currentImage,  glm::vec3 CamPos, glm::mat4 Projection, glm::mat4 View) {
         GlobalUniformBufferObject gubo;
+
+        gubo.ambientUpper = ambientLight.upper;
+        gubo.ambientLower = ambientLight.lower;
+        gubo.ambientDir   = ambientLight.dir;
 
         gubo.lightDir   = glm::vec4(directionalLight.direction, 0.0f);
         gubo.lightColor = glm::vec4(directionalLight.color, 0.0f) * directionalLight.radiance;

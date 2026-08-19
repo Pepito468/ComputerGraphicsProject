@@ -35,6 +35,13 @@ layout(binding = 0, set = 0) uniform GlobalUniformBufferObject {
     vec4 lightColor;        // xyz = color * intensity
     vec3 eyePos;
 
+
+    // --- Hemispheric ambient ---
+    vec4 ambientUpper;  // xyz = sky / upper  color  (lU)
+    vec4 ambientLower;  // xyz = ground / lower color (lD)
+    vec4 ambientDir;    // xyz = "up" direction for blending (d)
+
+
     // --- Point Light ---
     vec4 pointLightPos[8];     // xyz = world position
     vec4 pointLightColor[8];   // xyz = color * intensity
@@ -99,8 +106,8 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
            GeometrySchlickGGX(max(dot(N, L), 0.0), roughness);
 }
 
-vec3 lambertBRDF(vec3 L, vec3 N, vec3 diffuseColor){
-    return diffuseColor*max(dot(L,N),0);
+vec3 lambertBRDF(vec3 L, vec3 N, vec3 albedo){
+    return albedo*max(dot(L,N),0);
 }
 
 vec3 blinnBRDF(vec3 L, vec3 N, vec3 V){
@@ -110,8 +117,8 @@ vec3 blinnBRDF(vec3 L, vec3 N, vec3 V){
 	return ubo.specular.rgb*pow(max(dot(H, N), 0.0), ubo.specular.w);
 }
 
-vec3 applyBRDF(vec3 L, vec3 N, vec3 V, vec3 diffuseColor){
-    return lambertBRDF(L,N, diffuseColor) + blinnBRDF(L, N, V);
+vec3 applyBRDF(vec3 L, vec3 N, vec3 V, vec3 albedo){
+    return lambertBRDF(L,N, albedo) + blinnBRDF(L, N, V);
 }
 
 vec3 cookTorranceBRDF(vec3 L, vec3 N, vec3 V, vec3 albedo, float metallic, float roughness){
@@ -161,12 +168,23 @@ void spotLight(vec3 pos, out vec3 direction, out vec3 color, int i) {
     color     = l*dimming;
 }
 
+vec3 hemisphericAmbient(vec3 N, vec3 mA) {
+    vec3 lU = gubo.ambientUpper.xyz;
+    vec3 lD = gubo.ambientLower.xyz;
+    vec3 d  = normalize(gubo.ambientDir.xyz);
+    float dotNd = dot(N, d);
+
+    vec3 lA = ((dotNd + 1.0)/2.0)*lU + ((1.0 - dotNd)/2.0)*lD;
+
+    return lA * mA;
+}
+
 
 void main() {
 	// returns a color computed with lambert + blinn
 	//vec3 N = normalize(fragNorm);
 
-    vec3 diffuseColor = texture(tex, fragUV).rgb;
+    vec3 albedo = texture(tex, fragUV).rgb;
     float ao = texture(ambientOcclusionTex, fragUV).r;
     float metallic  = texture(metallicTex, fragUV).r;
     float roughness = texture(roughnessTex, fragUV).r;
@@ -203,18 +221,19 @@ void main() {
     }
     notInShadow /= 9.0f;*/
 
-    //TODO: non si implementa così l'ambient occlusion
-	color += notInShadow * Lc * cookTorranceBRDF(L, N, V, diffuseColor, metallic, roughness) + ao*0.0001;
+    vec3 ambient = hemisphericAmbient(N, albedo) * ao;
+	color += ambient;
+	color += notInShadow * Lc * cookTorranceBRDF(L, N, V, albedo, metallic, roughness);
 
     for (int i = 0; i < gubo.pointInstanceCount; i++){
 
         pointLight(fragPos, L, Lc, i);
-        color += Lc * cookTorranceBRDF(L, N, V, diffuseColor, metallic, roughness);
+        color += Lc * cookTorranceBRDF(L, N, V, albedo, metallic, roughness);
 	}
 
     for (int i = 0; i < gubo.spotInstanceCount; i++){
         spotLight(fragPos, L, Lc, i);
-        color += Lc * cookTorranceBRDF(L, N, V, diffuseColor, metallic, roughness);
+        color += Lc * cookTorranceBRDF(L, N, V, albedo, metallic, roughness);
 	}
 
     color = color / (color + vec3(1.0));

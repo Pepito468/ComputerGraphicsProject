@@ -27,6 +27,11 @@ layout(binding = 0, set = 0) uniform GlobalUniformBufferObject {
         vec4 lightColor;        // xyz = color * intensity
         vec4 eyePos;
 
+        // --- Hemispheric ambient ---
+        vec4 ambientUpper;  // xyz = sky / upper  color  (lU)
+        vec4 ambientLower;  // xyz = ground / lower color (lD)
+        vec4 ambientDir;    // xyz = "up" direction for blending (d)
+
         // --- Point Light ---
         vec4 pointLightPos[8];     // xyz = world position
         vec4 pointLightColor[8];   // xyz = color * intensity

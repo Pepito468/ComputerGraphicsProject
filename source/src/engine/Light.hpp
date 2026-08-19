@@ -111,4 +111,10 @@ class DirectionalLight : public Light {
     }
 };
 
+struct AmbientLight {
+    glm::vec4 upper;
+    glm::vec4 lower;
+    glm::vec4 dir;
+};
+
 #endif
