@@ -57,18 +57,16 @@ class Engine : public BaseProject {
             this->mainCamera = camera;
         }
 
-        /** Recomputes the matrices after the Node3Ds are moved and the hierarchy has changed */
-        static void recompute3DNodeHierarchy(Node* node, glm::mat4 fatherTransformMatrix) {
+        /** Recomputes the Node3D hierarchy */
+        void recompute3DNodeHierarchy(Node* node, glm::mat4 fatherTransformMatrix) {
 
-            // Update self matrix
+            // If a Node3D is found, propagate an update to it
             if (Node3D* node3d = dynamic_cast<Node3D*>(node)) {
-                node3d->fatherMatrix = fatherTransformMatrix;
-                node3d->updateGlobalMatrixFromLocal();
-                node3d->updateGlobalTransformPropertiesFromGlobalMatrix();
-                fatherTransformMatrix = node3d->globalMatrix;
+                node3d->updateFatherMatrix(fatherTransformMatrix);
+                return;
             }
 
-            // Propagate to children
+            // Else try again with the children
             for (Node *child : node->children) {
                 recompute3DNodeHierarchy(child, fatherTransformMatrix);
             }

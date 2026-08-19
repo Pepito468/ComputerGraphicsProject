@@ -23,11 +23,9 @@ class UpdateNode3D: public Node3D {
             if (json.contains("globalPosition")) globalPosition = glm::vec3(json["globalPosition"][0].get<float>(), json["globalPosition"][1].get<float>(), json["globalPosition"][2].get<float>());
             if (json.contains("globalRotation")) globalRotation = glm::vec3(json["globalRotation"][0].get<float>(), json["globalRotation"][1].get<float>(), json["globalRotation"][2].get<float>());
             if (json.contains("globalScale")) globalScale = glm::vec3(json["globalScale"][0].get<float>(), json["globalScale"][1].get<float>(), json["globalScale"][2].get<float>());
-            newNode->globalPosition = globalPosition;
-            newNode->globalRotation = globalRotation;
-            newNode->globalScale = globalScale;
-            newNode->globalMatrix = newNode->computeMatrixFromTransform(globalPosition, globalRotation, globalScale);
-            newNode->commitGlobalUpdate();
+            newNode->setGlobalPosition(globalPosition);
+            newNode->setGlobalRotation(globalRotation);
+            newNode->setGlobalScale(globalScale);
 
             return newNode;
         }

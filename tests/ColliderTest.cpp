@@ -95,10 +95,10 @@ void boxTest() {
 
     println("\t\tSPHERE BOUNDS TEST -- Basic");
     SphereBounds sB = box.getSphereBounds();
-    glm::vec3 v = glm::vec3(box.width, box.height, box.depth) * box.globalScale * glm::vec3(0.5f);
+    glm::vec3 v = glm::vec3(box.width, box.height, box.depth) * box.getGlobalScale()* glm::vec3(0.5f);
     float expectedR = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
 
-    _assert(epsilonEqual(sB.center, box.globalPosition), std::format("Wrong center: {} vs {}", sB.center, box.globalPosition));
+    _assert(epsilonEqual(sB.center, box.getGlobalPosition()), std::format("Wrong center: {} vs {}", sB.center, box.getGlobalPosition()));
     _assert(epsilonEqual(sB.radius, expectedR), std::format("Wrong radius: {} vs {}", sB.radius, expectedR));
 
     println("\t\tSPHERE BOUNDS TEST -- Rotated and translated box");
@@ -108,7 +108,7 @@ void boxTest() {
     box.localTranslate(glm::vec3(18, 46, -0.57f));
     sB = box.getSphereBounds();
 
-    _assert(epsilonEqual(sB.center, box.globalPosition), std::format("Wrong center: {} vs {}", sB.center, box.globalPosition));
+    _assert(epsilonEqual(sB.center, box.getGlobalPosition()), std::format("Wrong center: {} vs {}", sB.center, box.getGlobalPosition()));
     _assert(epsilonEqual(sB.radius, expectedR), std::format("Wrong radius: {} vs {}", sB.radius, expectedR));
     box.localTranslate(-glm::vec3(18, 46, -0.57f));
     box.localRotateX(glm::radians(64.0f));
@@ -119,10 +119,10 @@ void boxTest() {
     box.depth = 0.45f;
     box.localScaleAll(glm::vec3(16.3f, 0.42f, 61.54f));
     sB = box.getSphereBounds();
-    v = glm::vec3(box.width, box.height, box.depth) * box.globalScale * glm::vec3(0.5f);
+    v = glm::vec3(box.width, box.height, box.depth) * box.getGlobalScale ()* glm::vec3(0.5f);
     expectedR = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
 
-    _assert(epsilonEqual(sB.center, box.globalPosition), std::format("Wrong center: {} vs {}", sB.center, box.globalPosition));
+    _assert(epsilonEqual(sB.center, box.getGlobalPosition()), std::format("Wrong center: {} vs {}", sB.center, box.getGlobalPosition()));
     _assert(epsilonEqual(sB.radius, expectedR), std::format("Wrong radius: {} vs {}", sB.radius, expectedR));
     box.width = 1;
     box.depth = 1;
@@ -300,7 +300,7 @@ void sphereTest()
     println("\t\tSPHERE BOUNDS TEST -- Basic");
 
     SphereBounds sB = sphere.getSphereBounds();
-    _assert(epsilonEqual(sB.center, sphere.globalPosition), std::format("Wrong center: {} vs {}", sB.center, sphere.globalPosition));
+    _assert(epsilonEqual(sB.center, sphere.getGlobalPosition()), std::format("Wrong center: {} vs {}", sB.center, sphere.getGlobalPosition()));
     _assert(epsilonEqual(sB.radius, sphere.radius), std::format("Wrong radius: {} vs {}", sB.radius, sphere.radius));
 
     println("\t\tSPHERE BOUNDS TEST -- Rotated and translated sphere");
@@ -310,7 +310,7 @@ void sphereTest()
     sphere.localTranslate({-4, 16.79f, 9});
 
     sB = sphere.getSphereBounds();
-    _assert(epsilonEqual(sB.center, sphere.globalPosition), std::format("Wrong center: {} vs {}", sB.center, sphere.globalPosition));
+    _assert(epsilonEqual(sB.center, sphere.getGlobalPosition()), std::format("Wrong center: {} vs {}", sB.center, sphere.getGlobalPosition()));
     _assert(epsilonEqual(sB.radius, sphere.radius), std::format("Wrong radius: {} vs {}", sB.radius, sphere.radius));
 
     sphere.localTranslate({4, -16.79f, -9});
@@ -323,7 +323,7 @@ void sphereTest()
     sphere.localScaleAll(scaling);
 
     sB = sphere.getSphereBounds();
-    _assert(epsilonEqual(sB.center, sphere.globalPosition), std::format("Wrong center: {} vs {}", sB.center, sphere.globalPosition));
+    _assert(epsilonEqual(sB.center, sphere.getGlobalPosition()), std::format("Wrong center: {} vs {}", sB.center, sphere.getGlobalPosition()));
     _assert(epsilonEqual(sB.radius, sphere.radius * maxComponent(scaling)), std::format("Wrong radius: {} vs {}", sB.radius, sphere.radius * maxComponent(scaling)));
 
     sphere.localScaleAll(glm::vec3(1) / scaling);

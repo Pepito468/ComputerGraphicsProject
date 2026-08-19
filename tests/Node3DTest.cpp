@@ -1,5 +1,4 @@
 #include "Node3D.hpp"
-#include "Relations.hpp"
 #include <glm/ext/vector_float3.hpp>
 #include <glm/gtc/epsilon.hpp>
 #include <glm/trigonometric.hpp>
@@ -14,10 +13,8 @@ class MockEngine {
 
             // Update self matrix
             if (Node3D* node3d = dynamic_cast<Node3D*>(node)) {
-                node3d->fatherMatrix = fatherTransformMatrix;
-                node3d->updateGlobalMatrixFromLocal();
-                node3d->updateGlobalTransformPropertiesFromGlobalMatrix();
-                fatherTransformMatrix = node3d->globalMatrix;
+                node3d->updateFatherMatrix(fatherTransformMatrix);
+                return;
             }
 
             // Propagate to children
@@ -56,19 +53,19 @@ int main() {
     // Commit transform
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++)
-            printf("%.2f\t", node3d.globalMatrix[j][i]);
+            printf("%.2f\t", node3d.getGlobalMatrix()[j][i]);
         std::cout << std::endl;
     }
     std::cout << std::endl;
 
     // Test transform
-    glm::vec3 pos = node3d.globalPosition;
+    glm::vec3 pos = node3d.getGlobalPosition();
     printf("POS: %.2f %.2f %.2f\n", pos.x, pos.y, pos.z);
     assert(glm::all(glm::epsilonEqual(pos, glm::vec3(2, 2, 0), epsilon)));
-    glm::vec3 rot = node3d.globalRotation;
+    glm::vec3 rot = node3d.getGlobalRotation();
     printf("ROT: %.2f %.2f %.2f\n", rot.x, rot.y, rot.z);
     assert(glm::all(glm::epsilonEqual(rot, glm::vec3(0.79, 0.26, 1.57), epsilon)));
-    glm::vec3 sca = node3d.globalScale;
+    glm::vec3 sca = node3d.getGlobalScale();
     printf("SCA: %.2f %.2f %.2f\n\n", sca.x, sca.y, sca.z);
     assert(glm::all(glm::epsilonEqual(sca, glm::vec3(1, 2, 3), epsilon)));
 
@@ -86,17 +83,17 @@ int main() {
     a.globalScaleAll(glm::vec3(2, -1, 1));
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++)
-            printf("%.2f\t", a.globalMatrix[j][i]);
+            printf("%.2f\t", a.getGlobalMatrix()[j][i]);
         std::cout << std::endl;
     }
     printf("\n");
 
-    printf("POS: %.2f %.2f %.2f\n", a.globalPosition.x, a.globalPosition.y, a.globalPosition.z);
-    assert(glm::all(glm::epsilonEqual(a.globalPosition, glm::vec3(1, 1, 0), epsilon)));
-    printf("ROT: %.2f %.2f %.2f\n", a.globalRotation.x, a.globalRotation.y, a.globalRotation.z);
-    assert(glm::all(glm::epsilonEqual(a.globalRotation, glm::vec3(0, 0, -3*std::numbers::pi/4), epsilon)));
-    printf("SCA: %.2f %.2f %.2f\n\n", a.globalScale.x, a.globalScale.y, a.globalScale.z);
-    assert(glm::all(glm::epsilonEqual(a.globalScale, glm::vec3(2, 1, 1), epsilon)));
+    printf("POS: %.2f %.2f %.2f\n", a.getGlobalPosition().x, a.getGlobalPosition().y, a.getGlobalPosition().z);
+    assert(glm::all(glm::epsilonEqual(a.getGlobalPosition(), glm::vec3(1, 1, 0), epsilon)));
+    printf("ROT: %.2f %.2f %.2f\n", a.getGlobalRotation().x, a.getGlobalRotation().y, a.getGlobalRotation().z);
+    assert(glm::all(glm::epsilonEqual(a.getGlobalRotation(), glm::vec3(0, 0, -3*std::numbers::pi/4), epsilon)));
+    printf("SCA: %.2f %.2f %.2f\n\n", a.getGlobalScale().x, a.getGlobalScale().y, a.getGlobalScale().z);
+    assert(glm::all(glm::epsilonEqual(a.getGlobalScale(), glm::vec3(2, 1, 1), epsilon)));
 
 
     // Test 3: children
@@ -127,30 +124,30 @@ int main() {
     printf("FATHER\n");
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++)
-            printf("%.2f\t", father.globalMatrix[j][i]);
+            printf("%.2f\t", father.getGlobalMatrix()[j][i]);
         printf("\n");
     }
     printf("\n");
     printf("CHILD\n");
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++)
-            printf("%.2f\t", child.globalMatrix[j][i]);
+            printf("%.2f\t", child.getGlobalMatrix()[j][i]);
         printf("\n");
     }
     printf("\n");
     printf("GRANDCHILD\n");
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++)
-            printf("%.2f\t", grandchild.globalMatrix[j][i]);
+            printf("%.2f\t", grandchild.getGlobalMatrix()[j][i]);
         printf("\n");
     }
     printf("\n\n");
-    printf("Father: %.4f %.4f %.4f\n", father.globalPosition.x, father.globalPosition.y, father.globalPosition.z);
-    printf("Child: %.4f %.4f %.4f\n", child.globalPosition.x, child.globalPosition.y, child.globalPosition.z);
-    printf("Grandchild: %.4f %.4f %.4f\n", grandchild.globalPosition.x, grandchild.globalPosition.y, grandchild.globalPosition.z);
-    assert(glm::all(glm::epsilonEqual(father.globalPosition, glm::vec3(1, 0, 0), epsilon)));
-    assert(glm::all(glm::epsilonEqual(child.globalPosition, glm::vec3(1, 0, -2), epsilon)));
-    assert(glm::all(glm::epsilonEqual(grandchild.globalPosition, glm::vec3(0, 0, -2), epsilon)));
+    printf("Father: %.4f %.4f %.4f\n", father.getGlobalPosition().x, father.getGlobalPosition().y, father.getGlobalPosition().z);
+    printf("Child: %.4f %.4f %.4f\n", child.getGlobalPosition().x, child.getGlobalPosition().y, child.getGlobalPosition().z);
+    printf("Grandchild: %.4f %.4f %.4f\n", grandchild.getGlobalPosition().x, grandchild.getGlobalPosition().y, grandchild.getGlobalPosition().z);
+    assert(glm::all(glm::epsilonEqual(father.getGlobalPosition(), glm::vec3(1, 0, 0), epsilon)));
+    assert(glm::all(glm::epsilonEqual(child.getGlobalPosition(), glm::vec3(1, 0, -2), epsilon)));
+    assert(glm::all(glm::epsilonEqual(grandchild.getGlobalPosition(), glm::vec3(0, 0, -2), epsilon)));
 
     // Test 4: Collider
 
@@ -177,23 +174,23 @@ int main() {
     child2.localTranslate({1, 1, 0});
     child2.globalRotateZ(glm::radians(45.0f));
     printf("LOCAL:\n");
-    printMatrix(child2.localMatrix);
+    printMatrix(child2.getLocalMatrix());
     printf("\n");
     printf("GLOBAL:\n");
-    printMatrix(child2.globalMatrix);
+    printMatrix(child2.getGlobalMatrix());
     printf("\n");
-    printf("GPOS: %.4f %.4f %.4f\n", child2.globalPosition.x, child2.globalPosition.y, child2.globalPosition.z);
-    assert(glm::all(glm::epsilonEqual(child2.globalPosition, {1, 3.8284, 0}, epsilon)));
-    printf("GROT: %.4f %.4f %.4f\n", child2.globalRotation.x, child2.globalRotation.y, child2.globalRotation.z);
-    assert(glm::all(glm::epsilonEqual(child2.globalRotation, {0, 0, glm::radians(90.0f)}, epsilon)));
-    printf("GSCA: %.4f %.4f %.4f\n", child2.globalScale.x, child2.globalScale.y, child2.globalScale.z);
-    assert(glm::all(glm::epsilonEqual(child2.globalScale, {2, 2, 2}, epsilon)));
-    printf("LPOS: %.4f %.4f %.4f\n", child2.localPosition.x, child2.localPosition.y, child2.localPosition.z);
-    assert(glm::all(glm::epsilonEqual(child2.localPosition, {1, 1, 0}, epsilon)));
-    printf("LROT: %.4f %.4f %.4f\n", child2.localRotation.x, child2.localRotation.y, child2.localRotation.z);
-    assert(glm::all(glm::epsilonEqual(child2.localRotation, {0, 0, glm::radians(45.0f)}, epsilon)));
-    printf("LSCA: %.4f %.4f %.4f\n", child2.localScale.x, child2.localScale.y, child2.localScale.z);
-    assert(glm::all(glm::epsilonEqual(child2.localScale, {1, 1, 1}, epsilon)));
+    printf("GPOS: %.4f %.4f %.4f\n", child2.getGlobalPosition().x, child2.getGlobalPosition().y, child2.getGlobalPosition().z);
+    assert(glm::all(glm::epsilonEqual(child2.getGlobalPosition(), {1, 3.8284, 0}, epsilon)));
+    printf("GROT: %.4f %.4f %.4f\n", child2.getGlobalRotation().x, child2.getGlobalRotation().y, child2.getGlobalRotation().z);
+    assert(glm::all(glm::epsilonEqual(child2.getGlobalRotation(), {0, 0, glm::radians(90.0f)}, epsilon)));
+    printf("GSCA: %.4f %.4f %.4f\n", child2.getGlobalScale().x, child2.getGlobalScale().y, child2.getGlobalScale().z);
+    assert(glm::all(glm::epsilonEqual(child2.getGlobalScale(), {2, 2, 2}, epsilon)));
+    printf("LPOS: %.4f %.4f %.4f\n", child2.getLocalPosition().x, child2.getLocalPosition().y, child2.getLocalPosition().z);
+    assert(glm::all(glm::epsilonEqual(child2.getLocalPosition(), {1, 1, 0}, epsilon)));
+    printf("LROT: %.4f %.4f %.4f\n", child2.getLocalRotation().x, child2.getLocalRotation().y, child2.getLocalRotation().z);
+    assert(glm::all(glm::epsilonEqual(child2.getLocalRotation(), {0, 0, glm::radians(45.0f)}, epsilon)));
+    printf("LSCA: %.4f %.4f %.4f\n", child2.getLocalScale().x, child2.getLocalScale().y, child2.getLocalScale().z);
+    assert(glm::all(glm::epsilonEqual(child2.getLocalScale(), {1, 1, 1}, epsilon)));
 
     // Test 6: gimbal lock
     Node3D gimbal = Node3D();
