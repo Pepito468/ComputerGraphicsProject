@@ -75,15 +75,13 @@ class Engine : public BaseProject {
         /** Recomputes the matrices after the Node3Ds are moved and the hierarchy has changed */
         static void recompute2DNodeHierarchy(Node* node, glm::mat4 fatherTransformMatrix) {
 
-            // Update self matrix
+            // If the node is Node2D, propagate the update
             if (Node2D* node2d = dynamic_cast<Node2D*>(node)) {
-                node2d->fatherMatrix = fatherTransformMatrix;
-                node2d->updateGlobalMatrixFromLocal();
-                node2d->updateGlobalTransformPropertiesFromGlobalMatrix();
-                fatherTransformMatrix = node2d->globalMatrix;
+                node2d->updateFatherMatrix(fatherTransformMatrix);
+                return;
             }
 
-            // Propagate to children
+            // Else continue looking through the children
             for (Node *child : node->children) {
                 recompute2DNodeHierarchy(child, fatherTransformMatrix);
             }

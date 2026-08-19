@@ -30,11 +30,9 @@ class Sprite2D : public Node2D {
             if (json.contains("globalPosition")) globalPosition = glm::vec2(json["globalPosition"][0].get<float>(), json["globalPosition"][1].get<float>());
             if (json.contains("globalRotation")) globalRotation = json["globalRotation"].get<float>();
             if (json.contains("globalScale")) globalScale = glm::vec2(json["globalScale"][0].get<float>(), json["globalScale"][1].get<float>());
-            newNode->globalPosition = globalPosition;
-            newNode->globalRotation = globalRotation;
-            newNode->globalScale = globalScale;
-            newNode->globalMatrix = newNode->computeMatrixFromTransform(globalPosition, globalRotation, globalScale);
-            newNode->commitGlobalUpdate();
+            newNode->setGlobalPosition(globalPosition);
+            newNode->setGlobalRotation(globalRotation);
+            newNode->setGlobalScale(globalScale);
 
             if (json.contains("image")) newNode->image = json["image"].get<std::string>();
 

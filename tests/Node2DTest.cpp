@@ -12,10 +12,8 @@ class MockEngine {
 
             // Update self matrix
             if (Node2D* node2d = dynamic_cast<Node2D*>(node)) {
-                node2d->fatherMatrix = fatherTransformMatrix;
-                node2d->updateGlobalMatrixFromLocal();
-                node2d->updateGlobalTransformPropertiesFromGlobalMatrix();
-                fatherTransformMatrix = node2d->globalMatrix;
+                node2d->updateFatherMatrix(fatherTransformMatrix);
+                return;
             }
 
             // Propagate to children
@@ -49,16 +47,16 @@ int main() {
     node.setGlobalRotation(glm::radians(45.0f));
     node.localTranslate(glm::vec2(1, 2));
     node.setLocalScale(glm::vec2(2, 3));
-    printMatrix(node.globalMatrix);
+    printMatrix(node.getGlobalMatrix());
 
 
-    glm::vec2 pos = node.globalPosition;
+    glm::vec2 pos = node.getGlobalPosition();
     printf("POS: %.2f %.2f\n", pos.x, pos.y);
     assert(glm::all(glm::epsilonEqual(pos, glm::vec2(2, 4), epsilon)));
-    float rot = node.globalRotation;
+    float rot = node.getGlobalRotation();
     printf("ROT: %.2f\n", rot);
     assert(glm::epsilonEqual(rot, glm::radians(45.0f), epsilon));
-    glm::vec2 sca = node.globalScale;
+    glm::vec2 sca = node.getGlobalScale();
     printf("SCA: %.2f %.2f\n\n", sca.x, sca.y);
     assert(glm::all(glm::epsilonEqual(sca, glm::vec2(2, 3), epsilon)));
 
@@ -75,23 +73,23 @@ int main() {
     child2.setLocalPosition({1, 1});
     child2.globalRotate(glm::radians(45.0f));
     printf("LOCAL:\n");
-    printMatrix(child2.localMatrix);
+    printMatrix(child2.getLocalMatrix());
     printf("\n");
     printf("GLOBAL:\n");
-    printMatrix(child2.globalMatrix);
+    printMatrix(child2.getGlobalMatrix());
     printf("\n");
-    printf("GPOS: %.4f %.4f\n", child2.globalPosition.x, child2.globalPosition.y);
-    assert(glm::all(glm::epsilonEqual(child2.globalPosition, {1, 3.8284}, epsilon)));
-    printf("GROT: %.4f\n", child2.globalRotation);
-    assert(glm::epsilonEqual(child2.globalRotation, glm::radians(90.0f), epsilon));
-    printf("GSCA: %.4f %.4f\n", child2.globalScale.x, child2.globalScale.y);
-    assert(glm::all(glm::epsilonEqual(child2.globalScale, {2, 2}, epsilon)));
-    printf("LPOS: %.4f %.4f\n", child2.localPosition.x, child2.localPosition.y);
-    assert(glm::all(glm::epsilonEqual(child2.localPosition, {1, 1}, epsilon)));
-    printf("LROT: %.4f\n", child2.localRotation);
-    assert(glm::epsilonEqual(child2.localRotation, glm::radians(45.0f), epsilon));
-    printf("LSCA: %.4f %.4f\n", child2.localScale.x, child2.localScale.y);
-    assert(glm::all(glm::epsilonEqual(child2.localScale, {1, 1}, epsilon)));
+    printf("GPOS: %.4f %.4f\n", child2.getGlobalPosition().x, child2.getGlobalPosition().y);
+    assert(glm::all(glm::epsilonEqual(child2.getGlobalPosition(), {1, 3.8284}, epsilon)));
+    printf("GROT: %.4f\n", child2.getGlobalRotation());
+    assert(glm::epsilonEqual(child2.getGlobalRotation(), glm::radians(90.0f), epsilon));
+    printf("GSCA: %.4f %.4f\n", child2.getGlobalScale().x, child2.getGlobalScale().y);
+    assert(glm::all(glm::epsilonEqual(child2.getGlobalScale(), {2, 2}, epsilon)));
+    printf("LPOS: %.4f %.4f\n", child2.getLocalPosition().x, child2.getLocalPosition().y);
+    assert(glm::all(glm::epsilonEqual(child2.getLocalPosition(), {1, 1}, epsilon)));
+    printf("LROT: %.4f\n", child2.getLocalRotation());
+    assert(glm::epsilonEqual(child2.getLocalRotation(), glm::radians(45.0f), epsilon));
+    printf("LSCA: %.4f %.4f\n", child2.getLocalScale().x, child2.getLocalScale().y);
+    assert(glm::all(glm::epsilonEqual(child2.getLocalScale(), {1, 1}, epsilon)));
 
     info("END OF NODE2D TEST");
 

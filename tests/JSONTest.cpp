@@ -57,7 +57,7 @@ int main() {
             for (Node* child : child->children) {
                 printf("%s\n", child->name.c_str());
                 assert(child->name == "Jotaro");
-                printf("%f\n", dynamic_cast<Node2D*>(child)->globalRotation);
+                printf("%f\n", dynamic_cast<Node2D*>(child)->getGlobalRotation());
                 for (Node* child : child->children) {
                     printf("%s\n", child->name.c_str());
                     assert(child->name == "Jolyne");

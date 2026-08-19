@@ -459,12 +459,12 @@ class Node3D : public Node {
         }
 
         /** Returns true if the node has a global reflection */
-        bool isReflectedGlobal() {
+        bool isReflectedGlobal() const {
             return glm::determinant(this->globalMatrix) < 0.0f;
         }
 
         /** Returns true if the node has a local reflection */
-        bool isReflectedLocal() {
+        bool isReflectedLocal() const {
             return glm::determinant(this->localMatrix) < 0.0f;
         }
 
@@ -551,7 +551,7 @@ class Node3D : public Node {
         }
 
         /** Recursively updates the node and its children and so on */
-        void updateGlobalTransformFromLocal(Node *node, glm::mat4 fatherTransformMatrix) {
+        static void updateGlobalTransformFromLocal(Node *node, glm::mat4 fatherTransformMatrix) {
 
             // Update self
             // If node id Node3D, update it, else skip to its children
