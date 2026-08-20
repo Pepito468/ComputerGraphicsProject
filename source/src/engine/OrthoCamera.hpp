@@ -23,13 +23,13 @@ class OrthoCamera : public Camera {
     public:
 
         OrthoCamera() {
-            this->bottomBound = -10.0f;
-            this->topBound = 10.0f;
-            this->rightBound = -10.0f;
-            this->leftBound = 10.0f;
+            this->leftBound = -4.0f;
+            this->rightBound = 4.0f;
+            this->bottomBound = -5.0f;
+            this->topBound = 5.0f;
         };
 
-        OrthoCamera(const float nearPlane, const float farPlane, const float bottomBound, const float topBound, const float rightBound, const float leftBound) {
+        OrthoCamera(const float leftBound, const float rightBound, const float bottomBound, const float topBound, const float nearPlane, const float farPlane) {
             this->nearPlane = nearPlane;
             this->farPlane = farPlane;
             this->bottomBound = bottomBound;
@@ -43,7 +43,7 @@ class OrthoCamera : public Camera {
         }
 
         float getTopBound() const {
-            return this->bottomBound;
+            return this->topBound;
         }
 
         float getLeftBound() const {
@@ -58,8 +58,8 @@ class OrthoCamera : public Camera {
             this->bottomBound = bottomBound;
         }
 
-        const void setTopBound(const float bottomBound) {
-            this->bottomBound = bottomBound;
+        const void setTopBound(const float topBound) {
+            this->topBound = topBound;
         }
 
         const void setLeftBound(const float leftBound) {

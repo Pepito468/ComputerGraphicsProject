@@ -4,6 +4,7 @@
 #include <glm/trigonometric.hpp>
 #include <iostream>
 #include <ostream>
+#include <stdexcept>
 
 class MockEngine {
 
@@ -202,6 +203,16 @@ int main() {
     printf("GIMBAL LOCK SHOULD BE THROWN NOW:\n");
     gimbal.localRotateX(glm::radians(90.0f));
     printf("GIMBAL LOCK SHOULD HAVE BEEN THROWN\n");
+
+    // Test 7: scale error
+    try {
+        Node3D zeroScale = Node3D();
+        // Set Z scale as 0
+        printf("Setting 0 scale, AN ERROR SHOULD BE THROWN NOW:\n");
+        zeroScale.setGlobalScale({1, 1, 0});
+        // An error should be thrown can caught
+        assert(false);
+    } catch (std::runtime_error) {}
 
     info("END OF NODE3D TEST");
 }

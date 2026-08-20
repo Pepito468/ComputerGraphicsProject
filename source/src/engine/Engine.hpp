@@ -1,6 +1,7 @@
 // ENGINE
 
 #include "Node3D.hpp"
+#include "OrthoCamera.hpp"
 #include "glm/trigonometric.hpp"
 #include <cstdlib>
 #include <sstream>
@@ -182,7 +183,6 @@ class Engine : public BaseProject {
         P.init(this, &VD, "shaders/toChangeSimplePos.vert.spv",
                           "shaders/toChangeBlinnFromPos.frag.spv",
                           {&DSLglobal, &DSLlocal});
-
 
         // sets the size of the Descriptor Set Pool (it MUST be done before loading the scene)
         DPSZs.uniformBlocksInPool = 2;
@@ -371,9 +371,11 @@ class Engine : public BaseProject {
 
         if (!camera) {
             camera = new PerspectiveCamera(nearPlane, farPlane, FOVy, Ar);
+            // camera = new OrthoCamera(-4, 4, -5, 5, nearPlane, farPlane); TODO
             camera->setGlobalPosition({0, 5, 0});
-            camera->globalRotateX(glm::radians(-10.f));
+            camera->globalRotateX(glm::radians(-10.0f));
         }
+        // printf("%.2f %.2f %.2f\n", camera->getLookingDirection().x, camera->getLookingDirection().y, camera->getLookingDirection().z);
 
         glm::vec3 xdir = glm::normalize(glm::vec3(camera->getXAxis().x, 0, camera->getXAxis().z));
         glm::vec3 zdir = glm::normalize(glm::vec3(camera->getZAxis().x, 0, camera->getZAxis().z));
