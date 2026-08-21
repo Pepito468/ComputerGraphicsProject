@@ -9,14 +9,15 @@
 
 struct Bounds
 {
-    Collider* collider;
+    Collider* Collider;
     SphereBounds sphereBounds;
     AABBExtents aabbExtents;
     PointSet pointSet;
 
-    explicit Bounds(Collider* coll)
+    //TODO: non so cosa va messo al posto di boxCollider
+    explicit Bounds(BoxCollider* coll)
     {
-        collider = coll;
+        Collider = coll;
         sphereBounds = coll->getSphereBounds();
         aabbExtents = coll->getAABBExtents();
         pointSet = coll->getPointSet();
@@ -24,18 +25,18 @@ struct Bounds
 
     ~Bounds() = default;
 
-    bool operator<(const Bounds& other) const { return collider->UUID < other.collider->UUID; }
+    bool operator<(const Bounds& other) const { return Collider->UUID < other.Collider->UUID; }
 };
 
 class Physics
 {
     /// Root node of the current scene
     inline static Node* sceneRoot;
-    /// All collider nodes in the scene
-    inline static std::vector<Collider*> colliders = {};
-    /// Bounds of all colliders marked STATIC
+    /// All Collider nodes in the scene
+    inline static std::vector<Collider*> Colliders = {};
+    /// Bounds of all Colliders marked STATIC
     inline static std::vector<Bounds> staticBounds;
-    /// All collider nodes marked MOBILE
+    /// All Collider nodes marked MOBILE
     inline static std::vector<Collider*> dynamicColliders;
 
     static void findCollidersRecursive(Node* node)
@@ -43,8 +44,8 @@ class Physics
         //log(std::format("Checking {}", node->name));
         if (Collider* c = dynamic_cast<Collider*>(node))
         {
-            //log(std::format("Is collider A/S {}/{}", c->isActive, (int)c->movementStatus));
-            colliders.push_back(c);
+            //log(std::format("Is Collider A/S {}/{}", c->isActive, (int)c->movementStatus));
+            Colliders.push_back(c);
             if (c->movementStatus == STATIC)
                 staticBounds.push_back(Bounds(c));
             else
@@ -68,11 +69,11 @@ class Physics
         //Points check
         for (const glm::vec3 p : a.pointSet)
         {
-            if (b.collider->inBounds(p)) return true;
+            if (b.Collider->inBounds(p)) return true;
         }
         for (const glm::vec3 p : b.pointSet)
         {
-            if (a.collider->inBounds(p)) return true;
+            if (a.Collider->inBounds(p)) return true;
         }
 
         return false;
@@ -80,15 +81,15 @@ class Physics
 
     static void collisionCallbacks(Collider* moving, Collider* receiver)
     {
-        //log(std::format("Receiver {} has: {}", receiver, receiver->collidersInTrigger));
+        //log(std::format("Receiver {} has: {}", receiver, receiver->CollidersInTrigger));
         if (!receiver->isTrigger)
         {
             if (receiver->onCollision) receiver->onCollision(moving);
         }
-        else if (!receiver->collidersInTrigger.contains(moving))
+        else if (!receiver->CollidersInTrigger.contains(moving))
         {
             if (receiver->onTriggerEnter) receiver->onTriggerEnter(moving);
-            receiver->collidersInTrigger.insert(moving);
+            receiver->CollidersInTrigger.insert(moving);
         }
         else
         {
@@ -99,40 +100,40 @@ class Physics
     static void processCollisions(Collider* coll, const std::set<Bounds>& collisions, const std::set<Bounds>& sceneBounds)
     {
         const bool hasHardCollision = std::ranges::any_of(collisions,
-        [](const Bounds& b) { return !b.collider->isTrigger; });
+        [](const Bounds& b) { return !b.Collider->isTrigger; });
         if (!coll->isTrigger && hasHardCollision)
         {
-            //Reverse collider's movements
+            //Reverse Collider's movements
             coll->setGlobalMatrix(coll->previousMatrix);
         }
 
         for (const Bounds b : collisions)
         {
-            //log(std::format("{} collided with {}", coll->name, b.collider->name));
-            Collider* bColl = b.collider;
+            //log(std::format("{} collided with {}", coll->name, b.Collider->name));
+            Collider* bColl = b.Collider;
             collisionCallbacks(coll, bColl);
         }
 
         //Check for trigger exits
         for (Bounds b : sceneBounds)
         {
-            Collider* bColl = b.collider;
-            //log(std::format("Exit check {}-{}: {} {} {}", bColl->name, coll->name,  bColl->isTrigger, bColl->collidersInTrigger.contains(coll), !collisions.contains(b)));
-            if (bColl->isTrigger && bColl->collidersInTrigger.contains(coll) && !collisions.contains(b))
+            Collider* bColl = b.Collider;
+            //log(std::format("Exit check {}-{}: {} {} {}", bColl->name, coll->name,  bColl->isTrigger, bColl->CollidersInTrigger.contains(coll), !collisions.contains(b)));
+            if (bColl->isTrigger && bColl->CollidersInTrigger.contains(coll) && !collisions.contains(b))
             {
-                bColl->collidersInTrigger.erase(coll);
+                bColl->CollidersInTrigger.erase(coll);
                 if (bColl->onTriggerExit) bColl->onTriggerExit(coll);
             }
         }
     }
 
     public:
-        /// Loads a new scene into the physics system and finds all colliders within it.
+        /// Loads a new scene into the physics system and finds all Colliders within it.
         static void loadScene(Node* root)
         {
             sceneRoot = root;
 
-            colliders.clear();
+            Colliders.clear();
             dynamicColliders.clear();
             staticBounds.clear();
 
@@ -152,9 +153,9 @@ class Physics
             [](Collider* c)
             {
                 bool isInTrigger = false;
-                for (const Collider* coll : colliders)
+                for (const Collider* coll : Colliders)
                 {
-                    if (coll->isActive && coll->isTrigger && coll->collidersInTrigger.contains(c))
+                    if (coll->isActive && coll->isTrigger && coll->CollidersInTrigger.contains(c))
                     {
                         isInTrigger = true;
                         break;
@@ -175,7 +176,7 @@ class Physics
                 [bounds](const Bounds& b)
                 {
                     //Identity
-                    if (b.collider->UUID == bounds.collider->UUID) return false;
+                    if (b.Collider->UUID == bounds.Collider->UUID) return false;
                     return hasCollision(bounds, b);
                 });
 
@@ -192,10 +193,10 @@ class Physics
         {
             glm::vec3 point = VEC3_ZERO;
             float distance = 0.0f;
-            Collider* collider = nullptr;
+            Collider* Collider = nullptr;
         };
         /**
-         * Shoots a ray from an origin point in a given direction and checks if it hits a collider.
+         * Shoots a ray from an origin point in a given direction and checks if it hits a Collider.
          * @param origin The origin point of the ray.
          * @param direction The direction of the ray.
          * @param hit The struct in which to store the hit result.
@@ -211,7 +212,7 @@ class Physics
             for (int i = 0; i < stepNum; i++)
             {
                 const glm::vec3 p = origin + direction * (step * i);
-                for (Collider* coll : colliders)
+                for (Collider* coll : Colliders)
                 {
                     if (!coll->isActive) continue;
                     if (coll->inBounds(p))
@@ -220,7 +221,7 @@ class Physics
                         {
                             hit->point = p;
                             hit->distance = step * i;
-                            hit->collider = coll;
+                            hit->Collider = coll;
                         }
                         return true;
                     }
