@@ -132,10 +132,8 @@ class Renderer {
     std::unordered_map<ShaderType, std::unique_ptr<PipelineRenderer>> pipelinesMap;
     std::unordered_map <std::string, Model> modelAssets;
     std::unordered_map <std::string, Texture> albedoTexAssets;
-    std::unordered_map <std::string, Texture> ambientOcclusionTexAssets;
-    std::unordered_map <std::string, Texture> metallicTexAssets;
+    std::unordered_map <std::string, Texture> armTexAssets;
     std::unordered_map <std::string, Texture> normalTexAssets;
-    std::unordered_map <std::string, Texture> roughnessTexAssets;
     std::unordered_map <std::string, std::unique_ptr<Material>> materialAssets;
     std::vector<std::unique_ptr<Model3D>> sceneObjects; //stores all the models assigned to Renderer
 
@@ -280,16 +278,10 @@ class Renderer {
             t->init(bp,"assets/textures/albedo_" + model3D->getMaterial()->getTextureName());
         }
 
-        if ( ambientOcclusionTexAssets.find(model3D->getMaterial()->getTextureName()) == ambientOcclusionTexAssets.end()) {
-            ambientOcclusionTexAssets.insert({model3D->getMaterial()->getTextureName(),{}});
-            Texture* t = &ambientOcclusionTexAssets.at(model3D->getMaterial()->getTextureName());
-            t->init(bp,"assets/textures/ao_" + model3D->getMaterial()->getTextureName());
-        }
-
-        if ( metallicTexAssets.find(model3D->getMaterial()->getTextureName()) == metallicTexAssets.end()) {
-            metallicTexAssets.insert({model3D->getMaterial()->getTextureName(),{}});
-            Texture* t = &metallicTexAssets.at(model3D->getMaterial()->getTextureName());
-            t->init(bp,"assets/textures/metallic_" + model3D->getMaterial()->getTextureName());
+        if ( armTexAssets.find(model3D->getMaterial()->getTextureName()) == armTexAssets.end()) {
+            armTexAssets.insert({model3D->getMaterial()->getTextureName(),{}});
+            Texture* t = &armTexAssets.at(model3D->getMaterial()->getTextureName());
+            t->init(bp,"assets/textures/arm_" + model3D->getMaterial()->getTextureName());
         }
 
         if ( normalTexAssets.find(model3D->getMaterial()->getTextureName()) == normalTexAssets.end()) {
@@ -298,20 +290,12 @@ class Renderer {
             t->init(bp,"assets/textures/normal_" + model3D->getMaterial()->getTextureName());
         }
 
-        if ( roughnessTexAssets.find(model3D->getMaterial()->getTextureName()) == roughnessTexAssets.end()) {
-            roughnessTexAssets.insert({model3D->getMaterial()->getTextureName(),{}});
-            Texture* t = &roughnessTexAssets.at(model3D->getMaterial()->getTextureName());
-            t->init(bp,"assets/textures/roughness_" + model3D->getMaterial()->getTextureName());
-        }
-
 
         //Insert model and texture
         model3D->setModel(&modelAssets[model3D->getModelPath()]);
         model3D->getMaterial()->setAlbedoTex(&albedoTexAssets[model3D->getMaterial()->getTextureName()]);
-        model3D->getMaterial()->setAmbientOcclusionTex(&ambientOcclusionTexAssets[model3D->getMaterial()->getTextureName()]);
-        model3D->getMaterial()->setMetallicTex(&metallicTexAssets[model3D->getMaterial()->getTextureName()]);
+        model3D->getMaterial()->setArmTex(&armTexAssets[model3D->getMaterial()->getTextureName()]);
         model3D->getMaterial()->setNormalTex(&normalTexAssets[model3D->getMaterial()->getTextureName()]);
-        model3D->getMaterial()->setRoughnessTex(&roughnessTexAssets[model3D->getMaterial()->getTextureName()]);
 
         //Add to existing pipeline
         pipelinesMap.at(model3D->getShaderType())->addModel3D(model3D);
@@ -377,16 +361,10 @@ class Renderer {
             t->init(bp,"assets/textures/albedo_" + model3D->getMaterial()->getTextureName());
         }
 
-        if ( ambientOcclusionTexAssets.find(model3D->getMaterial()->getTextureName()) == ambientOcclusionTexAssets.end()) {
-            ambientOcclusionTexAssets.insert({model3D->getMaterial()->getTextureName(),{}});
-            Texture* t = &ambientOcclusionTexAssets.at(model3D->getMaterial()->getTextureName());
-            t->init(bp,"assets/textures/ao_" + model3D->getMaterial()->getTextureName());
-        }
-
-        if ( metallicTexAssets.find(model3D->getMaterial()->getTextureName()) == metallicTexAssets.end()) {
-            metallicTexAssets.insert({model3D->getMaterial()->getTextureName(),{}});
-            Texture* t = &metallicTexAssets.at(model3D->getMaterial()->getTextureName());
-            t->init(bp,"assets/textures/metallic_" + model3D->getMaterial()->getTextureName());
+        if ( armTexAssets.find(model3D->getMaterial()->getTextureName()) == armTexAssets.end()) {
+            armTexAssets.insert({model3D->getMaterial()->getTextureName(),{}});
+            Texture* t = &armTexAssets.at(model3D->getMaterial()->getTextureName());
+            t->init(bp,"assets/textures/arm_" + model3D->getMaterial()->getTextureName());
         }
 
         if ( normalTexAssets.find(model3D->getMaterial()->getTextureName()) == normalTexAssets.end()) {
@@ -395,20 +373,11 @@ class Renderer {
             t->init(bp,"assets/textures/normal_" + model3D->getMaterial()->getTextureName());
         }
 
-        if ( roughnessTexAssets.find(model3D->getMaterial()->getTextureName()) == roughnessTexAssets.end()) {
-            roughnessTexAssets.insert({model3D->getMaterial()->getTextureName(),{}});
-            Texture* t = &roughnessTexAssets.at(model3D->getMaterial()->getTextureName());
-            t->init(bp,"assets/textures/roughness_" + model3D->getMaterial()->getTextureName());
-        }
-
-
         //Insert model and texture
         model3D->setModel(&modelAssets[model3D->getModelPath()]);
         model3D->getMaterial()->setAlbedoTex(&albedoTexAssets[model3D->getMaterial()->getTextureName()]);
-        model3D->getMaterial()->setAmbientOcclusionTex(&ambientOcclusionTexAssets[model3D->getMaterial()->getTextureName()]);
-        model3D->getMaterial()->setMetallicTex(&metallicTexAssets[model3D->getMaterial()->getTextureName()]);
+        model3D->getMaterial()->setArmTex(&armTexAssets[model3D->getMaterial()->getTextureName()]);
         model3D->getMaterial()->setNormalTex(&normalTexAssets[model3D->getMaterial()->getTextureName()]);
-        model3D->getMaterial()->setRoughnessTex(&roughnessTexAssets[model3D->getMaterial()->getTextureName()]);
 
 
         //Add to existing pipeline
@@ -452,11 +421,9 @@ class Renderer {
             // third  element : the pipeline stage where it will be used
             {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, sizeof(UniformBufferObject), 1},
             {1,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,VK_SHADER_STAGE_ALL_GRAPHICS,0,1}, //albedo
-            {2,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,VK_SHADER_STAGE_ALL_GRAPHICS,1,1}, //ambient occlusion
-            {3,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,VK_SHADER_STAGE_ALL_GRAPHICS,2,1}, //metallic
-            {4,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,VK_SHADER_STAGE_ALL_GRAPHICS,3,1}, //normalMap
-            {5,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,VK_SHADER_STAGE_ALL_GRAPHICS,4,1}, //roughness
-            {6, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 5, 1} //shadowMap
+            {2,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,VK_SHADER_STAGE_ALL_GRAPHICS,1,1}, //arm
+            {3,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,VK_SHADER_STAGE_ALL_GRAPHICS,2,1}, //normalMap
+            {4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1} //shadowMap
           });
 
         globalLayout.init(bp, {
@@ -490,20 +457,12 @@ class Renderer {
             t.second.init(bp,"assets/textures/albedo_" + t.first);
         }
 
-        for (auto& t : ambientOcclusionTexAssets) {
-            t.second.init(bp,"assets/textures/ao_" + t.first, VK_FORMAT_R8G8B8A8_UNORM);
-        }
-
-        for (auto& t : metallicTexAssets) {
-            t.second.init(bp,"assets/textures/metallic_" + t.first, VK_FORMAT_R8G8B8A8_UNORM);
+        for (auto& t : armTexAssets) {
+            t.second.init(bp,"assets/textures/arm_" + t.first, VK_FORMAT_R8G8B8A8_UNORM);
         }
 
         for (auto& t : normalTexAssets) {
             t.second.init(bp,"assets/textures/normal_" + t.first, VK_FORMAT_R8G8B8A8_UNORM);
-        }
-
-        for (auto& t : roughnessTexAssets) {
-            t.second.init(bp,"assets/textures/roughness_" + t.first, VK_FORMAT_R8G8B8A8_UNORM);
         }
 
         for (auto& p : pipelinesMap) {
@@ -590,18 +549,14 @@ class Renderer {
         for (auto& t : albedoTexAssets) {
             t.second.cleanup();
         }
-        for (auto& t : ambientOcclusionTexAssets) {
+        for (auto& t : armTexAssets) {
             t.second.cleanup();
         }
-        for (auto& t : metallicTexAssets) {
-            t.second.cleanup();
-        }
+
         for (auto& t : normalTexAssets) {
             t.second.cleanup();
         }
-        for (auto& t : roughnessTexAssets) {
-            t.second.cleanup();
-        }
+
 
         PoffScreen.destroy();
         Pskybox.destroy();
@@ -726,7 +681,11 @@ class Renderer {
             return;
         }
 
-        sceneObjects[i].get()->descriptorSetCleanup();
+        Model3D* model = sceneObjects[i].get();
+
+        pipelinesMap.at(model->getShaderType())->removeModel3D(model);
+
+        model->descriptorSetCleanup();
         sceneObjects.erase(sceneObjects.begin() + i);
     }
 

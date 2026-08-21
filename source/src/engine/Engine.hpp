@@ -25,13 +25,13 @@ class Engine : public BaseProject {
 
     // to provide textual feedback
     TextMaker txt;
-    
+
     // Other application parameters
     float Ar;    // Aspect ratio
 
     glm::mat4 ViewPrj;
     glm::mat4 View;
-    
+
     // Here you set the main application parameters
     void setWindowParameters() {
         // window size, titile and initial background
@@ -39,11 +39,11 @@ class Engine : public BaseProject {
         windowHeight = 600;
         windowTitle = "Skeleton: place the name of your app here";
         windowResizable = GLFW_TRUE;
-        
+
         // Initial aspect ratio
         Ar = 4.0f / 3.0f;
     }
-    
+
     // What to do when the window changes size
     void onWindowResize(int w, int h) {
         std::cout << "Window resized to: " << w << " x " << h << "\n";
@@ -51,11 +51,11 @@ class Engine : public BaseProject {
         // Update Render Pass
         RP.width = w;
         RP.height = h;
-        
+
         // updates the textual output
         txt.resizeScreen(w, h);
     }
-    
+
     // Here you load and setup all your Vulkan Models and Texutures.
     // Here you also create your Descriptor set layouts and load the shaders for the pipelines
 
@@ -68,7 +68,7 @@ class Engine : public BaseProject {
     //ToonMaterial mat1 = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
     ToonMaterial mat2 = {glm::vec3(0.9f, 0.45f, 0.9f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
 
-    LambertTexMaterial mat1 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "rock.png"};
+    LambertTexMaterial mat1 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "brick.png"};
 
     //LambertTexMaterial mat2 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "VChecker.png"};
 
@@ -95,7 +95,7 @@ class Engine : public BaseProject {
         renderer.loadSceneFromJSON();
 
         renderer.setAmbientLight(glm::vec3(0.01f, 0.01f, 0.01f), glm::vec3(0.2f, 0.15f, 0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
-        renderer.createDirectionalLight(0.01f, glm::vec3(1.0f, 0.95f, 0.8f), glm::normalize(glm::vec3(0.4f, 0.8f, 0.4f)));
+        renderer.createDirectionalLight(0.5f, glm::vec3(1.0f, 0.95f, 0.8f), glm::normalize(glm::vec3(0.4f, 0.8f, 0.4f)));
 
         //renderer.addPointLight(glm::vec3(-1.0f, 2.0f, -5.0f), 0.1f, glm::vec3(1.0f, 1.0f, 1.0f), 5.0f, 2.0f);
         //renderer.addPointLight(glm::vec3(-3.0f, 2.0f, 4.0f), 0.1f, glm::vec3(0.0f, 0.0f, 1.0f), 5.0f, 2.0f);
@@ -148,7 +148,7 @@ class Engine : public BaseProject {
         txt.print(-1.0f, -1.0f ,  "Testo di prova", 2, "CO", false, false, false, TAL_LEFT, TRH_LEFT, TRV_TOP, {0.5f, 0.5f, 0.0f, 0.5f}, {0.5f,0.5f,0.0f,0.5f});
 
     }
-    
+
     // Here you create your pipelines and Descriptor Sets!
     void pipelinesAndDescriptorSetsInit() {
         // creates the render passes
@@ -230,10 +230,10 @@ int n;
         if (glfwGetKey(window, GLFW_KEY_Z)) {
             if (test__) {
                 if (j%2 == 0 ) {
-                    renderer.instantiate("Statue.gltf" , {1.0f, j, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(1.0f), &mat2);
+                    renderer.instantiate("Statue.gltf" , {1.0f, 0.0f, j},{0.0f, 0.0f, 0.0f},glm::vec3(2.0f), &mat1);
                 }
                 else {
-                    renderer.instantiate("Statue.gltf" , {-1.0f, j, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(1.0f), &mat2);
+                    renderer.instantiate("Statue.gltf" , {-1.0f, 0.0f, j},{0.0f, 0.0f, 0.0f},glm::vec3(2.0f), &mat1);
                 }
 
                 test__ = false;
@@ -295,28 +295,28 @@ int n;
 
         renderer.updateLightCulling(CamPos, 10.0f);
 
-        
+
         // updates the FPS
         static float elapsedT = 0.0f;
         static int countedFrames = 0;
-        
+
         countedFrames++;
         elapsedT += deltaT;
         if(elapsedT > 1.0f) {
             float Fps = (float)countedFrames / elapsedT;
-            
+
             std::ostringstream oss;
             oss << "FPS: " << Fps << "\n";
 
             txt.print(1.0f, 1.0f, oss.str(), 1, "CO", false, false, true,TAL_RIGHT,TRH_RIGHT,TRV_BOTTOM,{1.0f,0.0f,0.0f,1.0f},{0.8f,0.8f,0.0f,1.0f});
-            
+
             elapsedT = 0.0f;
             countedFrames = 0;
         }
-        
+
         txt.updateCommandBuffer();
     }
-    
+
     float GameLogic() {
         // Camera FOV-y, Near Plane and Far Plane
         const float FOVy = glm::radians(45.0f);

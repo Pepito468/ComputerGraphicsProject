@@ -16,10 +16,8 @@ class Material {
     ShaderType shaderType;
     std::string textureName;
     Texture* albedoTex;
-    Texture* ambientOcclusionTex;
-    Texture* metallicTex;
+    Texture* armTex;
     Texture* normalTex;
-    Texture* roughnessTex;
 
 
     public:
@@ -29,15 +27,11 @@ class Material {
     ShaderType getShaderType() const {return shaderType;}
     std::string getTextureName() const {return textureName;}
     Texture* getAlbedoTex() const {return albedoTex;}
-    Texture* getAmbientOcclusionTex() const {return ambientOcclusionTex;}
-    Texture* getMetallicTex() const {return metallicTex;}
+    Texture* getArmTex() const {return armTex;}
     Texture* getNormalTex() const {return normalTex;}
-    Texture* getRoughnessTex() const {return roughnessTex;}
     void setAlbedoTex(Texture* texture) {this->albedoTex = texture;}
-    void setAmbientOcclusionTex(Texture* texture) {this->ambientOcclusionTex = texture;}
-    void setMetallicTex(Texture* texture) {this->metallicTex = texture;}
+    void setArmTex(Texture* texture) {this->armTex = texture;}
     void setNormalTex(Texture* texture) {this->normalTex = texture;}
-    void setRoughnessTex(Texture* texture) {this->roughnessTex = texture;}
 };
 
 class LambertTexMaterial : public Material {
