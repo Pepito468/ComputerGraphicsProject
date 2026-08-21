@@ -141,7 +141,7 @@ class Renderer {
 
     DirectionalLight directionalLight;
     std::vector<std::unique_ptr<PointLight>> pointlights;
-    std::vector<std::unique_ptr<Spotlight>> spotlights;
+    std::vector<std::unique_ptr<SpotLight>> spotlights;
     AmbientLight ambientLight;
 
     //Shadow map
@@ -329,7 +329,7 @@ class Renderer {
 
     ///add a new spotlight on screen
     void addSpotLight(glm::vec3 position ,float radiance, glm::vec3 color, float aperture, float decay, glm::vec3 direction, bool isOn = true) {
-        spotlights.emplace_back(std::make_unique<Spotlight>(position, radiance,color,aperture, decay, direction, isOn));
+        spotlights.emplace_back(std::make_unique<SpotLight>(position, radiance,color,aperture, decay, direction, isOn));
     }
 
     ///Create the directional light (Only one directional light can exists)
@@ -351,11 +351,11 @@ class Renderer {
     ///Turn off light that are too far away
     void updateLightCulling(glm::vec3 camPos, float maxDist) {
         for (auto& o : pointlights) {
-            o->isOn = glm::distance(o->position, camPos) < maxDist;
+            o->isOn = glm::distance(o->getLocalPosition(), camPos) < maxDist;
         }
 
         for (auto& o : spotlights) {
-            o->isOn = glm::distance(o->position, camPos) < maxDist;
+            o->isOn = glm::distance(o->getLocalPosition(), camPos) < maxDist;
         }
     }
 
@@ -651,7 +651,7 @@ class Renderer {
         int j = 0;
         for (int i = 0; i < pointlights.size(); i++) {
             if (pointlights[i]->isOn) {
-                gubo.pointLightPos[j]    = glm::vec4(pointlights[i].get()->position, 0.0f);
+                gubo.pointLightPos[j]    = glm::vec4(pointlights[i].get()->getLocalPosition(), 0.0f);
                 gubo.pointLightColor[j]  = glm::vec4(pointlights[i].get()->color, 0.0f) * pointlights[i].get()->radiance;
                 gubo.pointLightParams[j] = glm::vec4(pointlights[i].get()->decay, pointlights[i].get()->radius, 0.0f, 0.0f);
                 j++;
@@ -663,7 +663,7 @@ class Renderer {
         j = 0;
         for (int i = 0; i < spotlights.size(); i++) {
             if (spotlights[i]->isOn) {
-                gubo.spotLightPos[j]    = glm::vec4(spotlights[i].get()->position, 0.0f);
+                gubo.spotLightPos[j]    = glm::vec4(spotlights[i].get()->getLocalPosition(), 0.0f);
                 gubo.spotLightDir[j]    = glm::vec4(spotlights[i].get()->direction,0.0f);
                 gubo.spotLightColor[j]  = glm::vec4(spotlights[i].get()->color, 0.0f) * spotlights[i].get()->radiance;
                 gubo.spotLightParams[j] = glm::vec4(
