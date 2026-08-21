@@ -2,9 +2,9 @@
 
 #include <Camera.hpp>
 
-#include <Collider.hpp>
+// #include <Collider.hpp>
 
-#include <Physics.hpp>
+// #include <Physics.hpp>
 
 #include <Debug.hpp>
 
@@ -27,3 +27,5 @@
 #include <Text2D.hpp>
 
 #include <UpdateNode3D.hpp>
+
+#include <Renderer.hpp>

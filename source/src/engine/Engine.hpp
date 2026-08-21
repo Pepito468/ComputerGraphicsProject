@@ -3,20 +3,73 @@
 #include <sstream>
 #include <json.hpp>
 
-#include "common.h"
-
 #include "Renderer.hpp"
 #include "Node.hpp"
 #include "Node3D.hpp"
+#include "Node2D.hpp"
+#include "Model3D.hpp"
+#include "PerspectiveCamera.hpp"
+#include "common.h"
+
 
 class Engine : public BaseProject {
-    // NOTE: new
-    public:
-    Engine() : renderer(this, &RP, [this](){submitCommandBuffer("main", 0, populateCommandBufferAccess, this);}) {
 
-    }
+    public:
+
+        Engine() : renderer(this, &RP, [this](){submitCommandBuffer("main", 0, populateCommandBufferAccess, this);}) {
+
+        }
+
+        /// The root of the current rendered scene
+        Node *scene;
+
+        /// Camera that is currently being used to visualize the world
+        Camera *mainCamera;
+
+        /**
+         *  Sets the given node as the current scene
+         * */
+        void setScene(Node *scene) {
+            this->scene = scene;
+        }
+
+        /** Sets the given camera as main camera */
+        void setMainCamera(Camera *camera) {
+            this->mainCamera = camera;
+        }
+
+        /** Recomputes the Node3D hierarchy */
+        void recompute3DNodeHierarchy(Node* node, glm::mat4 fatherTransformMatrix) {
+
+            // If a Node3D is found, propagate an update to it
+            if (Node3D* node3d = dynamic_cast<Node3D*>(node)) {
+                node3d->updateFatherMatrix(fatherTransformMatrix);
+                return;
+            }
+
+            // Else try again with the children
+            for (Node *child : node->children) {
+                recompute3DNodeHierarchy(child, fatherTransformMatrix);
+            }
+        }
+
+        /** Recomputes the matrices after the Node3Ds are moved and the hierarchy has changed */
+        static void recompute2DNodeHierarchy(Node* node, glm::mat4 fatherTransformMatrix) {
+
+            // If the node is Node2D, propagate the update
+            if (Node2D* node2d = dynamic_cast<Node2D*>(node)) {
+                node2d->updateFatherMatrix(fatherTransformMatrix);
+                return;
+            }
+
+            // Else continue looking through the children
+            for (Node *child : node->children) {
+                recompute2DNodeHierarchy(child, fatherTransformMatrix);
+            }
+        }
 
     protected:
+
     // Here you list all the Vulkan objects you need:
 
     Renderer renderer;
@@ -200,12 +253,18 @@ class Engine : public BaseProject {
         RP.end(commandBuffer);
     }
 
-    glm::vec3 CamPos = {0.0f, 1.0f, 4.0f};
-    float Pitch = 0.0f, Yaw = 0.0f;
     // Here is where you update the uniforms.
     // Very likely this will be where you will be writing the logic of your application.
     int i = 0, j = 0;
     bool test = true, test_ = true, test__ = true;
+    Camera *camera = NULL;
+    const float FOVy = glm::radians(45.0f);
+    const float nearPlane = 0.1f;
+    const float farPlane = 100.f;
+    float rot = 0;
+    float pos = 0;
+    float dir = 1;
+
     void updateUniformBuffer(uint32_t currentImage) {
         static bool debounce = false;
         static int curDebounce = 0;
@@ -226,7 +285,6 @@ class Engine : public BaseProject {
         } else {
             test = true;
         }*/
-int n;
         if (glfwGetKey(window, GLFW_KEY_Z)) {
             if (test__) {
                 if (j%2 == 0 ) {
@@ -268,79 +326,65 @@ int n;
             test_ = true;
         }
 
-        glm::mat4 View, Projection;
-        // Camera FOV-y, Near Plane and Far Plane
-        const float FOVy = glm::radians(45.0f);
-        const float nearPlane = 0.1f;
-        const float farPlane = 100.f;
+        if (!camera) {
+            // Create camera if it does not exist
+            camera = new PerspectiveCamera(nearPlane, farPlane, FOVy, Ar);
+            camera->globalTranslate({0, 1, 0});
+        }
 
         float deltaT;
         glm::vec3 m = {0,0,0}, r = {0,0,0};
         bool fire = false;
         getSixAxis(deltaT, m, r, fire);
 
-        Projection = glm::perspective(FOVy, Ar, nearPlane, farPlane);
-        Projection[1][1] *= -1;
-
         // update the camera position and direction with the inputs
-        CamPos += m * 2.0f * deltaT;
-        Pitch -= r.x * deltaT;
-        Yaw   -= r.y * deltaT;
+        glm::vec3 xdir = glm::normalize(glm::vec3(camera->getXAxis().x, 0, camera->getXAxis().z));
+        glm::vec3 zdir = glm::normalize(glm::vec3(camera->getZAxis().x, 0, camera->getZAxis().z));
 
-        View = glm::rotate   (glm::mat4(1), -Pitch, glm::vec3(1,0,0)) *
-               glm::rotate   (glm::mat4(1), -Yaw,   glm::vec3(0,1,0)) *
-               glm::translate(glm::mat4(1), -CamPos);
+        if (m.x == 1)
+            camera->globalTranslate(xdir * deltaT);
+        if (m.x == -1)
+            camera->globalTranslate(xdir * deltaT * -1.0f);
+        // Z axis is positive on the back
+        if (m.z == 1)
+            camera->globalTranslate(zdir * deltaT);
+        if (m.z == -1)
+            camera->globalTranslate(zdir * deltaT * -1.0f);
+        if (glfwGetKey(window, GLFW_KEY_SPACE))
+            camera->globalTranslate({0, 1*deltaT, 0});
+        if (glfwGetKey(window, GLFW_KEY_Q))
+            camera->globalTranslate({0, -1*deltaT, 0});
 
-        renderer.updateUniformBuffer(currentImage, CamPos, Projection, View);
+        camera->globalRotateX(-r.x * deltaT);
+        camera->globalRotateY(-r.y * deltaT);
 
-        renderer.updateLightCulling(CamPos, 10.0f);
+        renderer.updateUniformBuffer(currentImage,
+                camera->getGlobalPosition(),
+                camera->getProjectionMatrix(),
+                camera->getViewMatrix());
 
-        
+        renderer.updateLightCulling(camera->getGlobalPosition(), 10.0f);
+
+
         // updates the FPS
         static float elapsedT = 0.0f;
         static int countedFrames = 0;
-        
+
         countedFrames++;
         elapsedT += deltaT;
         if(elapsedT > 1.0f) {
             float Fps = (float)countedFrames / elapsedT;
-            
+
             std::ostringstream oss;
             oss << "FPS: " << Fps << "\n";
 
             txt.print(1.0f, 1.0f, oss.str(), 1, "CO", false, false, true,TAL_RIGHT,TRH_RIGHT,TRV_BOTTOM,{1.0f,0.0f,0.0f,1.0f},{0.8f,0.8f,0.0f,1.0f});
-            
+
             elapsedT = 0.0f;
             countedFrames = 0;
         }
-        
+
         txt.updateCommandBuffer();
     }
-    
-    float GameLogic() {
-        // Camera FOV-y, Near Plane and Far Plane
-        const float FOVy = glm::radians(45.0f);
-        const float nearPlane = 0.1f;
-        const float farPlane = 100.f;
 
-        // Integration with the timers and the controllers
-        float deltaT;
-        glm::vec3 m = glm::vec3(0.0f), r = glm::vec3(0.0f);
-        bool fire = false;
-        getSixAxis(deltaT, m, r, fire);
-
-        // Projection
-        glm::mat4 Prj = glm::perspective(FOVy, Ar, nearPlane, farPlane);
-        Prj[1][1] *= -1;
-
-        // View
-        View = glm::lookAt(glm::vec3(0.0f, 1.0f, 5.0f), // Pos
-                           glm::vec3(0.0f),                // Target
-                           glm::vec3(0.0f, 1.0f, 0.0f));
-
-        // View-Projection
-        ViewPrj = Prj * View;
-
-        return deltaT;
-    }
 };
