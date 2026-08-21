@@ -14,8 +14,7 @@ struct Bounds
     AABBExtents aabbExtents;
     PointSet pointSet;
 
-    //TODO: non so cosa va messo al posto di boxCollider
-    explicit Bounds(BoxCollider* coll)
+    explicit Bounds(Collider* coll)
     {
         Collider = coll;
         sphereBounds = coll->getSphereBounds();
