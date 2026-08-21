@@ -11,6 +11,10 @@ struct ShadowMapUniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
 };
 
+struct SkyboxUniformBufferObject {
+    alignas(16) glm::mat4 mvpMat;
+};
+
 /** This class simplifies 3D object rendering
  *
  * First you need to configure a render object inside the Engine class,then this class will offer:
@@ -116,9 +120,9 @@ class Renderer {
     };
 
     //Vulkan variables
-    DescriptorSetLayout globalLayout, localLayout;
+    DescriptorSetLayout globalLayout, localLayout, skyboxLayout;
     DescriptorSet global;
-    VertexDescriptor vertexDescriptor;
+    VertexDescriptor vertexDescriptor, VDskybox;
 
     //Variable taken from engine
     BaseProject* bp;
@@ -142,9 +146,12 @@ class Renderer {
 
     //Shadow map
     DescriptorSetLayout offScreenLayout;
-    DescriptorSet offScreen;
+    DescriptorSet offScreen, skybox;
     RenderPass RPoffScreen;
-    Pipeline PoffScreen;
+    Pipeline PoffScreen, Pskybox;
+
+    Texture TenvMap;   // environment cubemap
+    Model SkyboxCube;
 
     //Lambda function taken from Engine
     std::function<void()> screenUpdate;
@@ -432,6 +439,12 @@ class Renderer {
                 sizeof(glm::vec4), TANGENT}
            });
 
+        VDskybox.init(bp, {
+              {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
+            }, {
+              {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos), sizeof(glm::vec3), POSITION}
+            });
+
         localLayout.init(bp, {
             // this array contains the binding:
             // first  element : the binding number
@@ -457,6 +470,11 @@ class Renderer {
         offScreenLayout.init(bp, {
                     {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(ShadowMapUniformBufferObject), 1}
                     });
+
+        skyboxLayout.init(bp, {
+                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VK_SHADER_STAGE_VERTEX_BIT,   sizeof(SkyboxUniformBufferObject), 1},
+                    {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1}    // envMap (samplerCube)
+                  });
 
 
         for (auto& m : modelAssets) {
@@ -499,6 +517,21 @@ class Renderer {
 
 
         PoffScreen.init(bp, &vertexDescriptor, "shaders/ShadowMap.vert.spv", "shaders/ShadowMap.frag.spv", {&offScreenLayout, &localLayout});
+
+        Pskybox.init(bp, &VDskybox, "shaders/Skybox.vert.spv", "shaders/Skybox.frag.spv", {&skyboxLayout} );
+        Pskybox.setCompareOp(VK_COMPARE_OP_LESS_OR_EQUAL);
+        Pskybox.setCullMode(VK_CULL_MODE_FRONT_BIT);   // we are inside the cube
+        SkyboxCube.init(bp, &vertexDescriptor, "assets/models/Cube.gltf",     GLTF);
+
+
+        TenvMap.initCubic(bp, {
+            "assets/textures/skybox/px.png",
+            "assets/textures/skybox/nx.png",
+            "assets/textures/skybox/py.png",
+            "assets/textures/skybox/ny.png",
+            "assets/textures/skybox/pz.png",
+            "assets/textures/skybox/nz.png"
+        }, VK_FORMAT_R8G8B8A8_UNORM);
     }
 
     ///This method prepare stuff for Vulkan, must be called inside Engine.descriptorSetsInits()
@@ -509,7 +542,12 @@ class Renderer {
         global.init(bp, &globalLayout, {});
         offScreen.init(bp, &offScreenLayout, {});
 
+        skybox.init(bp, &skyboxLayout, {
+            TenvMap.getViewAndSampler()
+        });
         PoffScreen.create(&RPoffScreen);
+        Pskybox.create(rp);
+
         for (auto& p : pipelinesMap) {
             p.second->descriptorSetsInits(bp, rp, &RPoffScreen);
         }
@@ -520,9 +558,11 @@ class Renderer {
 
         global.cleanup();
         offScreen.cleanup();
+        skybox.cleanup();
 
         RPoffScreen.cleanup();
         PoffScreen.cleanup();
+        Pskybox.cleanup();
 
         for (auto& p : pipelinesMap) {
             p.second->descriptorSetsCleanup();
@@ -534,8 +574,14 @@ class Renderer {
 
         globalLayout.cleanup();
         offScreenLayout.cleanup();
+        skyboxLayout.cleanup();
 
         localLayout.cleanup();
+
+        TenvMap.cleanup();
+        vertexDescriptor.cleanup();
+        VDskybox.cleanup();
+        SkyboxCube.cleanup();
 
         for (auto& m : modelAssets) {
             m.second.cleanup();
@@ -558,6 +604,7 @@ class Renderer {
         }
 
         PoffScreen.destroy();
+        Pskybox.destroy();
         for (auto& p : pipelinesMap) {
             p.second->localCleanup();
         }
@@ -578,6 +625,13 @@ class Renderer {
 
     ///This method prepare stuff for Vulkan, must be called inside Engine.populateCommandBuffer()
     void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
+
+        Pskybox.bind(commandBuffer);
+        skybox.bind(commandBuffer, Pskybox, 0, currentImage);
+
+        SkyboxCube.bind(commandBuffer);
+        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(SkyboxCube.indices.size()), 1, 0, 0, 0);
+
         for (auto& p : pipelinesMap) {
             p.second->populateCommandBuffer(commandBuffer, currentImage, global, offScreen);
         }
@@ -648,6 +702,12 @@ class Renderer {
                       glm::inverse(lightView);
         subo.mvpMat = offVP;
         offScreen.map(currentImage, &subo, 0);
+
+        SkyboxUniformBufferObject skyboxUBO{};
+
+        skyboxUBO.mvpMat = Projection * glm::mat4(glm::mat3(View)) * glm::scale(glm::mat4(1), glm::vec3(50.0f));
+
+        skybox.map(currentImage, &skyboxUBO, 0);
 
         for (auto& p : pipelinesMap) {
             p.second->updateUniformBuffer(currentImage, CamPos, Projection, View);
