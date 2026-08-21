@@ -23,7 +23,7 @@ class Light : public Node3D {
         Light() {
             color = glm::vec3(0.0f);
             radiance = 0.0f;
-            isOn = true;
+            isOn = false;
         }
 
         /* Default virtual destructor */
@@ -41,6 +41,7 @@ class PointLight : public Light {
     public:
 
         float radius;
+        float decay;
 
 
         /* Default constructor */
@@ -48,28 +49,14 @@ class PointLight : public Light {
             radius = 0.0f;
         }
 
-        static PointLight* fromJSON(const nlohmann::json& json) {
-            PointLight *newNode = new PointLight();
+        PointLight(glm::vec3 position, float radiance, glm::vec3 color, float radius, float decay, bool isOn = true) {
+            this->setLocalPosition(position);
+            this->radiance = radiance;
+            this->color = color;
+            this->radius = radius;
+            this->decay = decay;
 
-            if (json.contains("name")) newNode->name = json["name"].get<std::string>();
-
-            glm::vec3 globalPosition = VEC3_ZERO;
-            glm::vec3 globalRotation = VEC3_ZERO;
-            glm::vec3 globalScale = VEC3_ONE;
-            if (json.contains("globalPosition")) globalPosition = glm::vec3(json["globalPosition"][0].get<float>(), json["globalPosition"][1].get<float>(), json["globalPosition"][2].get<float>());
-            if (json.contains("globalRotation")) globalRotation = glm::vec3(json["globalRotation"][0].get<float>(), json["globalRotation"][1].get<float>(), json["globalRotation"][2].get<float>());
-            if (json.contains("globalScale")) globalScale = glm::vec3(json["globalScale"][0].get<float>(), json["globalScale"][1].get<float>(), json["globalScale"][2].get<float>());
-            newNode->setGlobalPosition(globalPosition);
-            newNode->setGlobalRotation(globalRotation);
-            newNode->setGlobalScale(globalScale);
-
-            if (json.contains("color")) newNode->color = glm::vec3(json["color"][0].get<float>(), json["color"][1].get<float>(), json["color"][2].get<float>());
-            if (json.contains("radiance")) newNode->radiance = json["radiance"].get<float>();
-            if (json.contains("isOn")) newNode->isOn = json["radiance"].get<bool>();
-
-            if (json.contains("radius")) newNode->radius = json["radius"].get<float>();
-
-            return newNode;
+            this->isOn = isOn;
         }
 };
 
@@ -78,21 +65,31 @@ class SpotLight : public Light {
 
     public:
 
-        /// The half-angle of the spotlight's cone (alpha_in), in radians
+        /// The half-angle of the spotlight's cone (alpha_in), in degrees
         float aperture;
 
-        /// The half-angle of the spotlight's decay cone (alpha_out), in radians
+        /// The half-angle of the spotlight's decay cone (alpha_out), in degrees
         float decay;
 
-        /// How far from the origin the light reaches
-        float range;
+        /// Where is pointing the light
+        glm::vec3 direction;
 
 
         /* Default constructor */
         SpotLight() {
             aperture = 0.0f;
             decay = 0.0f;
-            range = 0.0f;
+        }
+
+        SpotLight(glm::vec3 position, float radiance, glm::vec3 color, float aperture, float decay, glm::vec3 direction, bool isOn = true) {
+            this->setLocalPosition(position);
+            this->radiance = radiance;
+            this->color = color;
+            this->aperture = aperture;
+            this->decay = decay;
+            this->direction = direction;
+
+            this->isOn = isOn;
         }
 
         static SpotLight* fromJSON(const nlohmann::json& json) {
@@ -116,7 +113,6 @@ class SpotLight : public Light {
 
             if (json.contains("aperture")) newNode->aperture = json["aperture"].get<float>();
             if (json.contains("decay")) newNode->decay = json["decay"].get<float>();
-            if (json.contains("range")) newNode->range = json["range"].get<float>();
 
             return newNode;
         }
@@ -124,30 +120,50 @@ class SpotLight : public Light {
 
 /// Emits light in parallel rays along the node's Z-axis
 class DirectionalLight : public Light {
-
     public:
 
-        static DirectionalLight* fromJSON(const nlohmann::json& json) {
-            DirectionalLight *newNode = new DirectionalLight();
+    ///Where is pointing the light
+    glm::vec3 direction;
 
-            if (json.contains("name")) newNode->name = json["name"].get<std::string>();
+    /*Default constructor*/
+    DirectionalLight() : Light() {}
 
-            glm::vec3 globalPosition = VEC3_ZERO;
-            glm::vec3 globalRotation = VEC3_ZERO;
-            glm::vec3 globalScale = VEC3_ONE;
-            if (json.contains("globalPosition")) globalPosition = glm::vec3(json["globalPosition"][0].get<float>(), json["globalPosition"][1].get<float>(), json["globalPosition"][2].get<float>());
-            if (json.contains("globalRotation")) globalRotation = glm::vec3(json["globalRotation"][0].get<float>(), json["globalRotation"][1].get<float>(), json["globalRotation"][2].get<float>());
-            if (json.contains("globalScale")) globalScale = glm::vec3(json["globalScale"][0].get<float>(), json["globalScale"][1].get<float>(), json["globalScale"][2].get<float>());
-            newNode->setGlobalPosition(globalPosition);
-            newNode->setGlobalRotation(globalRotation);
-            newNode->setGlobalScale(globalScale);
+    DirectionalLight(float radiance, glm::vec3 color, glm::vec3 direction, bool isOn = true) {
+        this->radiance = radiance;
+        this->color = color;
+        this->direction = direction;
 
-            if (json.contains("color")) newNode->color = glm::vec3(json["color"][0].get<float>(), json["color"][1].get<float>(), json["color"][2].get<float>());
-            if (json.contains("radiance")) newNode->radiance = json["radiance"].get<float>();
-            if (json.contains("isOn")) newNode->isOn = json["radiance"].get<bool>();
+        this->isOn = true;
+    }
 
-            return newNode;
-        }
+    static DirectionalLight* fromJSON(const nlohmann::json& json) {
+        DirectionalLight *newNode = new DirectionalLight();
+
+        if (json.contains("name")) newNode->name = json["name"].get<std::string>();
+
+        glm::vec3 globalPosition = VEC3_ZERO;
+        glm::vec3 globalRotation = VEC3_ZERO;
+        glm::vec3 globalScale = VEC3_ONE;
+        if (json.contains("globalPosition")) globalPosition = glm::vec3(json["globalPosition"][0].get<float>(), json["globalPosition"][1].get<float>(), json["globalPosition"][2].get<float>());
+        if (json.contains("globalRotation")) globalRotation = glm::vec3(json["globalRotation"][0].get<float>(), json["globalRotation"][1].get<float>(), json["globalRotation"][2].get<float>());
+        if (json.contains("globalScale")) globalScale = glm::vec3(json["globalScale"][0].get<float>(), json["globalScale"][1].get<float>(), json["globalScale"][2].get<float>());
+        newNode->setGlobalPosition(globalPosition);
+        newNode->setGlobalRotation(globalRotation);
+        newNode->setGlobalScale(globalScale);
+
+        if (json.contains("color")) newNode->color = glm::vec3(json["color"][0].get<float>(), json["color"][1].get<float>(), json["color"][2].get<float>());
+        if (json.contains("radiance")) newNode->radiance = json["radiance"].get<float>();
+        if (json.contains("isOn")) newNode->isOn = json["radiance"].get<bool>();
+
+        return newNode;
+    }
 };
+
+struct AmbientLight {
+    glm::vec4 upper;
+    glm::vec4 lower;
+    glm::vec4 dir;
+};
+
 
 #endif

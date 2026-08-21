@@ -1,0 +1,43 @@
+{
+  "materials": {
+    "LambertBlinnTexture": [
+      {
+        "id": "mat1",
+        "diffuse": [1.0, 1.0, 1.0],
+        "specular": [1.0, 1.0, 1.0, 100.0],
+        "texture": "orbed_plastic.png"
+      },
+      {
+        "id": "mat2",
+        "diffuse": [1.0, 1.0, 1.0],
+        "specular": [1.0, 1.0, 1.0, 100.0],
+        "texture": "Default.png"
+      },
+      {
+        "id": "mat3",
+        "diffuse": [1.0, 1.0, 1.0],
+        "specular": [1.0, 1.0, 1.0, 100.0],
+        "texture": "rock.png"
+      }
+    ],
+    "Toon": [
+      {
+        "id": "mat3",
+        "diffuse": [1.0, 0.0, 1.0],
+        "specular": [1.0, 1.0, 1.0, 100.0],
+        "params": [0.3, 1.0, 0.3, 0.95, 1.0, 0.0]
+      },
+      {
+        "id": "mat4",
+        "diffuse": [7.0, 7.0, 0.0],
+        "specular": [1.0, 1.0, 1.0, 100.0],
+        "params": [0.3, 1.0, 0.3, 0.95, 1.0, 0.0]
+      }
+    ]
+  },
+  "instances": [
+      {"model": "Plane.gltf", "material": "mat3", "position": [0.0, 0.0, 0.0], "rotation": [0.0, 0.0, 0.0] ,"scale": [10, 10, 10]},
+      {"model": "Statue.gltf", "material": "mat1", "position": [-3.0, 0.0, 2.0], "rotation": [0.0, 0.0, 0.0] ,"scale": [3, 3, 3]},
+      {"model": "Statue.gltf", "material": "mat1", "position": [3.0, 0.0, -2.0], "rotation": [0.0, 0.0, 0.0] ,"scale": [3, 3, 3]}
+  ]
+}

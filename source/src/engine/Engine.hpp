@@ -1,114 +1,27 @@
 // ENGINE
 
-#include "Node3D.hpp"
-#include "OrthoCamera.hpp"
-#include "glm/trigonometric.hpp"
-#include <cstdlib>
 #include <sstream>
 #include <json.hpp>
 
+#include "common.h"
 
-#define  STARTER_IMPLEMENTATION
-#include "modules/Starter.hpp"
-#define  TEXTMAKER_IMPLEMENTATION
-#include "modules/TextMaker.hpp"
-#define  SCENE_IMPLEMENTATION
-#include "modules/Scene.hpp"
-
-#include "Libraries.hpp"
-
-// The uniform buffer object used in this example
-struct UniformBufferObject {
-    alignas(16) glm::mat4 mvpMat;
-    alignas(16) glm::mat4 mMat;
-};
-
-struct GlobalUniformBufferObject {
-    alignas(16) glm::vec3 lightDir;
-    alignas(16) glm::vec4 lightColor;
-    alignas(16) glm::vec3 eyePos;
-};
-
-struct Vertex {
-    glm::vec3 pos;
-    glm::vec2 UV;
-};
-
+#include "Renderer.hpp"
+#include "Node.hpp"
+#include "Node3D.hpp"
 
 class Engine : public BaseProject {
-
     // NOTE: new
-
     public:
-        /// The root of the current rendered scene
-        Node *scene;
+    Engine() : renderer(this, &RP, [this](){submitCommandBuffer("main", 0, populateCommandBufferAccess, this);}) {
 
-        /// Camera that is currently being used to visualize the world
-        Camera *mainCamera;
-
-        /**
-         *  Sets the given node as the current scene
-         * */
-        void setScene(Node *scene) {
-            this->scene = scene;
-        }
-
-        /** Sets the given camera as main camera */
-        void setMainCamera(Camera *camera) {
-            this->mainCamera = camera;
-        }
-
-        /** Recomputes the Node3D hierarchy */
-        void recompute3DNodeHierarchy(Node* node, glm::mat4 fatherTransformMatrix) {
-
-            // If a Node3D is found, propagate an update to it
-            if (Node3D* node3d = dynamic_cast<Node3D*>(node)) {
-                node3d->updateFatherMatrix(fatherTransformMatrix);
-                return;
-            }
-
-            // Else try again with the children
-            for (Node *child : node->children) {
-                recompute3DNodeHierarchy(child, fatherTransformMatrix);
-            }
-        }
-
-        /** Recomputes the matrices after the Node3Ds are moved and the hierarchy has changed */
-        static void recompute2DNodeHierarchy(Node* node, glm::mat4 fatherTransformMatrix) {
-
-            // If the node is Node2D, propagate the update
-            if (Node2D* node2d = dynamic_cast<Node2D*>(node)) {
-                node2d->updateFatherMatrix(fatherTransformMatrix);
-                return;
-            }
-
-            // Else continue looking through the children
-            for (Node *child : node->children) {
-                recompute2DNodeHierarchy(child, fatherTransformMatrix);
-            }
-        }
-
-
-    // NOTE: end new
+    }
 
     protected:
     // Here you list all the Vulkan objects you need:
 
-    // Descriptor Layouts [what will be passed to the shaders]
-    DescriptorSetLayout DSLlocal, DSLglobal;
+    Renderer renderer;
 
-    // Vertex formants, Pipelines [Shader couples] and Render passes
-    VertexDescriptor VD;
     RenderPass RP;
-    Pipeline P;
-
-    // Models, textures and Descriptors (values assigned to the uniforms)
-    DescriptorSet DSglobal;
-
-    // To support loading assets from a scene.json file
-    Scene SC;
-    std::vector<VertexDescriptorRef>  VDRs;
-    std::vector<TechniqueRef> PRs;
 
     // to provide textual feedback
     TextMaker txt;
@@ -124,7 +37,7 @@ class Engine : public BaseProject {
         // window size, titile and initial background
         windowWidth = 800;
         windowHeight = 600;
-        windowTitle = "Game";
+        windowTitle = "Skeleton: place the name of your app here";
         windowResizable = GLFW_TRUE;
         
         // Initial aspect ratio
@@ -145,69 +58,84 @@ class Engine : public BaseProject {
     
     // Here you load and setup all your Vulkan Models and Texutures.
     // Here you also create your Descriptor set layouts and load the shaders for the pipelines
+
+    //TODO
+
+    LambertMaterial mat3 = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}};
+
+    //LambertMaterial mat2 = {glm::vec3(0.0f, 0.0f, 1.0f), {1.0f,1.0f,1.0f,50.0f}};
+
+    //ToonMaterial mat1 = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
+    ToonMaterial mat2 = {glm::vec3(0.9f, 0.45f, 0.9f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
+
+    LambertTexMaterial mat1 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "rock.png"};
+
+    //LambertTexMaterial mat2 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "VChecker.png"};
+
+    std::string modelPath = "SuzanneUV.obj";
+
+    Model3D m = {modelPath , {1.0f, 0.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
+    Model3D m1 = {modelPath, {1.0f, 1.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
+    Model3D m2 = {modelPath, {1.0f, 2.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
+    Model3D m3 = {modelPath, {1.0f, 3.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
+    Model3D m4 = {modelPath, {1.0f, 4.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
+
+    Model3D m5 = {modelPath, {-1.0f, 0.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
+    Model3D m6 = {modelPath, {-1.0f, 1.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
+    Model3D m7 = {modelPath, {-1.0f, 2.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
+    Model3D m8 = {modelPath, {-1.0f, 3.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat1};
+    Model3D m9 = {modelPath, {-1.0f, 4.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(0.5f), &mat2};
+
+    Model3D plane = {"Plane.gltf", {0.0f, 0.0f, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(10.0f), &mat3};
+
+
     void localInit() {
         // Descriptor Layouts [what will be passed to the shaders]
-        DSLlocal.init(this, {
-                    // this array contains the binding:
-                    // first  element : the binding number
-                    // second element : the type of element (buffer or texture)
-                    // third  element : the pipeline stage where it will be used
-                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(UniformBufferObject), 1},
-                    {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1}
-                  });
-        DSLglobal.init(this, {
-                    // this array contains the binding:
-                    // first  element : the binding number
-                    // second element : the type of element (buffer or texture)
-                    // third  element : the pipeline stage where it will be used
-                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, sizeof(GlobalUniformBufferObject), 1}
-                  });
-        VD.init(this, {
-                  {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
-                }, {
-                  {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos),
-                         sizeof(glm::vec3), POSITION},
-                  {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, UV),
-                         sizeof(glm::vec2), UV}
-                });
+
+        renderer.loadSceneFromJSON();
+
+        renderer.setAmbientLight(glm::vec3(0.01f, 0.01f, 0.01f), glm::vec3(0.2f, 0.15f, 0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
+        renderer.createDirectionalLight(0.01f, glm::vec3(1.0f, 0.95f, 0.8f), glm::normalize(glm::vec3(0.4f, 0.8f, 0.4f)));
+
+        //renderer.addPointLight(glm::vec3(-1.0f, 2.0f, -5.0f), 0.1f, glm::vec3(1.0f, 1.0f, 1.0f), 5.0f, 2.0f);
+        //renderer.addPointLight(glm::vec3(-3.0f, 2.0f, 4.0f), 0.1f, glm::vec3(0.0f, 0.0f, 1.0f), 5.0f, 2.0f);
+        //renderer.addPointLight(glm::vec3(2.0f, 2.0f, -1.0f), 0.1f, glm::vec3(1.0f, 0.0f, 0.0f), 5.0f, 2.0f);
+        //renderer.addPointLight(glm::vec3(4.0f, 4.0f, -3.0f), 0.1f, glm::vec3(0.0f, 1.0f, 0.0f), 5.0f, 2.0f);
+
+        //renderer.addSpotLight(glm::vec3(0.0f, 7.0f, 0.0f), 0.1f, glm::vec3(1.0f, 1.0f, 1.0f), 5.0f, 10.0f, glm::normalize(glm::vec3(0.0f, 1.0f,0.0f)));
+        //renderer.addSpotLight(glm::vec3(3.0f, 7.0f, 0.0f), 0.1f, glm::vec3(1.0f, 1.0f, 0.0f), 5.0f, 10.0f, glm::normalize(glm::vec3(0.0f, 1.0f,0.0f)));
+        //renderer.addSpotLight(glm::vec3(-3.0f, 7.0f, 0.0f), 0.1f, glm::vec3(1.0f, 0.0f, 1.0f), 5.0f, 10.0f, glm::normalize(glm::vec3(0.0f, 1.0f,0.0f)));
+        //renderer.addSpotLight(glm::vec3(-3.0f, 7.0f, 4.0f), 0.1f, glm::vec3(0.0f, 0.0f, 1.0f), 5.0f, 10.0f, glm::normalize(glm::vec3(0.0f, 1.0f,0.0f)));
+
+        //std::cout << "TEST\n";
+
+        //renderer.preLoadModel(&plane);
+
+        /*
+        renderer.instantiate(&m);
+        renderer.instantiate(&m1);
+        renderer.instantiate(&m2);
+        renderer.instantiate(&m3);
+        renderer.instantiate(&m4);
+        renderer.instantiate(&m5);
+        renderer.instantiate(&m6);
+        renderer.instantiate(&m7);
+        renderer.instantiate(&m8);
+        renderer.instantiate(&m9);
+        */
+
+        renderer.localInit();
 
         // initializes the render passes
         RP.init(this);
         // sets the blue sky
-        RP.properties[0].clearValue = {0.0f,0.9f,1.0f,1.0f};
+        RP.properties[0].clearValue = {0.0f,0.0f,0.0f,0.0f};
 
-        // Pipelines [Shader couples]
-        // The last array, is a vector of pointer to the layouts of the sets that will
-        // be used in this pipeline. The first element will be set 0, and so on..
-        
-        P.init(this, &VD, "shaders/toChangeSimplePos.vert.spv",
-                          "shaders/toChangeBlinnFromPos.frag.spv",
-                          {&DSLglobal, &DSLlocal});
 
         // sets the size of the Descriptor Set Pool (it MUST be done before loading the scene)
-        DPSZs.uniformBlocksInPool = 2;
-        DPSZs.texturesInPool = 1;
-        DPSZs.setsInPool = 2;
-
-        // to support scene
-        VDRs.resize(1);
-        VDRs[0].init("VDposUV",  &VD);
-
-        PRs.resize(1);
-        PRs[0].init("BlinnPos", {
-                            {&P, {//Pipeline and DSL for the main pass
-                             /*DSLglobal*/{},
-                             /*DSLlocal*/{
-                                    /*t0*/{true,  0, {}}
-                                  }
-                                 }
-                                }
-                          }, /*TotalNtextures*/1, &VD);
-
-        if(SC.init(this, 1, VDRs, PRs, "assets/scenes/scene.json") != 0) {
-            std::cout << "ERROR LOADING THE SCENE\n";
-            exit(0);
-        }
+        DPSZs.uniformBlocksInPool = 200;
+        DPSZs.texturesInPool = 200;
+        DPSZs.setsInPool = 200;
 
         // initializes the textual output
         txt.init(this, windowWidth, windowHeight);
@@ -217,6 +145,7 @@ class Engine : public BaseProject {
 
         // Prepares for showing the FPS count
         txt.print(1.0f, 1.0f, "FPS:",1,"CO",false,false,true,TAL_RIGHT,TRH_RIGHT,TRV_BOTTOM,{1.0f,0.0f,0.0f,1.0f},{0.8f,0.8f,0.0f,1.0f});
+        txt.print(-1.0f, -1.0f ,  "Testo di prova", 2, "CO", false, false, false, TAL_LEFT, TRH_LEFT, TRV_TOP, {0.5f, 0.5f, 0.0f, 0.5f}, {0.5f,0.5f,0.0f,0.5f});
 
     }
     
@@ -224,46 +153,30 @@ class Engine : public BaseProject {
     void pipelinesAndDescriptorSetsInit() {
         // creates the render passes
         RP.create();
-        
-        // This creates a new pipeline (with the current surface), using its shaders for the provided render pass
-        P.create(&RP);
-        
-        DSglobal.init(this, &DSLglobal, {});
-        
-        // Here you define the data set
-        // If the scene has textures coming from a render pass, the corresponding element of the technique must be
-        // updated before calling SC.pipelinesAndDescriptorSetsInit();
 
-        SC.pipelinesAndDescriptorSetsInit();
+        renderer.descriptorSetsInits();
+
         txt.pipelinesAndDescriptorSetsInit();
     }
 
     // Here you destroy your pipelines and Descriptor Sets!
     void pipelinesAndDescriptorSetsCleanup() {
-        P.cleanup();
-
         RP.cleanup();
-        
-        DSglobal.cleanup();
-        
-        SC.pipelinesAndDescriptorSetsCleanup();
+        renderer.descriptorSetsCleanup();
         txt.pipelinesAndDescriptorSetsCleanup();
     }
 
     // Here you destroy all the Models, Texture and Desc. Set Layouts you created!
     // You also have to destroy the pipelines
     void localCleanup() {
-        DSLlocal.cleanup();
-        DSLglobal.cleanup();
-
-        P.destroy();
-
         RP.destroy();
 
-        SC.localCleanup();
+        renderer.localCleanup();
+
         txt.localCleanup();
     }
-    
+
+
     // Here it is the creation of the command buffer:
     // You send to the GPU all the objects you want to draw,
     // with their buffers and textures
@@ -275,18 +188,24 @@ class Engine : public BaseProject {
     }
 
     void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
-        
+
+        renderer.populateShadowCommandBuffer(commandBuffer, currentImage);
+
         // Offscreen pass - always required
         // begin standard pass
         RP.begin(commandBuffer, currentImage);
 
-        SC.populateCommandBuffer(commandBuffer, 0, currentImage);
+        renderer.populateCommandBuffer(commandBuffer, currentImage);
 
         RP.end(commandBuffer);
     }
 
+    glm::vec3 CamPos = {0.0f, 1.0f, 4.0f};
+    float Pitch = 0.0f, Yaw = 0.0f;
     // Here is where you update the uniforms.
     // Very likely this will be where you will be writing the logic of your application.
+    int i = 0, j = 0;
+    bool test = true, test_ = true, test__ = true;
     void updateUniformBuffer(uint32_t currentImage) {
         static bool debounce = false;
         static int curDebounce = 0;
@@ -296,38 +215,86 @@ class Engine : public BaseProject {
             glfwSetWindowShouldClose(window, GL_TRUE);
         }
 
-        // moves the view
-        float deltaT = GameLogic();
-        
-        // defines the global parameters for the uniform
-        static float lightRotationAngle = 0.0f; // Static variable to keep track of rotation
-        lightRotationAngle += -0.5f * deltaT; // Increment rotation angle based on time
+        /*
+        if (glfwGetKey(window, GLFW_KEY_Q)) {
+            if (test) {
+                renderer.removeObject(0);
+                test = false;
 
-        const glm::mat4 lightView = glm::rotate(glm::mat4(1), glm::radians(lightRotationAngle), glm::vec3(0.0f, 1.0f, 0.0f)) * 
-                                    glm::rotate(glm::mat4(1), glm::radians(-45.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-        const glm::vec3 lightDir =  glm::vec3(lightView * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f));
+                submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
+            }
+        } else {
+            test = true;
+        }*/
+int n;
+        if (glfwGetKey(window, GLFW_KEY_Z)) {
+            if (test__) {
+                if (j%2 == 0 ) {
+                    renderer.instantiate("Statue.gltf" , {1.0f, j, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(1.0f), &mat2);
+                }
+                else {
+                    renderer.instantiate("Statue.gltf" , {-1.0f, j, 0.0f},{0.0f, 0.0f, 0.0f},glm::vec3(1.0f), &mat2);
+                }
 
-        GlobalUniformBufferObject gubo{};
+                test__ = false;
 
-        gubo.lightDir = lightDir;
-        gubo.lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)*5.0f;
-        gubo.eyePos = glm::vec3(glm::inverse(View)[3]);
-
-        DSglobal.map(currentImage, &gubo, 0);
-
-        // defines the local parameters for the uniforms
-        UniformBufferObject ubo{};        
-
-        int instanceId;
-        // character
-        for(instanceId = 0; instanceId < SC.TI[0].InstanceCount; instanceId++) {
-            ubo.mMat = SC.TI[0].I[instanceId].Wm;
-            ubo.mvpMat = ViewPrj * ubo.mMat;
-            
-            // DS[1] = Pchar pass (main render): set0=DSLglobal, set1=DSLlocal
-            SC.TI[0].I[instanceId].DS[0][0]->map(currentImage, &gubo, 0); // global (light/camera)
-            SC.TI[0].I[instanceId].DS[0][1]->map(currentImage, &ubo, 0); // camera MVPs
+                j++;
+            }
+        } else {
+            test__ = true;
         }
+
+        if (glfwGetKey(window, GLFW_KEY_Q)) {
+            if (test) {
+                renderer.setObjectVisibility(i, false);
+                i++;
+                test = false;
+            }
+        } else {
+            test = true;
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_E)) {
+            if (test_) {
+                i--;
+                if (i < 0)
+                    i = 0;
+
+                renderer.setObjectVisibility(i, true);
+
+                test_ = false;
+            }
+        } else {
+            test_ = true;
+        }
+
+        glm::mat4 View, Projection;
+        // Camera FOV-y, Near Plane and Far Plane
+        const float FOVy = glm::radians(45.0f);
+        const float nearPlane = 0.1f;
+        const float farPlane = 100.f;
+
+        float deltaT;
+        glm::vec3 m = {0,0,0}, r = {0,0,0};
+        bool fire = false;
+        getSixAxis(deltaT, m, r, fire);
+
+        Projection = glm::perspective(FOVy, Ar, nearPlane, farPlane);
+        Projection[1][1] *= -1;
+
+        // update the camera position and direction with the inputs
+        CamPos += m * 2.0f * deltaT;
+        Pitch -= r.x * deltaT;
+        Yaw   -= r.y * deltaT;
+
+        View = glm::rotate   (glm::mat4(1), -Pitch, glm::vec3(1,0,0)) *
+               glm::rotate   (glm::mat4(1), -Yaw,   glm::vec3(0,1,0)) *
+               glm::translate(glm::mat4(1), -CamPos);
+
+        renderer.updateUniformBuffer(currentImage, CamPos, Projection, View);
+
+        renderer.updateLightCulling(CamPos, 10.0f);
+
         
         // updates the FPS
         static float elapsedT = 0.0f;
@@ -350,18 +317,11 @@ class Engine : public BaseProject {
         txt.updateCommandBuffer();
     }
     
-    float rot = 0;
-    float pos = 0;
-    float dir = 1;
-    Camera *camera = NULL;
-
-
     float GameLogic() {
         // Camera FOV-y, Near Plane and Far Plane
-        const float FOVy = glm::radians(90.0f);
+        const float FOVy = glm::radians(45.0f);
         const float nearPlane = 0.1f;
         const float farPlane = 100.f;
-        // const float FOVy = 45.0f;
 
         // Integration with the timers and the controllers
         float deltaT;
@@ -369,39 +329,14 @@ class Engine : public BaseProject {
         bool fire = false;
         getSixAxis(deltaT, m, r, fire);
 
-        if (!camera) {
-            camera = new PerspectiveCamera(nearPlane, farPlane, FOVy, Ar);
-            // camera = new OrthoCamera(-4, 4, -5, 5, nearPlane, farPlane); TODO
-            camera->setGlobalPosition({0, 5, 0});
-            camera->globalRotateX(glm::radians(-10.0f));
-        }
-        // printf("%.2f %.2f %.2f\n", camera->getLookingDirection().x, camera->getLookingDirection().y, camera->getLookingDirection().z);
+        // Projection
+        glm::mat4 Prj = glm::perspective(FOVy, Ar, nearPlane, farPlane);
+        Prj[1][1] *= -1;
 
-        glm::vec3 xdir = glm::normalize(glm::vec3(camera->getXAxis().x, 0, camera->getXAxis().z));
-        glm::vec3 zdir = glm::normalize(glm::vec3(camera->getZAxis().x, 0, camera->getZAxis().z));
-
-        if (m.x == 1)
-            camera->globalTranslate(xdir * deltaT);
-        if (m.x == -1)
-            camera->globalTranslate(xdir * deltaT * -1.0f);
-        // Z axis is positive on the back
-        if (m.z == 1)
-            camera->globalTranslate(zdir * deltaT);
-        if (m.z == -1)
-            camera->globalTranslate(zdir * deltaT * -1.0f);
-        if (glfwGetKey(window, GLFW_KEY_SPACE))
-            camera->globalTranslate({0, 1*deltaT, 0});
-        if (glfwGetKey(window, GLFW_KEY_Z))
-            camera->globalTranslate({0, -1*deltaT, 0});
-
-        camera->globalRotateX(r.x * deltaT);
-        camera->globalRotateY(r.y * deltaT);
-        // dynamic_cast<PerspectiveCamera*>(camera)->setFOV(dynamic_cast<PerspectiveCamera*>(camera)->getFOV() + deltaT);
-
-        glm::mat4 Prj = camera->getProjectionMatrix();
-        rot -= deltaT * 50;
         // View
-        View = camera->getViewMatrix();
+        View = glm::lookAt(glm::vec3(0.0f, 1.0f, 5.0f), // Pos
+                           glm::vec3(0.0f),                // Target
+                           glm::vec3(0.0f, 1.0f, 0.0f));
 
         // View-Projection
         ViewPrj = Prj * View;

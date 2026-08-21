@@ -10,6 +10,7 @@
 #include <json.hpp>
 
 
+
 /// Represents a functional element within a scene
 class Node {
     inline static uint64_t nodeCounter = 0;
