@@ -9,7 +9,9 @@ class UpdateNode3D: public Node3D {
     public:
 
         /** This method will be called every frame by the Engine */
-        void (*update)() = nullptr;
+        virtual void update() {
+            warning(std::format("Update Method for UpdateNode3D [{}] has not been changed from default", this->UUID));
+        }
 
 
         static UpdateNode3D* fromJSON(const nlohmann::json& json) {

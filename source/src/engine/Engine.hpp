@@ -1,7 +1,10 @@
 // ENGINE
+#ifndef ENGINE_ENGINE_H
+#define ENGINE_ENGINE_H
 
 #include <sstream>
 #include <json.hpp>
+#include <vulkan/vulkan_core.h>
 
 #include "Renderer.hpp"
 #include "Node.hpp"
@@ -9,7 +12,17 @@
 #include "Node2D.hpp"
 #include "Model3D.hpp"
 #include "PerspectiveCamera.hpp"
+#include "UpdateNode3D.hpp"
 #include "common.h"
+
+inline struct globals {
+    // Time elapsed from last frame
+    float deltaTime = 0;
+    // Translation input
+    glm::vec3 inputTranslation = VEC3_ZERO;
+    // Rotation input
+    glm::vec3 inputRotation = VEC3_ZERO;
+} engineGlobals;
 
 
 class Engine : public BaseProject {
@@ -48,13 +61,12 @@ class Engine : public BaseProject {
             }
 
             // Else try again with the children
-            for (Node *child : node->children) {
+            for (Node *child : node->children)
                 recompute3DNodeHierarchy(child, fatherTransformMatrix);
-            }
         }
 
         /** Recomputes the matrices after the Node3Ds are moved and the hierarchy has changed */
-        static void recompute2DNodeHierarchy(Node* node, glm::mat4 fatherTransformMatrix) {
+        void recompute2DNodeHierarchy(Node* node, glm::mat4 fatherTransformMatrix) {
 
             // If the node is Node2D, propagate the update
             if (Node2D* node2d = dynamic_cast<Node2D*>(node)) {
@@ -63,9 +75,23 @@ class Engine : public BaseProject {
             }
 
             // Else continue looking through the children
-            for (Node *child : node->children) {
+            for (Node *child : node->children)
                 recompute2DNodeHierarchy(child, fatherTransformMatrix);
-            }
+        }
+
+        void updateUpdate3DNodes(Node *node) {
+            if (UpdateNode3D *updateNode = dynamic_cast<UpdateNode3D*>(node))
+                updateNode->update();
+
+            for (Node *child : node->children)
+                updateUpdate3DNodes(child);
+        }
+
+        void activateOnEnter(Node* node) {
+            node->onEnter();
+
+            for (Node *child : node->children)
+                activateOnEnter(child);
         }
 
     protected:
@@ -143,6 +169,18 @@ class Engine : public BaseProject {
 
 
     void localInit() {
+        // Engine checks
+        if (!scene)
+            error("Scene not set");
+        if (!mainCamera)
+            warning("Main camera not set");
+
+        // TODO: have better way to add nodes to the scene
+        this->activateOnEnter(this->scene);
+
+
+
+
         // Descriptor Layouts [what will be passed to the shaders]
 
         renderer.loadSceneFromJSON();
@@ -257,15 +295,24 @@ class Engine : public BaseProject {
     // Very likely this will be where you will be writing the logic of your application.
     int i = 0, j = 0;
     bool test = true, test_ = true, test__ = true;
-    Camera *camera = NULL;
-    const float FOVy = glm::radians(45.0f);
-    const float nearPlane = 0.1f;
-    const float farPlane = 100.f;
-    float rot = 0;
-    float pos = 0;
-    float dir = 1;
 
     void updateUniformBuffer(uint32_t currentImage) {
+
+        // Recompute hierarchy in case something changed
+        this->recompute3DNodeHierarchy(this->scene, MAT4_I);
+
+        // Update input globals
+        bool fire = false;
+        engineGlobals.inputTranslation = VEC3_ZERO;
+        engineGlobals.inputRotation = VEC3_ZERO;
+        getSixAxis(engineGlobals.deltaTime, engineGlobals.inputTranslation, engineGlobals.inputRotation, fire);
+
+        // Update all UpdateNodes
+        this->updateUpdate3DNodes(this->scene);
+
+
+
+
         static bool debounce = false;
         static int curDebounce = 0;
 
@@ -326,44 +373,14 @@ class Engine : public BaseProject {
             test_ = true;
         }
 
-        if (!camera) {
-            // Create camera if it does not exist
-            camera = new PerspectiveCamera(nearPlane, farPlane, FOVy, Ar);
-            camera->globalTranslate({0, 1, 0});
-        }
 
-        float deltaT;
-        glm::vec3 m = {0,0,0}, r = {0,0,0};
-        bool fire = false;
-        getSixAxis(deltaT, m, r, fire);
-
-        // update the camera position and direction with the inputs
-        glm::vec3 xdir = glm::normalize(glm::vec3(camera->getXAxis().x, 0, camera->getXAxis().z));
-        glm::vec3 zdir = glm::normalize(glm::vec3(camera->getZAxis().x, 0, camera->getZAxis().z));
-
-        if (m.x == 1)
-            camera->globalTranslate(xdir * deltaT);
-        if (m.x == -1)
-            camera->globalTranslate(xdir * deltaT * -1.0f);
-        // Z axis is positive on the back
-        if (m.z == 1)
-            camera->globalTranslate(zdir * deltaT);
-        if (m.z == -1)
-            camera->globalTranslate(zdir * deltaT * -1.0f);
-        if (glfwGetKey(window, GLFW_KEY_SPACE))
-            camera->globalTranslate({0, 1*deltaT, 0});
-        if (glfwGetKey(window, GLFW_KEY_Q))
-            camera->globalTranslate({0, -1*deltaT, 0});
-
-        camera->globalRotateX(-r.x * deltaT);
-        camera->globalRotateY(-r.y * deltaT);
-
+        // Update with camera data
         renderer.updateUniformBuffer(currentImage,
-                camera->getGlobalPosition(),
-                camera->getProjectionMatrix(),
-                camera->getViewMatrix());
+                this->mainCamera->getGlobalPosition(),
+                this->mainCamera->getProjectionMatrix(),
+                this->mainCamera->getViewMatrix());
 
-        renderer.updateLightCulling(camera->getGlobalPosition(), 10.0f);
+        renderer.updateLightCulling(this->mainCamera->getGlobalPosition(), 10.0f);
 
 
         // updates the FPS
@@ -371,7 +388,7 @@ class Engine : public BaseProject {
         static int countedFrames = 0;
 
         countedFrames++;
-        elapsedT += deltaT;
+        elapsedT += engineGlobals.deltaTime;
         if(elapsedT > 1.0f) {
             float Fps = (float)countedFrames / elapsedT;
 
@@ -388,3 +405,4 @@ class Engine : public BaseProject {
     }
 
 };
+#endif
