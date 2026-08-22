@@ -1,5 +1,5 @@
-﻿#ifndef ENGINE_Collider_HPP
-#define ENGINE_Collider_HPP
+﻿#ifndef ENGINE_COLLIDER_HPP
+#define ENGINE_COLLIDER_HPP
 
 #define GLM_ENABLE_EXPERIMENTAL
 #define GLM_FORCE_RADIANS
@@ -19,7 +19,7 @@ struct Vec3Compare {
 typedef std::set<glm::vec3, Vec3Compare> PointSet;
 #define POINT_PARAMETER 12
 
-/// The extents of the sphere bounds containing a Collider.
+/// The extents of the sphere bounds containing a collider.
 struct SphereBounds
 {
     glm::vec3 center;
@@ -43,7 +43,7 @@ struct SphereBounds
     }
 };
 
-/// The extents of the axis-aligned bounding box containing a Collider.
+/// The extents of the axis-aligned bounding box containing a collider.
 struct AABBExtents
 {
     float xMin, xMax;
@@ -82,35 +82,35 @@ struct AABBExtents
 
 enum MovementStatus
 {
-    /// The Collider is not meant to move after being loaded into the scene
+    /// The collider is not meant to move after being loaded into the scene
     STATIC,
-    /// The Collider can move but hasn't since last it was checked
+    /// The collider can move but hasn't since last it was checked
     MOBILE_UNMOVED,
-    /// The Collider has moved since last it was checked
+    /// The collider has moved since last it was checked
     MOBILE_HAS_MOVED
 };
-/// A node with a physics Collider
+/// A node with a physics collider
 class Collider: public Node3D
 {
     public:
-        /// If the Collider is to be used in physics checks
+        /// If the collider is to be used in physics checks
         bool isActive = true;
-        /// The Collider's movement status
+        /// The collider's movement status
         MovementStatus movementStatus = MOBILE_UNMOVED;
-        /// The Collider's global matrix at the start of the previous frame
+        /// The collider's global matrix at the start of the previous frame
         glm::mat4 previousMatrix = MAT4_I;
-        /// If the Collider allows objects to pass through it
+        /// If the collider allows objects to pass through it
         bool isTrigger = false;
         /// Colliders that are within this trigger's bounds
-        std::set<Collider*> CollidersInTrigger = std::set<Collider*>();
+        std::set<Collider*> collidersInTrigger = std::set<Collider*>();
 
-        /// External function to call when another Collider collides with this one
+        /// External function to call when another collider collides with this one
         void (*onCollision)(Collider*) = nullptr;
-        /// External function to call when another Collider enters this trigger Collider
+        /// External function to call when another collider enters this trigger collider
         void (*onTriggerEnter)(Collider*) = nullptr;
-        /// External function to call when another Collider exits this trigger Collider
+        /// External function to call when another collider exits this trigger collider
         void (*onTriggerExit)(Collider*) = nullptr;
-        /// External function to call when another Collider remains in this trigger Collider
+        /// External function to call when another collider remains in this trigger collider
         void (*onTriggerStay)(Collider*) = nullptr;
 
         Collider() : Node3D() {}
@@ -129,16 +129,16 @@ class Collider: public Node3D
             previousMatrix = getGlobalMatrix();
         }
 
-        /// @return True if the point is within the bounds of the Collider.
+        /// @return True if the point is within the bounds of the collider.
         virtual bool inBounds(glm::vec3 point) const = 0;
 
-        /// @return A set containing points within the Collider.
+        /// @return A set containing points within the collider.
         virtual PointSet getPointSet() const = 0;
 
-        /// @return The sphere bounds containing the Collider.
+        /// @return The sphere bounds containing the collider.
         virtual SphereBounds getSphereBounds() const = 0;
 
-        /// @return The bounding box containing the Collider.
+        /// @return The bounding box containing the collider.
         virtual AABBExtents getAABBExtents() const = 0;
 
         void commitGlobalUpdate() override
@@ -158,7 +158,7 @@ class Collider: public Node3D
         }
 };
 
-/// A Collider shaped like a box
+/// A collider shaped like a box
 class BoxCollider: public Collider
 {
     float halfWidth() const {return width / 2.0f;}
@@ -258,7 +258,7 @@ class BoxCollider: public Collider
         }
 };
 
-/// A spherical Collider
+/// A spherical collider
 class SphereCollider: public Collider
 {
     public:
@@ -349,7 +349,7 @@ class SphereCollider: public Collider
         }
 };
 
-/// A Collider shaped like a cylinder with two hemispheres at the ends
+/// A collider shaped like a cylinder with two hemispheres at the ends
 class CapsuleCollider: public Collider
 {
     float halfHeight() const {return height / 2.0f;}
@@ -464,7 +464,7 @@ class CapsuleCollider: public Collider
         }
 };
 
-/// A Collider shaped like a spherical cone
+/// A collider shaped like a spherical cone
 class ConeCollider : public Collider
 {
     private:

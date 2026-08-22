@@ -19,7 +19,7 @@ struct AABBextents {
 class ColliderShow;
 
 // Main class representing a generic collider
-class Colliders {
+class Collider {
 	friend ColliderShow;
 
 	colliderType type; // AABB or OOBB or POINT or SPHERE or BVH
@@ -33,32 +33,32 @@ class Colliders {
 	float r;
 
 	// BVH: list of the children colliders belonging to the BVH node
-	std::vector<Colliders *> children;
+	std::vector<Collider *> children;
 
 	// World matrix of the collider (position, rotation, scale)
 	glm::mat4 Wm;
 
 	// Utility functions
-	void transformAABB(EightPoints &Ps, Colliders &C);
+	void transformAABB(EightPoints &Ps, Collider &C);
 	void getExtentsAABB(EightPoints &Ps, AABBextents &E);
 	glm::vec3 getClosestPointOnAABB(AABBextents &E, glm::vec3 P);
-	float getTransformedRadius(Colliders &C);
+	float getTransformedRadius(Collider &C);
 	void getMinMaxAlongAxes(EightPoints P, glm::vec3 Axis, float &Min, float &Max);
 	bool checkIntersectAxis(EightPoints P1, EightPoints P2, glm::vec3 Axis);
 	void getModelExtentsAABB(Model *M, AABBextents &E);
 
 	// Collisions functions
-	bool collisionPointSphere(Colliders &P1l, Colliders &P2l);
-	bool collisionSphereSphere(Colliders &P1l, Colliders &P2l);
-	bool collisionPointPoint(Colliders &P1l, Colliders &P2l);
-	bool collisionPointAABB(Colliders &P1l, Colliders &P2l);
-	bool collisionPointOOBB(Colliders &P1l, Colliders &P2l);
-	bool collisionAABBAABB(Colliders &P1l, Colliders &P2l);
-	bool collisionOOBBAABB(Colliders &P1l, Colliders &P2l);
-	bool collisionOOBBOOBB(Colliders &P1l, Colliders &P2l);
-	bool collisionSphereAABB(Colliders &P1l, Colliders &P2l);
-	bool collisionSphereOOBB(Colliders &P1l, Colliders &P2l);
-	bool collisionBVHCollider(Colliders &P1l, Colliders &P2l);
+	bool collisionPointSphere(Collider &P1l, Collider &P2l);
+	bool collisionSphereSphere(Collider &P1l, Collider &P2l);
+	bool collisionPointPoint(Collider &P1l, Collider &P2l);
+	bool collisionPointAABB(Collider &P1l, Collider &P2l);
+	bool collisionPointOOBB(Collider &P1l, Collider &P2l);
+	bool collisionAABBAABB(Collider &P1l, Collider &P2l);
+	bool collisionOOBBAABB(Collider &P1l, Collider &P2l);
+	bool collisionOOBBOOBB(Collider &P1l, Collider &P2l);
+	bool collisionSphereAABB(Collider &P1l, Collider &P2l);
+	bool collisionSphereOOBB(Collider &P1l, Collider &P2l);
+	bool collisionBVHCollider(Collider &P1l, Collider &P2l);
 
 	public:
 	// Initialization functions
@@ -71,16 +71,16 @@ class Colliders {
 	void fitOOBB(Model *M);
 	void initSphere(float x, float y, float z, float _r);
 //	void initCapsule(float _x1, float _y1, float _z1, float _x2, float _y2, float _z2, float _r);
-	void initBVH(std::vector<Colliders *> _c);
+	void initBVH(std::vector<Collider *> _c);
 
 	// Other functions
 	void setWorldMatrix(glm::mat4 M);
-	bool collidesWith(Colliders &dest);
+	bool collidesWith(Collider &dest);
 	AABBextents getExtents();
 };
 
 // Initialize a POINT collider
-inline void Colliders::initPoint(float x, float y, float z) {
+inline void Collider::initPoint(float x, float y, float z) {
 	type = CLD_POINT;
 	Wm = glm::mat4(1);
 	children = {};
@@ -94,7 +94,7 @@ void Collider::initSegment(float _x1, float _y1, float _z1, float _x2, float _y2
 	type = CLD_SEGMENT;
 	Wm = glm::mat4(1);
 	children = {};
-
+	
 	x1 = _x1; y1 = _y1; z1 = _z1;
 	x2 = _x2; y2 = _y2; z2 = _z2;
 }
@@ -103,13 +103,13 @@ void Collider::initRect(float _x1, float _y1, float _x2, float _y2) {
 	type = CLD_RECT;
 	Wm = glm::mat4(1);
 	children = {};
-
+	
 	x1 = _x1; y1 = _y1;
 	x2 = _x2; y2 = _y2;
 }*/
 
 // Initialize an AABB Collider
-inline void Colliders::initAABB(float _x1, float _y1, float _z1, float _x2, float _y2, float _z2) {
+inline void Collider::initAABB(float _x1, float _y1, float _z1, float _x2, float _y2, float _z2) {
 	type = CLD_AABB;
 	Wm = glm::mat4(1);
 	children = {};
@@ -120,7 +120,7 @@ inline void Colliders::initAABB(float _x1, float _y1, float _z1, float _x2, floa
 }
 
 // Initialize an OOBB Collider
-inline void Colliders::initOOBB(float _x1, float _y1, float _z1, float _x2, float _y2, float _z2) {
+inline void Collider::initOOBB(float _x1, float _y1, float _z1, float _x2, float _y2, float _z2) {
 	type = CLD_OOBB;
 	Wm = glm::mat4(1);
 	children = {};
@@ -132,14 +132,14 @@ inline void Colliders::initOOBB(float _x1, float _y1, float _z1, float _x2, floa
 }
 
 // Compute the model's AABB extents from its vertices
-inline void Colliders::getModelExtentsAABB(Model *M, AABBextents &E) {
+inline void Collider::getModelExtentsAABB(Model *M, AABBextents &E) {
 	VertexDescriptor *VD = M->getVD();
-
+	
 	if(!VD->Position.hasIt) {
 		std::cout << "Error! Vertex descriptor does not have position. Cannot create Bounding Box\n";
 		return;
 	}
-
+	
 	int offset = VD->Position.offset;		// Offset of position inside vertex's structure
 	int stride = VD->Bindings[0].stride;	// Size of a vertex in bytes
 
@@ -167,9 +167,9 @@ inline void Colliders::getModelExtentsAABB(Model *M, AABBextents &E) {
 }
 
 // Initialize an AABB enclosing a model
-inline void Colliders::fitAABB(Model *M) {
+inline void Collider::fitAABB(Model *M) {
 	AABBextents E;
-
+	
 	getModelExtentsAABB(M, E);
 	initAABB(E.xMin, E.yMin, E.zMin, E.xMax, E.yMax, E.zMax);
 }
@@ -177,15 +177,15 @@ inline void Colliders::fitAABB(Model *M) {
 // Initialize an OOBB enclosing a model
 // Note: this returns a non-oriented box in local space.
 //		 Rotation must be applied by setting its world matrix.
-inline void Colliders::fitOOBB(Model *M) {
+inline void Collider::fitOOBB(Model *M) {
 	AABBextents E;
-
+	
 	getModelExtentsAABB(M, E);
 	initOOBB(E.xMin, E.yMin, E.zMin, E.xMax, E.yMax, E.zMax);
 }
 
 // Initialize a SPHERE collider
-inline void Colliders::initSphere(float x, float y, float z, float _r) {
+inline void Collider::initSphere(float x, float y, float z, float _r) {
 	type = CLD_SPHERE;
 	Wm = glm::mat4(1);
 	children = {};
@@ -200,14 +200,14 @@ inline void Colliders::initSphere(float x, float y, float z, float _r) {
 void Collider::initCapsule(float _x1, float _y1, float _z1, float _x2, float _y2, float _z2, float _r) {
 	type = CLD_CAPSULE;
 	Wm = glm::mat4(1);
-
+	
 	x1 = _x1; y1 = _y1; z1 = _z1;
 	x2 = _x2; y2 = _y2; z2 = _z2;
 	r = _r;
 }*/
 
 // Initialize a BVH node computing the AABB that encloses all the children
-inline void Colliders::initBVH(std::vector<Colliders *> _c) {
+inline void Collider::initBVH(std::vector<Collider *> _c) {
 	type = CLD_BVH;
 	Wm = glm::mat4(1);
 	children = _c;
@@ -240,7 +240,7 @@ inline void Colliders::initBVH(std::vector<Colliders *> _c) {
 }
 
 // Set collider's World Matrix
-inline void Colliders::setWorldMatrix(glm::mat4 M) {
+inline void Collider::setWorldMatrix(glm::mat4 M) {
 	Wm = M;
 	// If it is a BVH, propagate the matrix to all the children
 	for(auto* child : children) {
@@ -251,14 +251,14 @@ inline void Colliders::setWorldMatrix(glm::mat4 M) {
 // Check collisions between a POINT collider and an AABB collider
 // Note: a point collides with an AABB if, after being transformed in world space,
 //		 it is located inside the transformed AABB's extents.
-inline bool Colliders::collisionPointAABB(Colliders &P1l, Colliders &P2l) {
+inline bool Collider::collisionPointAABB(Collider &P1l, Collider &P2l) {
 	// P1l: POINT, P2L: AABB
 
 	// Transform the point from local space to world space
 	glm::vec3 P1 = glm::vec3(P1l.Wm * glm::vec4(P1l.x1, P1l.y1, P1l.z1, 1.0f));
 
 	// Compute world space AABB extents
-	EightPoints P2;
+	EightPoints P2; 
 	AABBextents E2;
 	transformAABB(P2, P2l);
 	getExtentsAABB(P2, E2); // Compute min/max from transformed positions
@@ -273,7 +273,7 @@ inline bool Colliders::collisionPointAABB(Colliders &P1l, Colliders &P2l) {
 // Note: To check if a point collides with an OOBB, we first transform the point in world space,
 //		 then we bring the point into OOBB's local space, and finally we check if the point is located
 //		 inside the OOBB.
-inline bool Colliders::collisionPointOOBB(Colliders &P1l, Colliders &P2l)
+inline bool Collider::collisionPointOOBB(Collider &P1l, Collider &P2l)
 {
 	// P1l: POINT, P2l: OOBB
 
@@ -292,10 +292,10 @@ inline bool Colliders::collisionPointOOBB(Colliders &P1l, Colliders &P2l)
 
 // Check collisions between two AABB colliders
 // Note: here we just check the overlapping along each axis
-inline bool Colliders::collisionAABBAABB(Colliders &P1l, Colliders &P2l) {
+inline bool Collider::collisionAABBAABB(Collider &P1l, Collider &P2l) {
 	// P1l: AABB, P2l: AABB
 
-	EightPoints P1, P2;
+	EightPoints P1, P2; 
 	AABBextents E1, E2;
 
 	// Transform both boxes in world space
@@ -314,10 +314,10 @@ inline bool Colliders::collisionAABBAABB(Colliders &P1l, Colliders &P2l) {
 
 // This function projects the 8 vertices of a box on the axes and returns min/max
 // Note: this function is used for SAT (Separating Axis Theorem)
-inline void Colliders::getMinMaxAlongAxes(EightPoints P, glm::vec3 Axis, float &Min, float &Max) {
+inline void Collider::getMinMaxAlongAxes(EightPoints P, glm::vec3 Axis, float &Min, float &Max) {
 	float d = glm::dot(Axis, P.P[0]);
 	Min = Max = d;
-
+	
 	for(int i = 1; i < 8; i++) {
 		d = glm::dot(Axis, P.P[i]);
 		if(d < Min) {Min = d;}
@@ -327,9 +327,9 @@ inline void Colliders::getMinMaxAlongAxes(EightPoints P, glm::vec3 Axis, float &
 
 // This functions checks for overlap between two boxes projected on an axis
 // Note: this function is used for SAT (Separating Axis Theorem)
-inline bool Colliders::checkIntersectAxis(EightPoints P1, EightPoints P2, glm::vec3 Axis) {
+inline bool Collider::checkIntersectAxis(EightPoints P1, EightPoints P2, glm::vec3 Axis) {
 	float P1min, P1max, P2min, P2max;
-
+	
 	getMinMaxAlongAxes(P1, Axis, P1min, P1max);
 	getMinMaxAlongAxes(P2, Axis, P2min, P2max);
 
@@ -340,7 +340,7 @@ inline bool Colliders::checkIntersectAxis(EightPoints P1, EightPoints P2, glm::v
 // Check collisions between an OOBB collider and an AABB collider
 // Note: to check for collisions between OOBB and AABB colliders, we use the SAT (Separating Axis Theorem),
 //		 using 15 test axes (3 OOBB's axes, 3 AABB's axes, 9 cross product crossed axes)
-inline bool Colliders::collisionOOBBAABB(Colliders &P1l, Colliders &P2l) {
+inline bool Collider::collisionOOBBAABB(Collider &P1l, Collider &P2l) {
 	// P1l: OOBB, P2l: AABB
 
 	EightPoints P1, P2;
@@ -378,18 +378,18 @@ inline bool Colliders::collisionOOBBAABB(Colliders &P1l, Colliders &P2l) {
 // Check collisions between two OOBB colliders
 // Note: here we use a trick: we bring the first OOBB into its self local space.
 //		 In this way, the first OOBB becomes an AABB, and we can reuse collisionOOBBAABB.
-inline bool Colliders::collisionOOBBOOBB(Colliders &P1l, Colliders &P2l)
+inline bool Collider::collisionOOBBOOBB(Collider &P1l, Collider &P2l)
 {
 	// P1l: OOBB, P2l: OOBB
 
 	glm::mat4 inv = glm::inverse(P1l.Wm);
 
 	// Transform the first OOBB into its self local space (it becomes an AABB)
-	Colliders AABB = P1l;
+	Collider AABB = P1l;
 	AABB.setWorldMatrix(inv * P1l.Wm);
 
 	// Transform the second OOBB into first OOBB's local space
-	Colliders OOBB = P2l;
+	Collider OOBB = P2l;
 	OOBB.setWorldMatrix(inv * P2l.Wm);
 
 	// Check collisions as OOBB-AABB case
@@ -397,7 +397,7 @@ inline bool Colliders::collisionOOBBOOBB(Colliders &P1l, Colliders &P2l)
 }
 
 // This function transforms the 8 AABB's vertices in world space
-inline void Colliders::transformAABB(EightPoints &Ps, Colliders &C) {
+inline void Collider::transformAABB(EightPoints &Ps, Collider &C) {
 
 	// Local vertices of the AABB
 	const glm::vec3 Pl[8] = {
@@ -418,7 +418,7 @@ inline void Colliders::transformAABB(EightPoints &Ps, Colliders &C) {
 }
 
 // This function computes min/max of world space AABB's points
-inline void Colliders::getExtentsAABB(EightPoints &Ps, AABBextents &E) {
+inline void Collider::getExtentsAABB(EightPoints &Ps, AABBextents &E) {
 	E.xMin = E.xMax = Ps.P[0].x;
 	E.yMin = E.yMax = Ps.P[0].y;
 	E.zMin = E.zMax = Ps.P[0].z;
@@ -434,7 +434,7 @@ inline void Colliders::getExtentsAABB(EightPoints &Ps, AABBextents &E) {
 }
 
 // This function returns the radius of the sphere, scaled accordingly with the world matrix
-inline float Colliders::getTransformedRadius(Colliders &C) {
+inline float Collider::getTransformedRadius(Collider &C) {
 
 	// Scale of each world matrix's axis
 	float sx = glm::length(glm::vec3(C.Wm[0]));
@@ -444,12 +444,12 @@ inline float Colliders::getTransformedRadius(Colliders &C) {
 	// Use the largest component
 	float s = (sx > sy ? sx : sy);
 	s = (s > sz ? s : sz);
-
+	
 	return C.r * s;
 }
 
 // Check collisions between a SPHERE collider and an AABB collider
-inline bool Colliders::collisionSphereAABB(Colliders &P1l, Colliders &P2l) {
+inline bool Collider::collisionSphereAABB(Collider &P1l, Collider &P2l) {
 	// P1l: SPHERE, P2l: AABB
 
 	// Radius of the sphere in world space (considering potential scaling of the sphere)
@@ -459,7 +459,7 @@ inline bool Colliders::collisionSphereAABB(Colliders &P1l, Colliders &P2l) {
 	glm::vec3 P1 = glm::vec3(P1l.Wm * glm::vec4(P1l.x1, P1l.y1, P1l.z1, 1.0f));
 
 	// Compute world space AABB extents
-	EightPoints P2;
+	EightPoints P2; 
 	AABBextents E2;
 	transformAABB(P2, P2l);
 	getExtentsAABB(P2, E2);
@@ -476,7 +476,7 @@ inline bool Colliders::collisionSphereAABB(Colliders &P1l, Colliders &P2l) {
 //						2) Clamp each axis distance to the OOBB extent
 //						3) Reconstruct closest point on the OOBB
 //						4) collision if (distance)^2 <= (radius)^2
-inline bool Colliders::collisionSphereOOBB(Colliders &P1l, Colliders &P2l) {
+inline bool Collider::collisionSphereOOBB(Collider &P1l, Collider &P2l) {
     // P1l: SPHERE, P2l: OOBB
 
 	// Center of the sphere in world space
@@ -552,7 +552,7 @@ inline bool Colliders::collisionSphereOOBB(Colliders &P1l, Colliders &P2l) {
 }
 
 // This function computes the closest point on an AABB to a given point P
-inline glm::vec3 Colliders::getClosestPointOnAABB(AABBextents &E, glm::vec3 P) {
+inline glm::vec3 Collider::getClosestPointOnAABB(AABBextents &E, glm::vec3 P) {
 
 	return glm::vec3(
 		glm::clamp(P.x, E.xMin, E.xMax),
@@ -562,7 +562,7 @@ inline glm::vec3 Colliders::getClosestPointOnAABB(AABBextents &E, glm::vec3 P) {
 }
 
 // Check collisions between a POINT collider and a SPHERE collider
-inline bool Colliders::collisionPointSphere(Colliders &P1l, Colliders &P2l) {
+inline bool Collider::collisionPointSphere(Collider &P1l, Collider &P2l) {
 	// P1l: POINT, P2l: SPHERE
 
 	float r = getTransformedRadius(P2l);
@@ -574,7 +574,7 @@ inline bool Colliders::collisionPointSphere(Colliders &P1l, Colliders &P2l) {
 }
 
 // Check collisions between two SPHERE colliders
-inline bool Colliders::collisionSphereSphere(Colliders &P1l, Colliders &P2l) {
+inline bool Collider::collisionSphereSphere(Collider &P1l, Collider &P2l) {
 	// P1l: SPHERE, P2l: SPHERE
 
 	float r1 = getTransformedRadius(P1l);
@@ -587,7 +587,7 @@ inline bool Colliders::collisionSphereSphere(Colliders &P1l, Colliders &P2l) {
 }
 
 // Check collisions between two POINT colliders
-inline bool Colliders::collisionPointPoint(Colliders &P1l, Colliders &P2l) {
+inline bool Collider::collisionPointPoint(Collider &P1l, Collider &P2l) {
 	// P1l: POINT, P2l: POINT
 
 	glm::vec3 P1 = glm::vec3(P1l.Wm * glm::vec4(P1l.x1, P1l.y1, P1l.z1, 1.0f));
@@ -602,13 +602,13 @@ inline bool Colliders::collisionPointPoint(Colliders &P1l, Colliders &P2l) {
 //							2) If the other collider does not intersect this AABB, then there is no collision
 //							3) If it's a leaf, check direct collider
 //							4) Otherwise recursively check children
-inline bool Colliders::collisionBVHCollider(Colliders &P1l, Colliders &P2l) {
+inline bool Collider::collisionBVHCollider(Collider &P1l, Collider &P2l) {
 	// P1l: BVH, P2l: a generic collider
 
 	// Compute the bounding box (AABB) of this BVH node
 	AABBextents E = P1l.getExtents();
 
-	Colliders box;
+	Collider box;
 	box.initAABB(E.xMin, E.yMin, E.zMin, E.xMax, E.yMax, E.zMax);
 	box.setWorldMatrix(glm::mat4(1));
 
@@ -628,7 +628,7 @@ inline bool Colliders::collisionBVHCollider(Colliders &P1l, Colliders &P2l) {
 }
 
 // This function acts as a dispatcher selecting the correct collision checking algorithm based on both collider types
-inline bool Colliders::collidesWith(Colliders &dest) {
+inline bool Collider::collidesWith(Collider &dest) {
 	switch(type) {
 	  case CLD_POINT:
 		switch(dest.type) {
@@ -685,19 +685,19 @@ inline bool Colliders::collidesWith(Colliders &dest) {
 	  case CLD_BVH:
 		return collisionBVHCollider(*this, dest);
 	}
-
+	
 	std::cout << "Collision not supported between types\n";
 	return false;
 }
 
 // Compute the world space AABB extents of any collider
 // Note: it is used for BVH
-inline AABBextents Colliders::getExtents() {
+inline AABBextents Collider::getExtents() {
 	AABBextents E, E2;
 	glm::vec3 P;
 	float r;
-	EightPoints P8;
-
+	EightPoints P8; 
+		
 	switch(type) {
 	  case CLD_POINT:
 		// Extents collapse to the point position
@@ -784,7 +784,7 @@ struct ColliderShowPushConstant {
 
 // Internal representation of a collider ready for rendering.
 struct ShownCollider {
-	Colliders *c;		// Pointer to the original Collider object
+	Collider *c;		// Pointer to the original Collider object
 	int start;			// Start index in the shared index buffer
 	int len;			// Number of indices to render
 	glm::vec4 Stroke;	// Stroke color
@@ -794,7 +794,7 @@ struct ShownCollider {
 // It builds wireframe meshes for AABB, OOBB, SPHERE, POINT and BVH, uploads them to Vulkan buffers,
 // and renders them as line lists.
 class ColliderShow {
-	friend Colliders;
+	friend Collider;
 
 	int submitOrder;
 
@@ -803,8 +803,8 @@ class ColliderShow {
 
 	// Vulkan objects
 	DescriptorSetLayout DSL;
-	VertexDescriptor VD;
-
+	VertexDescriptor VD;	
+	
 	BaseProject *BP;
 
 	RenderPass RP;
@@ -870,7 +870,7 @@ class ColliderShow {
 	// for the collider’s bounding geometry.
 	// Note: this is necessary because a single shared Model is used to store the
 	//		 geometry of all colliders together.
-	void SizeBoundingGeometry(Colliders *c, int &sv, int &si) {
+	void SizeBoundingGeometry(Collider *c, int &sv, int &si) {
 		switch(c->type) {
 			case CLD_AABB:
 				// 8 corners, 12 edges -> 24 indices
@@ -912,7 +912,7 @@ class ColliderShow {
 	//			- ib: the current write index in the index buffer
 	// Note: for OOBB, we use the collider's world matrix to transform its local AABB corner coordinates.
 	//		 For AABB, we recompute the global extents and rebuild an aligned AABB.
-	void MakeBox(Colliders *c, ColliderShowVertex *&V_vertex, int &ib, bool isAxisAligned) {
+	void MakeBox(Collider *c, ColliderShowVertex *&V_vertex, int &ib, bool isAxisAligned) {
 
 		// Compute the 8 world space vertices of the box (AABB or OOBB)
 		EightPoints P8;
@@ -971,7 +971,7 @@ class ColliderShow {
 	// This function generates a sphere wireframe using 3 circles (XY, XZ, YZ planes)
 	// Note: each circle has SPHERE_RESOLUTION segments (the higher this value, the smoother the circle is).
 	//		 For each segment, we emit 2 vertices defining a line.
-	void MakeSphere(Colliders *c, ColliderShowVertex *&V_vertex, int &ib) {
+	void MakeSphere(Collider *c, ColliderShowVertex *&V_vertex, int &ib) {
 
 		// Compute sphere center in world space
 		glm::vec3 center = glm::vec3(c->Wm * glm::vec4(c->x1, c->y1, c->z1, 1.0f));
@@ -1013,7 +1013,7 @@ class ColliderShow {
 
 	// This function visualizes a point collider as a small crosshair aligned to world axes.
 	// Note: three short line segments are emitted (one for each axis)
-	void MakePoint(Colliders *c, ColliderShowVertex *&V_vertex, int &ib) {
+	void MakePoint(Collider *c, ColliderShowVertex *&V_vertex, int &ib) {
 
 		glm::vec3 P = glm::vec3(c->Wm * glm::vec4(c->x1, c->y1, c->z1, 1.0f));
 
@@ -1042,7 +1042,7 @@ class ColliderShow {
 
 	// This function dispatches to the correct geometry-construction function depending on the collider type
 	// Note: BVH nodes are rendered as AABBs and processed recursively.
-	void MakeBoundingGeometry(Colliders *c, ColliderShowVertex *&V_vertex, int &ib) {
+	void MakeBoundingGeometry(Collider *c, ColliderShowVertex *&V_vertex, int &ib) {
 		switch(c->type) {
 			case CLD_AABB:
 				MakeBox(c, V_vertex, ib, true);	// Axis-aligned bounding box
@@ -1085,7 +1085,7 @@ class ColliderShow {
 
 		// Create an empty model to store the generated mesh
 		M = new Model();
-
+		
 		int mainStride = VD.Bindings[0].stride;	// Size of one ColliderShowVertex
 		int ib = 0;  // Current index buffer write position
 		int sv = 0;  // Total vertex count
@@ -1109,7 +1109,7 @@ class ColliderShow {
 
 			// Generate wireframe geometry (box, sphere, point, BVH recursive…)
 			MakeBoundingGeometry(cld.c, V_vertex, ib);
-
+			
 			cld.len = ib - cld.start; // number of indices written
 		}
 
@@ -1134,7 +1134,7 @@ class ColliderShow {
 			M->cleanup();
 		}
 		DSL.cleanup();
-
+		
 		P.destroy();
 		RP.destroy();
 	}
@@ -1175,15 +1175,15 @@ class ColliderShow {
 							 0, 0);
 		}
 
-		RP.end(commandBuffer);
+		RP.end(commandBuffer);			
 	}
 
 	static void freeCommandBuffer(void *Params) {
 		Model *M = ((ColliderShowAndModel *)Params)->M;
 		M->cleanup();
-
+		
 		free(Params);
-	}
+	}	
 
 	void updateCommandBuffer() {
 		if (clds.empty()) return;
@@ -1211,7 +1211,7 @@ class ColliderShow {
 
 	// This function adds a new collider to be shown
 	// Note: stroke set to green by default
-	void show(Colliders *c) {
+	void show(Collider *c) {
 		clds.push_back({c, 0, 0, {0.0f, 1.0f, 0.0f, 1.0f}});
 		commandBufferMustUpdate = true;
 	}
@@ -1227,7 +1227,7 @@ class ColliderShow {
 	// Set stroke's color of a collider, searching by pointer
 	// Note: this function works always, even when dynamically adding/removing some
 	//		 shown colliders.
-	void setStroke(Colliders* c, glm::vec4 color) {
+	void setStroke(Collider* c, glm::vec4 color) {
 		for (auto& sc : clds) {
 			if (sc.c == c) {
 				sc.Stroke = color;

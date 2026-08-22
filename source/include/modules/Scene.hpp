@@ -15,7 +15,7 @@ struct Instance {
 	glm::mat4 Wm;
 	TechniqueInstances *TIp;
 
-	Colliders *C = nullptr; // Pointer to Instance's Collider
+	Collider *C = nullptr; // Pointer to Instance's Collider
 } ;
 
 struct TextureDefs {
@@ -102,7 +102,7 @@ class Scene {
 	std::vector<ColliderDef> ModelColliderDefs;
 
 	// Global List for the memory cleanup of the instantiated colliders
-	std::vector<Colliders *> GlobalColliders;
+	std::vector<Collider *> GlobalColliders;
 
 	// Colliders visualization
 	ColliderShow ColShow;
@@ -116,8 +116,8 @@ class Scene {
 	void updateColliderVisualizer(uint32_t currentImage, glm::mat4 ViewPrj);
 	void refreshColliderVisualizer();
 	void ParseColliderRecursive(nlohmann::json &node, ColliderDef &def, Model **M, int modelIndex);
-	Colliders* CreateColliderRecursive(ColliderDef &def, std::vector<Colliders *> &GlobalList, ColliderShow &Show, bool parentVisible);
-	void setColliderStroke(Colliders* c, glm::vec4 color);
+	Collider* CreateColliderRecursive(ColliderDef &def, std::vector<Collider *> &GlobalList, ColliderShow &Show, bool parentVisible);
+	void setColliderStroke(Collider* c, glm::vec4 color);
 };
 
 #ifdef SCENE_IMPLEMENTATION
@@ -376,7 +376,7 @@ std::cout << "\n";
 
 					// Recursive helper
 					// Note: initial parentVisible flag is false, it will be the root "visible" flag to decide
-					Colliders *newCol = CreateColliderRecursive(def, GlobalColliders, ColShow, false);
+					Collider *newCol = CreateColliderRecursive(def, GlobalColliders, ColShow, false);
 
 					newCol->setWorldMatrix(TI[k].I[j].Wm);
 					TI[k].I[j].C = newCol;
@@ -613,7 +613,7 @@ void Scene::ParseColliderRecursive(nlohmann::json &node, ColliderDef &def, Model
 
 	// AABB Auto-Fit (by shortcut or by empty parameters)
     if (def.type == "FitAABB" || (def.type == "AABB" && def.params.empty())) {
-         Colliders tmp;
+         Collider tmp;
     	 tmp.fitAABB(M[modelIndex]);
          AABBextents ext = tmp.getExtents();
          def.params = {ext.xMin, ext.yMin, ext.zMin, ext.xMax, ext.yMax, ext.zMax};
@@ -622,7 +622,7 @@ void Scene::ParseColliderRecursive(nlohmann::json &node, ColliderDef &def, Model
 
 	// OOBB Auto-Fit (by shortcut or by empty parameters)
     else if (def.type == "FitOOBB" || (def.type == "OOBB" && def.params.empty())) {
-         Colliders tmp;
+         Collider tmp;
     	 tmp.fitOOBB(M[modelIndex]);
          AABBextents ext = tmp.getExtents();
          def.params = {ext.xMin, ext.yMin, ext.zMin, ext.xMax, ext.yMax, ext.zMax};
@@ -631,8 +631,8 @@ void Scene::ParseColliderRecursive(nlohmann::json &node, ColliderDef &def, Model
 }
 
 // Recursive helper to create the Colliders
-Colliders* Scene::CreateColliderRecursive(ColliderDef &def, std::vector<Colliders *> &GlobalList, ColliderShow &Show, bool parentVisible) {
-    Colliders *newCol = new Colliders();
+Collider* Scene::CreateColliderRecursive(ColliderDef &def, std::vector<Collider *> &GlobalList, ColliderShow &Show, bool parentVisible) {
+    Collider *newCol = new Collider();
 
     // Primitive creation
     if (def.type == "AABB") {
@@ -668,7 +668,7 @@ Colliders* Scene::CreateColliderRecursive(ColliderDef &def, std::vector<Collider
 		newCol->initPoint(def.params[0], def.params[1], def.params[2]);
     }
     else if (def.type == "BVH") {
-        std::vector<Colliders *> childrenPtrs;
+        std::vector<Collider *> childrenPtrs;
         bool isVisible = def.visible || parentVisible; // If BVH is visible, show the children
 
     	if (def.children.empty())
@@ -679,7 +679,7 @@ Colliders* Scene::CreateColliderRecursive(ColliderDef &def, std::vector<Collider
 
         for(auto &childDef : def.children) {
         	// Recursively create the children
-            Colliders* childCol = CreateColliderRecursive(childDef, GlobalList, Show, isVisible);
+            Collider* childCol = CreateColliderRecursive(childDef, GlobalList, Show, isVisible);
             childrenPtrs.push_back(childCol);
         }
 
@@ -703,7 +703,7 @@ Colliders* Scene::CreateColliderRecursive(ColliderDef &def, std::vector<Collider
     return newCol;
 }
 
-void Scene::setColliderStroke(Colliders* c, glm::vec4 color) {
+void Scene::setColliderStroke(Collider* c, glm::vec4 color) {
 	ColShow.setStroke(c, color);
 }
 
