@@ -14,24 +14,23 @@ class CustomCameraUpdate : public UpdateNode3D {
         this->globalTranslate({0, 2, 0});
 
         for (Node *child : this->children) {
-            if (PerspectiveCamera *camera = dynamic_cast<PerspectiveCamera*>(child)) {
+            if (PerspectiveCamera *camera = dynamic_cast<PerspectiveCamera*>(child))
                 this->PCamera = camera;
-            } else if (OrthoCamera* camera = dynamic_cast<OrthoCamera*>(child)) {
+            else if (OrthoCamera* camera = dynamic_cast<OrthoCamera*>(child))
                 this->OCamera = camera;
-            }
         }
     }
 
     void update() override {
 
         // Camera change
-        if (glfwGetKey(Engine::MainEngine->getWindow(), GLFW_KEY_P))
+        if (Engine::MainEngine->isKeyBeingPressed(GLFW_KEY_P))
             Engine::MainEngine->setMainCamera(PCamera);
-        else if (glfwGetKey(Engine::MainEngine->getWindow(), GLFW_KEY_O))
+        else if (Engine::MainEngine->isKeyBeingPressed(GLFW_KEY_O))
             Engine::MainEngine->setMainCamera(OCamera);
 
         // FOV update (ortho does not have FOV)
-        if (glfwGetKey(Engine::MainEngine->getWindow(), GLFW_KEY_F))
+        if (Engine::MainEngine->isKeyBeingPressed(GLFW_KEY_F))
             this->PCamera->setFOV(PCamera->getFOV() + glm::radians(Engine::MainEngine->deltaTime * 10));
 
         // update the camera position and direction with the inputs
@@ -52,9 +51,9 @@ class CustomCameraUpdate : public UpdateNode3D {
         this->globalRotateY(-Engine::MainEngine->inputRotation.y * Engine::MainEngine->deltaTime);
 
         // Vertical movement
-        if (glfwGetKey(Engine::MainEngine->getWindow(), GLFW_KEY_SPACE))
+        if (Engine::MainEngine->isKeyBeingPressed(GLFW_KEY_SPACE))
             this->globalTranslate(VEC3_Y * Engine::MainEngine->deltaTime);
-        else if (glfwGetKey(Engine::MainEngine->getWindow(), GLFW_KEY_V))
+        else if (Engine::MainEngine->isKeyBeingPressed(GLFW_KEY_V))
             this->globalTranslate(VEC3_Y * Engine::MainEngine->deltaTime * -1.0f);
 
     }

@@ -40,8 +40,9 @@ class Engine : public BaseProject {
         // Rotation input
         glm::vec3 inputRotation = VEC3_ZERO;
 
-        GLFWwindow *getWindow() {
-            return this->window;
+        // Returns true if the given key is being pressed
+        bool isKeyBeingPressed(int key) {
+            return glfwGetKey(this->window, key);
         }
 
         /**
