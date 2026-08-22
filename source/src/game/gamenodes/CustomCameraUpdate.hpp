@@ -1,32 +1,61 @@
+#include "OrthoCamera.hpp"
+#include "PerspectiveCamera.hpp"
 #include "UpdateNode3D.hpp"
 #include "Engine.hpp"
+#include "glm/trigonometric.hpp"
 
 class CustomCameraUpdate : public UpdateNode3D {
+
+    PerspectiveCamera *PCamera = NULL;
+    OrthoCamera *OCamera = NULL;
 
     void onEnter() override {
         // Position over the plane
         this->globalTranslate({0, 2, 0});
+
+        for (Node *child : this->children) {
+            if (PerspectiveCamera *camera = dynamic_cast<PerspectiveCamera*>(child)) {
+                this->PCamera = camera;
+            } else if (OrthoCamera* camera = dynamic_cast<OrthoCamera*>(child)) {
+                this->OCamera = camera;
+            }
+        }
     }
 
     void update() override {
+
+        // Camera change
+        if (glfwGetKey(Engine::MainEngine->getWindow(), GLFW_KEY_P))
+            Engine::MainEngine->setMainCamera(PCamera);
+        else if (glfwGetKey(Engine::MainEngine->getWindow(), GLFW_KEY_O))
+            Engine::MainEngine->setMainCamera(OCamera);
+
+        // FOV update (ortho does not have FOV)
+        if (glfwGetKey(Engine::MainEngine->getWindow(), GLFW_KEY_F))
+            this->PCamera->setFOV(PCamera->getFOV() + glm::radians(Engine::MainEngine->deltaTime * 10));
+
         // update the camera position and direction with the inputs
         glm::vec3 xdir = glm::normalize(glm::vec3(this->getXAxis().x, 0, this->getXAxis().z));
         glm::vec3 zdir = glm::normalize(glm::vec3(this->getZAxis().x, 0, this->getZAxis().z));
 
-        if (engineGlobals.inputTranslation.x == 1)
-            this->globalTranslate(xdir * engineGlobals.deltaTime);
-        else if (engineGlobals.inputTranslation.x == -1)
-            this->globalTranslate(xdir * engineGlobals.deltaTime * -1.0f);
+        if (Engine::MainEngine->inputTranslation.x == 1)
+            this->globalTranslate(xdir * Engine::MainEngine->deltaTime);
+        else if (Engine::MainEngine->inputTranslation.x == -1)
+            this->globalTranslate(xdir * Engine::MainEngine->deltaTime * -1.0f);
         // Z axis is positive on the back
-        if (engineGlobals.inputTranslation.z == 1)
-            this->globalTranslate(zdir * engineGlobals.deltaTime);
-        else if (engineGlobals.inputTranslation.z == -1)
-            this->globalTranslate(zdir * engineGlobals.deltaTime * -1.0f);
+        if (Engine::MainEngine->inputTranslation.z == 1)
+            this->globalTranslate(zdir * Engine::MainEngine->deltaTime);
+        else if (Engine::MainEngine->inputTranslation.z == -1)
+            this->globalTranslate(zdir * Engine::MainEngine->deltaTime * -1.0f);
 
-        // TODO: find method to query input (window from engine is needed: API from Engine or Engine itself passed to the node?)
+        this->globalRotateX(-Engine::MainEngine->inputRotation.x * Engine::MainEngine->deltaTime);
+        this->globalRotateY(-Engine::MainEngine->inputRotation.y * Engine::MainEngine->deltaTime);
 
-        this->globalRotateX(-engineGlobals.inputRotation.x * engineGlobals.deltaTime);
-        this->globalRotateY(-engineGlobals.inputRotation.y * engineGlobals.deltaTime);
+        // Vertical movement
+        if (glfwGetKey(Engine::MainEngine->getWindow(), GLFW_KEY_SPACE))
+            this->globalTranslate(VEC3_Y * Engine::MainEngine->deltaTime);
+        else if (glfwGetKey(Engine::MainEngine->getWindow(), GLFW_KEY_V))
+            this->globalTranslate(VEC3_Y * Engine::MainEngine->deltaTime * -1.0f);
 
     }
 

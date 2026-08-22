@@ -6,38 +6,43 @@
 #include <json.hpp>
 #include <vulkan/vulkan_core.h>
 
+#include "GLFW/glfw3.h"
 #include "Renderer.hpp"
 #include "Node.hpp"
 #include "Node3D.hpp"
 #include "Node2D.hpp"
 #include "Model3D.hpp"
-#include "PerspectiveCamera.hpp"
+#include "Camera.hpp"
 #include "UpdateNode3D.hpp"
 #include "common.h"
-
-inline struct globals {
-    // Time elapsed from last frame
-    float deltaTime = 0;
-    // Translation input
-    glm::vec3 inputTranslation = VEC3_ZERO;
-    // Rotation input
-    glm::vec3 inputRotation = VEC3_ZERO;
-} engineGlobals;
-
 
 class Engine : public BaseProject {
 
     public:
 
+        inline static Engine *MainEngine = NULL;
+
         Engine() : renderer(this, &RP, [this](){submitCommandBuffer("main", 0, populateCommandBufferAccess, this);}) {
 
         }
 
-        /// The root of the current rendered scene
+        /// The root of the current rendered scen
         Node *scene;
 
         /// Camera that is currently being used to visualize the world
         Camera *mainCamera;
+
+        // globals
+        // Time elapsed from last frame
+        float deltaTime = 0;
+        // Translation input
+        glm::vec3 inputTranslation = VEC3_ZERO;
+        // Rotation input
+        glm::vec3 inputRotation = VEC3_ZERO;
+
+        GLFWwindow *getWindow() {
+            return this->window;
+        }
 
         /**
          *  Sets the given node as the current scene
@@ -178,6 +183,8 @@ class Engine : public BaseProject {
         // TODO: have better way to add nodes to the scene
         this->activateOnEnter(this->scene);
 
+        Engine::MainEngine = this;
+
 
 
 
@@ -303,9 +310,9 @@ class Engine : public BaseProject {
 
         // Update input globals
         bool fire = false;
-        engineGlobals.inputTranslation = VEC3_ZERO;
-        engineGlobals.inputRotation = VEC3_ZERO;
-        getSixAxis(engineGlobals.deltaTime, engineGlobals.inputTranslation, engineGlobals.inputRotation, fire);
+        this->inputTranslation = VEC3_ZERO;
+        this->inputRotation = VEC3_ZERO;
+        getSixAxis(this->deltaTime, this->inputTranslation, this->inputRotation, fire);
 
         // Update all UpdateNodes
         this->updateUpdate3DNodes(this->scene);
@@ -388,7 +395,7 @@ class Engine : public BaseProject {
         static int countedFrames = 0;
 
         countedFrames++;
-        elapsedT += engineGlobals.deltaTime;
+        elapsedT += this->deltaTime;
         if(elapsedT > 1.0f) {
             float Fps = (float)countedFrames / elapsedT;
 
@@ -405,4 +412,5 @@ class Engine : public BaseProject {
     }
 
 };
+
 #endif
