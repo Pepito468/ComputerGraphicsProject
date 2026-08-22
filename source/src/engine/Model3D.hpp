@@ -17,7 +17,7 @@ class Model3D : public Node3D {
 
     public:
 
-    Model3D();
+    Model3D() {}
 
     Model3D(std::string modelPath, const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale, Material* material, bool isVisible = true) :
         Node3D(position, rotation, scale)
@@ -26,6 +26,7 @@ class Model3D : public Node3D {
         this->material = material;
         this->isVisible = isVisible;
     }
+
     ~Model3D() = default;
 
     ///This must be called inside PipelineRender.descriptorSetsInits()
