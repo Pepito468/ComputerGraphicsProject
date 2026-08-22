@@ -4,7 +4,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/epsilon.hpp>
-#define EPSILON 0.00001f
+#define EPSILON 0.001f
 
 /// Returns true if for each component A == B (epsilon-equality)
 template<glm::length_t L, typename T, glm::qualifier Q>

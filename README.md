@@ -8,6 +8,6 @@
 | Transform System |         0          |        0        |       1        |        35         |
 | Physics          |         0          |        0        |       25       |         0         |
 | Model Rendering  |         0          |        0        |       0        |         0         |
-| Testing          |         3          |        0        |       11       |         3         |
+| Testing          |         3          |        0        |       16       |         3         |
 | Shaders          |         0          |        0        |       0        |         0         |
 | UI               |         15         |        0        |       0        |         0         |

@@ -9,14 +9,14 @@
 
 struct Bounds
 {
-    Collider* Collider;
+    Collider* collider;
     SphereBounds sphereBounds;
     AABBExtents aabbExtents;
     PointSet pointSet;
 
     explicit Bounds(Collider* coll)
     {
-        Collider = coll;
+        collider = coll;
         sphereBounds = coll->getSphereBounds();
         aabbExtents = coll->getAABBExtents();
         pointSet = coll->getPointSet();
@@ -24,7 +24,7 @@ struct Bounds
 
     ~Bounds() = default;
 
-    bool operator<(const Bounds& other) const { return Collider->UUID < other.Collider->UUID; }
+    bool operator<(const Bounds& other) const { return collider->UUID < other.collider->UUID; }
 };
 
 class Physics
@@ -68,11 +68,11 @@ class Physics
         //Points check
         for (const glm::vec3 p : a.pointSet)
         {
-            if (b.Collider->inBounds(p)) return true;
+            if (b.collider->inBounds(p)) return true;
         }
         for (const glm::vec3 p : b.pointSet)
         {
-            if (a.Collider->inBounds(p)) return true;
+            if (a.collider->inBounds(p)) return true;
         }
 
         return false;
@@ -99,7 +99,7 @@ class Physics
     static void processCollisions(Collider* coll, const std::set<Bounds>& collisions, const std::set<Bounds>& sceneBounds)
     {
         const bool hasHardCollision = std::ranges::any_of(collisions,
-        [](const Bounds& b) { return !b.Collider->isTrigger; });
+        [](const Bounds& b) { return !b.collider->isTrigger; });
         if (!coll->isTrigger && hasHardCollision)
         {
             //Reverse Collider's movements
@@ -109,14 +109,14 @@ class Physics
         for (const Bounds b : collisions)
         {
             //log(std::format("{} collided with {}", coll->name, b.Collider->name));
-            Collider* bColl = b.Collider;
+            Collider* bColl = b.collider;
             collisionCallbacks(coll, bColl);
         }
 
         //Check for trigger exits
         for (Bounds b : sceneBounds)
         {
-            Collider* bColl = b.Collider;
+            Collider* bColl = b.collider;
             //log(std::format("Exit check {}-{}: {} {} {}", bColl->name, coll->name,  bColl->isTrigger, bColl->CollidersInTrigger.contains(coll), !collisions.contains(b)));
             if (bColl->isTrigger && bColl->CollidersInTrigger.contains(coll) && !collisions.contains(b))
             {
@@ -175,7 +175,7 @@ class Physics
                 [bounds](const Bounds& b)
                 {
                     //Identity
-                    if (b.Collider->UUID == bounds.Collider->UUID) return false;
+                    if (b.collider->UUID == bounds.collider->UUID) return false;
                     return hasCollision(bounds, b);
                 });
 
@@ -192,7 +192,7 @@ class Physics
         {
             glm::vec3 point = VEC3_ZERO;
             float distance = 0.0f;
-            Collider* Collider = nullptr;
+            Collider* collider = nullptr;
         };
         /**
          * Shoots a ray from an origin point in a given direction and checks if it hits a Collider.
@@ -220,7 +220,7 @@ class Physics
                         {
                             hit->point = p;
                             hit->distance = step * i;
-                            hit->Collider = coll;
+                            hit->collider = coll;
                         }
                         return true;
                     }

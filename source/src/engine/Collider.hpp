@@ -372,18 +372,15 @@ class CapsuleCollider: public Collider
         bool inBounds(const glm::vec3 point) const override
         {
             const glm::vec3 p = toLocalSpace(point);
-            const float dY = p.y - getGlobalPosition().y;
-            if (-halfHeight() <= dY && dY <= halfHeight())
+            if (epsilonBetween(-halfHeight(), p.y, halfHeight()))
             {
                 //Cylindrical
-                const float dX = std::abs(p.x - getGlobalPosition().x);
-                const float dZ = std::abs(p.z - getGlobalPosition().z);
-                return (dX * dX + dZ * dZ) <= radius * radius;
+                return epsilonLessThanEqual((p.x * p.x + p.z * p.z), radius * radius);
             }
 
             //Sphere caps
-            const glm::vec3 capC = getGlobalPosition ()+ (VEC3_Y * halfHeight() * glm::sign(dY));
-            return glm::distance(p, capC) <= radius;
+            const glm::vec3 capC = VEC3_Y * halfHeight() * glm::sign(p.y);
+            return epsilonLessThanEqual(glm::distance(p, capC), radius);
         }
 
         PointSet getPointSet() const override
@@ -437,7 +434,7 @@ class CapsuleCollider: public Collider
             res.insert(toGlobalSpace({-sqrt3rdRad, -(halfHeight() + sqrt3rdRad), sqrt3rdRad}));
             res.insert(toGlobalSpace({-sqrt3rdRad, -(halfHeight() + sqrt3rdRad), -sqrt3rdRad}));
 
-            return PointSet();
+            return res;
         }
 
         SphereBounds getSphereBounds() const override
@@ -452,9 +449,9 @@ class CapsuleCollider: public Collider
             AABBExtents res = AABBExtents();
 
             const AABBExtents northCapExt = SphereCollider::getSphereExtents(radius,
-                glm::translate(MAT4_I, VEC3_Y * halfHeight()) * getGlobalMatrix());
+                glm::translate(MAT4_I, getLocalYAxis() * halfHeight() * getGlobalScale().y) * getGlobalMatrix());
             const AABBExtents southCapExt = SphereCollider::getSphereExtents(radius,
-                glm::translate(MAT4_I, -VEC3_Y * halfHeight()) * getGlobalMatrix());
+                glm::translate(MAT4_I, -getLocalYAxis() * halfHeight() * getGlobalScale().y) * getGlobalMatrix());
 
             res.xMax = std::max(northCapExt.xMax, southCapExt.xMax);
             res.yMax = std::max(northCapExt.yMax, southCapExt.yMax);
@@ -491,7 +488,7 @@ class ConeCollider : public Collider
         /// The radius of the cone along the Z-axis
         float radius = 1.0f;
 
-        /// The angle between the Z-axis of the cone and its extremes, in radians [0, PI]
+        /// The angle between the Z-axis of the cone and its extremes, in radians [0, PI / 2]
         float aperture = M_PI / 6;
 
         ConeCollider() : Collider() {}
@@ -506,11 +503,10 @@ class ConeCollider : public Collider
         bool inBounds(const glm::vec3 point) const override
         {
             const glm::vec3 p = toLocalSpace(point);
-            if (!(glm::distance(p, getGlobalPosition()) <= radius)) return false;
+            if (!epsilonLessThanEqual(glm::length(p), radius)) return false;
 
-            const glm::vec3 toP = glm::normalize(p - getGlobalPosition());
-            const float angle = glm::acos(glm::dot(getZAxis(), toP));
-            return angle <= aperture;
+            const float angle = glm::acos(glm::dot(VEC3_Z, glm::normalize(p)));
+            return epsilonLessThanEqual(angle, aperture);
         }
 
         PointSet getPointSet() const override
@@ -552,15 +548,11 @@ class ConeCollider : public Collider
 
         SphereBounds getSphereBounds() const override
         {
-            const PointSet corners = getOBBCorners();
-            glm::vec3 center = VEC3_ZERO;
-            for (const auto corner : corners)
-            {
-                center += corner;
-            }
-            center /= std::size(corners);
+            const glm::vec3 center = toGlobalSpace({0, 0, radius / 2.0f});
+            //Point on the circumference of the cone
+            const glm::vec3 edgePoint = toGlobalSpace({radius * glm::sin(aperture), 0, radius * glm::cos(aperture)});
 
-            return SphereBounds(center, glm::distance(center, *corners.begin()));
+            return SphereBounds(center, glm::distance(center, edgePoint));
         }
 
         AABBExtents getAABBExtents() const override
