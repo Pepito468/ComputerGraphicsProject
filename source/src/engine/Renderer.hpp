@@ -256,7 +256,7 @@ class Renderer {
      *<li>This method is meant to be called on runtime</li>
      *<li>If you want to load models on advance, use "preLoadModel" instead</li>
      */
-    void instantiate(std::string modelPath, glm::vec3 position, glm::vec3 rotation, glm::vec3 scale, Material* material) {
+    void instantiate(std::string modelPath, glm::vec3 position, glm::vec3 rotation, glm::vec3 scale, Material* material, bool updateScreen = true) {
         sceneObjects.emplace_back(std::make_unique<Model3D>( modelPath, position, rotation, scale, material));
 
         Model3D* model3D = sceneObjects.back().get();
@@ -319,7 +319,8 @@ class Renderer {
         //Model local descriptor set init
         pipelinesMap.at(model3D->getShaderType())->modelDescriptorSetInit(bp, model3D, &RPoffScreen);
 
-        screenUpdate();
+        if (updateScreen)
+            screenUpdate();
     }
 
     ///add a new point light on screen
