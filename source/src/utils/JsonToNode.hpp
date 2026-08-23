@@ -6,7 +6,7 @@
 #include "Libraries.hpp"
 
 inline std::optional<Node*> getNodeFromJSONObj(const nlohmann::json json) {
-    std::string type = json.value("type", "INVALID");
+    const std::string type = json.value("type", "INVALID");
 
     Node *newNode;
 
@@ -20,8 +20,14 @@ inline std::optional<Node*> getNodeFromJSONObj(const nlohmann::json json) {
         newNode = PerspectiveCamera::fromJSON(json);
     } else if (type == "OrthoCamera") {
         newNode = OrthoCamera::fromJSON(json);
-    } else if (type == "Collider") {
-        // newNode = Collider::fromJSON(json); TODO
+    } else if (type == "BoxCollider") {
+        newNode = BoxCollider::fromJSON(json);
+    } else if (type == "SphereCollider") {
+        newNode = SphereCollider::fromJSON(json);
+    } else if (type == "CapsuleCollider") {
+        newNode = CapsuleCollider::fromJSON(json);
+    } else if (type == "ConeCollider") {
+        newNode = ConeCollider::fromJSON(json);
     } else if (type == "Model3D") {
         newNode = Model3D::fromJSON(json);
     } else if (type == "Sprite2D") {
@@ -52,7 +58,6 @@ inline std::optional<Node*> getNodeFromJSONObj(const nlohmann::json json) {
     }
 
     return newNode;
-
 }
 
 inline std::optional<Node*> getNodeFromJSON(const std::string& json) {

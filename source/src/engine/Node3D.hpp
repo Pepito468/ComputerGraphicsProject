@@ -473,10 +473,10 @@ class Node3D : public Node {
             return glm::determinant(this->localMatrix) < 0.0f;
         }
 
-        static Node3D* fromJSON(const nlohmann::json& json) {
-            Node3D *newNode = new Node3D();
+        static Node3D* fromJSON(const nlohmann::json& json, Node3D* node = nullptr) {
+            Node3D *newNode = node ? node : new Node3D();
 
-            if (json.contains("name")) newNode->name = json["name"].get<std::string>();
+            Node::fromJSON(json, newNode);
 
             glm::vec3 globalPosition = VEC3_ZERO;
             glm::vec3 globalRotation = VEC3_ZERO;

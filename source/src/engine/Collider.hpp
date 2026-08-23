@@ -89,6 +89,11 @@ enum MovementStatus
     /// The collider has moved since last it was checked
     MOBILE_HAS_MOVED
 };
+NLOHMANN_JSON_SERIALIZE_ENUM(MovementStatus, {
+    {STATIC, "static"},
+    {MOBILE_UNMOVED, "dynamic"}
+})
+
 /// A node with a physics collider
 class Collider: public Node3D
 {
@@ -256,6 +261,20 @@ class BoxCollider: public Collider
             getCorners(&corners);
             return AABBExtents(corners);
         }
+
+        static BoxCollider* fromJSON(const nlohmann::json& json, BoxCollider* node = nullptr) {
+            BoxCollider *newNode = node ? node: new BoxCollider();
+
+            Node3D::fromJSON(json, newNode);
+
+            if (json.contains("isTrigger")) newNode->isTrigger = json.at("isTrigger").get<bool>();
+            if (json.contains("movement")) newNode->movementStatus = json.at("movement").get<MovementStatus>();
+            if (json.contains("width")) newNode->width = json.at("width").get<float>();
+            if (json.contains("height")) newNode->height = json.at("height").get<float>();
+            if (json.contains("depth")) newNode->depth = json.at("depth").get<float>();
+
+            return newNode;
+        }
 };
 
 /// A spherical collider
@@ -321,6 +340,18 @@ class SphereCollider: public Collider
         AABBExtents getAABBExtents() const override
         {
             return getSphereExtents(radius, getGlobalMatrix());
+        }
+
+        static SphereCollider* fromJSON(const nlohmann::json& json, SphereCollider* node = nullptr) {
+            SphereCollider *newNode = node ? node: new SphereCollider();
+
+            Node3D::fromJSON(json, newNode);
+
+            if (json.contains("isTrigger")) newNode->isTrigger = json.at("isTrigger").get<bool>();
+            if (json.contains("movement")) newNode->movementStatus = json.at("movement").get<MovementStatus>();
+            if (json.contains("radius")) newNode->radius = json.at("radius").get<float>();
+
+            return newNode;
         }
 
         /**
@@ -462,6 +493,19 @@ class CapsuleCollider: public Collider
 
             return res;
         }
+
+        static CapsuleCollider* fromJSON(const nlohmann::json& json, CapsuleCollider* node = nullptr) {
+            CapsuleCollider *newNode = node ? node: new CapsuleCollider();
+
+            Node3D::fromJSON(json, newNode);
+
+            if (json.contains("isTrigger")) newNode->isTrigger = json.at("isTrigger").get<bool>();
+            if (json.contains("movement")) newNode->movementStatus = json.at("movement").get<MovementStatus>();
+            if (json.contains("radius")) newNode->radius = json.at("radius").get<float>();
+            if (json.contains("height")) newNode->height = json.at("height").get<float>();
+
+            return newNode;
+        }
 };
 
 /// A collider shaped like a spherical cone
@@ -558,6 +602,19 @@ class ConeCollider : public Collider
         AABBExtents getAABBExtents() const override
         {
             return AABBExtents(getOBBCorners());
+        }
+
+        static ConeCollider* fromJSON(const nlohmann::json& json, ConeCollider* node = nullptr) {
+            ConeCollider *newNode = node ? node: new ConeCollider();
+
+            Node3D::fromJSON(json, newNode);
+
+            if (json.contains("isTrigger")) newNode->isTrigger = json.at("isTrigger").get<bool>();
+            if (json.contains("movement")) newNode->movementStatus = json.at("movement").get<MovementStatus>();
+            if (json.contains("radius")) newNode->radius = json.at("radius").get<float>();
+            if (json.contains("aperture")) newNode->aperture = glm::radians(json.at("aperture").get<float>());
+
+            return newNode;
         }
 };
 

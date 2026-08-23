@@ -100,8 +100,8 @@ class Node {
             return currentNode;
         }
 
-        static Node* fromJSON(const nlohmann::json& json) {
-            Node *newNode = new Node();
+        static Node* fromJSON(const nlohmann::json& json, Node* node = nullptr) {
+            Node *newNode = node ? node : new Node();
             if (json.contains("name")) newNode->name = json.at("name").get<std::string>();
             return newNode;
         }

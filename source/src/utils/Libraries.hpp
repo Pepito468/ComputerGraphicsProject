@@ -1,10 +1,11 @@
 /* Helper file with all the libraries */
+#pragma once
 
 #include <Camera.hpp>
 
-// #include <Collider.hpp>
+#include <Collider.hpp>
 
-// #include <Physics.hpp>
+#include <Physics.hpp>
 
 #include <Debug.hpp>
 

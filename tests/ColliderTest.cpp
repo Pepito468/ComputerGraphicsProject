@@ -533,8 +533,8 @@ void coneTest()
 
 int main() {
     println("COLLIDER TEST");
-    //boxTest();
-    //sphereTest();
+    boxTest();
+    sphereTest();
     capsuleTest();
     coneTest();
     println("END COLLIDER TEST");

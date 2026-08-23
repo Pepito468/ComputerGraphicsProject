@@ -339,10 +339,10 @@ class Node2D: public Node {
             return glm::determinant(this->localMatrix) < 0.0f;
         }
 
-        static Node2D* fromJSON(const nlohmann::json& json) {
-            Node2D *newNode = new Node2D();
+        static Node2D* fromJSON(const nlohmann::json& json, Node2D* node = nullptr) {
+            Node2D *newNode = node ? node: new Node2D();
 
-            if (json.contains("name")) newNode->name = json["name"].get<std::string>();
+            Node::fromJSON(json, newNode);
 
             glm::vec2 globalPosition = VEC2_ZERO;
             float globalRotation = 0.0f;

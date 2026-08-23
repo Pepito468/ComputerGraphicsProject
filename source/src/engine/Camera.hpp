@@ -71,6 +71,5 @@ class Camera : public Node3D
         const glm::vec3 getLookingDirection() const {
             return -1.0f * this->getZAxis();
         }
-
 };
 #endif

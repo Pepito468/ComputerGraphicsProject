@@ -59,20 +59,10 @@ class PointLight : public Light {
             this->isOn = isOn;
         }
 
-        static PointLight* fromJSON(const nlohmann::json& json) {
-            PointLight *newNode = new PointLight();
+        static PointLight* fromJSON(const nlohmann::json& json, PointLight* node = nullptr) {
+            PointLight *newNode = node ? node: new PointLight();
 
-            if (json.contains("name")) newNode->name = json["name"].get<std::string>();
-
-            glm::vec3 globalPosition = VEC3_ZERO;
-            glm::vec3 globalRotation = VEC3_ZERO;
-            glm::vec3 globalScale = VEC3_ONE;
-            if (json.contains("globalPosition")) globalPosition = glm::vec3(json["globalPosition"][0].get<float>(), json["globalPosition"][1].get<float>(), json["globalPosition"][2].get<float>());
-            if (json.contains("globalRotation")) globalRotation = glm::vec3(json["globalRotation"][0].get<float>(), json["globalRotation"][1].get<float>(), json["globalRotation"][2].get<float>());
-            if (json.contains("globalScale")) globalScale = glm::vec3(json["globalScale"][0].get<float>(), json["globalScale"][1].get<float>(), json["globalScale"][2].get<float>());
-            newNode->setGlobalPosition(globalPosition);
-            newNode->setGlobalRotation(globalRotation);
-            newNode->setGlobalScale(globalScale);
+            Node3D::fromJSON(json, newNode);
 
             if (json.contains("radius")) newNode->radius = json["radius"].get<float>();
             if (json.contains("decay")) newNode->decay = json["decay"].get<float>();
@@ -113,20 +103,10 @@ class SpotLight : public Light {
             this->isOn = isOn;
         }
 
-        static SpotLight* fromJSON(const nlohmann::json& json) {
-            SpotLight *newNode = new SpotLight();
+        static SpotLight* fromJSON(const nlohmann::json& json, SpotLight* node = nullptr) {
+            SpotLight *newNode = node ? node: new SpotLight();
 
-            if (json.contains("name")) newNode->name = json["name"].get<std::string>();
-
-            glm::vec3 globalPosition = VEC3_ZERO;
-            glm::vec3 globalRotation = VEC3_ZERO;
-            glm::vec3 globalScale = VEC3_ONE;
-            if (json.contains("globalPosition")) globalPosition = glm::vec3(json["globalPosition"][0].get<float>(), json["globalPosition"][1].get<float>(), json["globalPosition"][2].get<float>());
-            if (json.contains("globalRotation")) globalRotation = glm::vec3(json["globalRotation"][0].get<float>(), json["globalRotation"][1].get<float>(), json["globalRotation"][2].get<float>());
-            if (json.contains("globalScale")) globalScale = glm::vec3(json["globalScale"][0].get<float>(), json["globalScale"][1].get<float>(), json["globalScale"][2].get<float>());
-            newNode->setGlobalPosition(globalPosition);
-            newNode->setGlobalRotation(globalRotation);
-            newNode->setGlobalScale(globalScale);
+            Node3D::fromJSON(json, newNode);
 
             if (json.contains("color")) newNode->color = glm::vec3(json["color"][0].get<float>(), json["color"][1].get<float>(), json["color"][2].get<float>());
             if (json.contains("radiance")) newNode->radiance = json["radiance"].get<float>();
@@ -157,20 +137,10 @@ class DirectionalLight : public Light {
         this->isOn = true;
     }
 
-    static DirectionalLight* fromJSON(const nlohmann::json& json) {
-        DirectionalLight *newNode = new DirectionalLight();
+    static DirectionalLight* fromJSON(const nlohmann::json& json, DirectionalLight* node = nullptr) {
+        DirectionalLight *newNode = node ? node: new DirectionalLight();
 
-        if (json.contains("name")) newNode->name = json["name"].get<std::string>();
-
-        glm::vec3 globalPosition = VEC3_ZERO;
-        glm::vec3 globalRotation = VEC3_ZERO;
-        glm::vec3 globalScale = VEC3_ONE;
-        if (json.contains("globalPosition")) globalPosition = glm::vec3(json["globalPosition"][0].get<float>(), json["globalPosition"][1].get<float>(), json["globalPosition"][2].get<float>());
-        if (json.contains("globalRotation")) globalRotation = glm::vec3(json["globalRotation"][0].get<float>(), json["globalRotation"][1].get<float>(), json["globalRotation"][2].get<float>());
-        if (json.contains("globalScale")) globalScale = glm::vec3(json["globalScale"][0].get<float>(), json["globalScale"][1].get<float>(), json["globalScale"][2].get<float>());
-        newNode->setGlobalPosition(globalPosition);
-        newNode->setGlobalRotation(globalRotation);
-        newNode->setGlobalScale(globalScale);
+        Node3D::fromJSON(json, newNode);
 
         if (json.contains("color")) newNode->color = glm::vec3(json["color"][0].get<float>(), json["color"][1].get<float>(), json["color"][2].get<float>());
         if (json.contains("radiance")) newNode->radiance = json["radiance"].get<float>();
