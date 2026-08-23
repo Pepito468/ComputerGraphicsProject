@@ -31,7 +31,7 @@ class CustomCameraUpdate : public UpdateNode3D {
 
         // FOV update (ortho does not have FOV)
         if (Engine::MainEngine->isKeyBeingPressed(GLFW_KEY_F))
-            this->PCamera->setFOV(PCamera->getFOV() + glm::radians(Engine::MainEngine->deltaTime * 10));
+            this->PCamera->fov = PCamera->fov + glm::radians(Engine::MainEngine->deltaTime * 10);
 
         // update the camera position and direction with the inputs
         glm::vec3 xdir = glm::normalize(glm::vec3(this->getXAxis().x, 0, this->getXAxis().z));

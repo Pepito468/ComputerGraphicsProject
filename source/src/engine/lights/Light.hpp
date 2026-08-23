@@ -2,32 +2,27 @@
 #define ENGINE_LIGHT_H
 
 #include "Node3D.hpp"
+#include "Types.hpp"
+#include <glm/glm.hpp>
 
 /// Base class for all light emitting nodes
-class Light : public Node3D {
-
+class Light : public Node3D
+{
     public:
-
         /// The color of the light
-        glm::vec3 color;
+        glm::vec3 color = VEC3_ZERO;
 
         /// The intensity of the light
-        float radiance;
+        BoundFloat radiance = PositiveFloat(0.0f);
 
         /// True if the node is currently emitting light; false otherwise
-        bool isOn;
-
-
+        bool isOn = true;
 
         /* Default constructor */
-        Light() {
-            color = glm::vec3(0.0f);
-            radiance = 0.0f;
-            isOn = false;
-        }
+        Light() {}
 
-        /* Default virtual destructor */
-        virtual ~Light() = default;
+        /* Default destructor */
+        ~Light() override = default;
 
         /* Toggles the light */
         void toggle() {
@@ -36,20 +31,15 @@ class Light : public Node3D {
 };
 
 /// Emits light in a sphere around the node
-class PointLight : public Light {
-
+class PointLight : public Light
+{
     public:
-
-        float radius;
-        float decay;
-
+        BoundFloat radius = PositiveFloat(1.0f);
+        BoundFloat decay = PositiveFloat(0.0f);
 
         /* Default constructor */
-        PointLight() {
-            radius = 0.0f;
-        }
-
-        PointLight(glm::vec3 position, float radiance, glm::vec3 color, float radius, float decay, bool isOn = true) {
+        PointLight() {}
+        PointLight(const glm::vec3 position, const float radiance, const glm::vec3 color, const float radius, const float decay, const bool isOn = true) {
             this->setLocalPosition(position);
             this->radiance = radiance;
             this->color = color;
@@ -72,33 +62,23 @@ class PointLight : public Light {
 };
 
 /// Emits a cone of light along the node's Z-axis
-class SpotLight : public Light {
-
+class SpotLight : public Light
+{
     public:
-
         /// The half-angle of the spotlight's cone (alpha_in), in degrees
-        float aperture;
+        BoundFloat aperture = BoundFloat(0.0f, 360.0f, 45.0f);
 
         /// The half-angle of the spotlight's decay cone (alpha_out), in degrees
-        float decay;
-
-        /// Where is pointing the light
-        glm::vec3 direction;
-
+        BoundFloat decay = BoundFloat(0.0f, 360.0f, 0.0f);
 
         /* Default constructor */
-        SpotLight() {
-            aperture = 0.0f;
-            decay = 0.0f;
-        }
-
-        SpotLight(glm::vec3 position, float radiance, glm::vec3 color, float aperture, float decay, glm::vec3 direction, bool isOn = true) {
+        SpotLight() {}
+        SpotLight(const glm::vec3 position, const float radiance, const glm::vec3 color, const float aperture, const float decay, const bool isOn = true) {
             this->setLocalPosition(position);
             this->radiance = radiance;
             this->color = color;
             this->aperture = aperture;
             this->decay = decay;
-            this->direction = direction;
 
             this->isOn = isOn;
         }
@@ -123,18 +103,14 @@ class SpotLight : public Light {
 class DirectionalLight : public Light {
     public:
 
-    ///Where is pointing the light
-    glm::vec3 direction;
-
     /*Default constructor*/
     DirectionalLight() : Light() {}
 
-    DirectionalLight(float radiance, glm::vec3 color, glm::vec3 direction, bool isOn = true) {
+    DirectionalLight(const float radiance, const glm::vec3 color, const bool isOn = true) {
         this->radiance = radiance;
         this->color = color;
-        this->direction = direction;
 
-        this->isOn = true;
+        this->isOn = isOn;
     }
 
     static DirectionalLight* fromJSON(const nlohmann::json& json, DirectionalLight* node = nullptr) {

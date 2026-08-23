@@ -82,18 +82,14 @@ class Physics
     {
         //log(std::format("Receiver {} has: {}", receiver, receiver->collidersInTrigger));
         if (!receiver->isTrigger)
-        {
-            if (receiver->onCollision) receiver->onCollision(moving);
-        }
+            receiver->onCollision(moving);
         else if (!receiver->collidersInTrigger.contains(moving))
         {
-            if (receiver->onTriggerEnter) receiver->onTriggerEnter(moving);
+            receiver->onTriggerEnter(moving);
             receiver->collidersInTrigger.insert(moving);
         }
         else
-        {
-            if (receiver->onTriggerStay) receiver->onTriggerStay(moving);
-        }
+            receiver->onTriggerStay(moving);
     }
 
     static void processCollisions(Collider* coll, const std::set<Bounds>& collisions, const std::set<Bounds>& sceneBounds)
@@ -121,7 +117,7 @@ class Physics
             if (bColl->isTrigger && bColl->collidersInTrigger.contains(coll) && !collisions.contains(b))
             {
                 bColl->collidersInTrigger.erase(coll);
-                if (bColl->onTriggerExit) bColl->onTriggerExit(coll);
+                bColl->onTriggerExit(coll);
             }
         }
     }

@@ -2,24 +2,17 @@
 #define ENGINE_PERSPECTIVECAMERA_H
 
 #include "Camera.hpp"
-#include "glm/trigonometric.hpp"
 #include <glm/ext/matrix_clip_space.hpp>
 
-class PerspectiveCamera : public Camera {
-
-    protected:
-
-        float fov;
-        float aspectRatio;
-
+class PerspectiveCamera : public Camera
+{
     public:
 
-        /** Default constructor */
-        PerspectiveCamera() : Camera() {
-            this->fov = glm::radians(90.0f);
-            this->aspectRatio = 1.0f;
-        }
+        BoundFloat fov = BoundFloat(0.0f, M_PI * 0.9f, M_PI/2);
+        BoundFloat aspectRatio = PositiveFloat(1.0f);
 
+        /** Default constructor */
+        PerspectiveCamera() : Camera() {}
         /** Alternative constructor with FOV and aspect ratio */
         PerspectiveCamera(const float nearPlane, const float farPlane, const float fov, const float aspectRatio) {
             this->nearPlane = nearPlane;
@@ -36,24 +29,8 @@ class PerspectiveCamera : public Camera {
             this->fov = atan(topBound / nearValue) * 2;
         }
 
-        float getFOV() const {
-            return this->fov;
-        }
-
-        float getAspectRatio() const {
-            return this->aspectRatio;
-        }
-
-        const void setFOV(const float FOV) {
-            this->fov = FOV;
-        }
-
-        const void setAspectRatio(const float aspectRatio) {
-            this->aspectRatio = aspectRatio;
-        }
-
-        virtual const glm::mat4 getProjectionMatrix() override {
-            glm::mat4 p = glm::perspective(this->fov, this->aspectRatio, this->nearPlane, this->farPlane);
+        const glm::mat4 getProjectionMatrix() override {
+            glm::mat4 p = glm::perspective<float>(this->fov, this->aspectRatio, this->nearPlane, this->farPlane);
             // Apply manual reflection because the perspective function was made for OpenGL
             p[1][1] *= -1;
             return p;

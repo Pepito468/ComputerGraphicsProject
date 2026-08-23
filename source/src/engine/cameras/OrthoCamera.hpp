@@ -2,33 +2,24 @@
 #define ENGINE_ORTHOCAMERA_H
 
 #include "Camera.hpp"
-#include "glm/ext/matrix_clip_space.hpp"
+#include <glm/ext/matrix_clip_space.hpp>
 
-class OrthoCamera : public Camera {
-
-    protected:
-
+class OrthoCamera : public Camera
+{
+    public:
         /// Camera lower bound
-        float bottomBound;
+        BoundFloat bottomBound = NegativeFloat(-5.0f);
 
         /// Camera higher bound
-        float topBound;
+        BoundFloat topBound = PositiveFloat(5.0f);
 
         /// Camera leftmost bound
-        float leftBound;
+        BoundFloat leftBound = NegativeFloat(-4.0f);
 
         /// Camera rightmost bound
-        float rightBound;
+        BoundFloat rightBound = PositiveFloat(4.0f);;
 
-    public:
-
-        OrthoCamera() {
-            this->leftBound = -4.0f;
-            this->rightBound = 4.0f;
-            this->bottomBound = -5.0f;
-            this->topBound = 5.0f;
-        };
-
+        OrthoCamera() {};
         OrthoCamera(const float leftBound, const float rightBound, const float bottomBound, const float topBound, const float nearPlane, const float farPlane) {
             this->nearPlane = nearPlane;
             this->farPlane = farPlane;
@@ -38,45 +29,12 @@ class OrthoCamera : public Camera {
             this->leftBound = leftBound;
         }
 
-        float getBottomBound() const {
-            return this->bottomBound;
-        }
-
-        float getTopBound() const {
-            return this->topBound;
-        }
-
-        float getLeftBound() const {
-            return this->leftBound;
-        }
-
-        float getRightBound() const {
-            return this->rightBound;
-        }
-
-        const void setBottomBound(const float bottomBound) {
-            this->bottomBound = bottomBound;
-        }
-
-        const void setTopBound(const float topBound) {
-            this->topBound = topBound;
-        }
-
-        const void setLeftBound(const float leftBound) {
-            this->leftBound = leftBound;
-        }
-
-        const void setRightBound(const float rightBound) {
-            this->rightBound = rightBound;
-        }
-
-        virtual const glm::mat4 getProjectionMatrix() override {
+        const glm::mat4 getProjectionMatrix() override {
             // Apply reflection because the ortho function was made for OpenGL
             return
                 glm::scale(MAT4_I, glm::vec3(1, -1, 1)) *
-                glm::ortho(this->leftBound, this->rightBound, this->bottomBound, this->topBound, this->nearPlane, this->farPlane);
+                glm::ortho<float>(this->leftBound, this->rightBound, this->bottomBound, this->topBound, this->nearPlane, this->farPlane);
         }
-
 
         static OrthoCamera* fromJSON(const nlohmann::json& json, OrthoCamera* node = nullptr) {
             OrthoCamera *newNode = node ? node: new OrthoCamera();

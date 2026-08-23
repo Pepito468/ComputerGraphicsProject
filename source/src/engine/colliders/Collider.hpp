@@ -8,6 +8,7 @@
 #include <glm/vec3.hpp>
 #include "Node3D.hpp"
 #include "Relations.hpp"
+#include "Types.hpp"
 
 struct Vec3Compare {
     bool operator()(const glm::vec3& a, const glm::vec3& b) const {
@@ -109,14 +110,15 @@ class Collider: public Node3D
         /// Colliders that are within this trigger's bounds
         std::set<Collider*> collidersInTrigger = std::set<Collider*>();
 
+        typedef Function<void(Collider*)> CollisionCallback;
         /// External function to call when another collider collides with this one
-        void (*onCollision)(Collider*) = nullptr;
+        CollisionCallback onCollision;
         /// External function to call when another collider enters this trigger collider
-        void (*onTriggerEnter)(Collider*) = nullptr;
+        CollisionCallback onTriggerEnter;
         /// External function to call when another collider exits this trigger collider
-        void (*onTriggerExit)(Collider*) = nullptr;
+        CollisionCallback onTriggerExit;
         /// External function to call when another collider remains in this trigger collider
-        void (*onTriggerStay)(Collider*) = nullptr;
+        CollisionCallback onTriggerStay;
 
         Collider() : Node3D() {}
         Collider(const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale) : Node3D(position, rotation, scale)
@@ -184,13 +186,13 @@ class BoxCollider: public Collider
 
     public:
         /// The length of the box along the X-axis
-        float width = 1.0f;
+        BoundFloat width = PositiveFloat(1.0f);
 
         /// The length of the box along the Y-axis
-        float height = 1.0f;
+        BoundFloat height = PositiveFloat(1.0f);
 
         /// The length of the box along the Z-axis
-        float depth = 1.0f;
+        BoundFloat depth = PositiveFloat(1.0f);
 
         BoxCollider() : Collider() {}
         BoxCollider(const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale) : Collider(position, rotation, scale) {}
@@ -282,7 +284,7 @@ class SphereCollider: public Collider
 {
     public:
         /// The radius of the sphere
-        float radius = 1.0f;
+        BoundFloat radius = PositiveFloat(1.0f);
 
         SphereCollider() : Collider() {}
         SphereCollider(const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale) : Collider(position, rotation, scale) {}
@@ -306,8 +308,8 @@ class SphereCollider: public Collider
             res.insert(getGlobalPosition());
 
             //Add the poles
-            res.insert(toGlobalSpace(VEC3_Y * radius));
-            res.insert(toGlobalSpace(-VEC3_Y * radius));
+            res.insert(toGlobalSpace(VEC3_Y * (float)radius));
+            res.insert(toGlobalSpace(-VEC3_Y * (float)radius));
 
             //Add points along the surface
             const float cos30Rad = radius * std::cos(M_PI / 6.0f);
@@ -387,9 +389,9 @@ class CapsuleCollider: public Collider
 
     public:
         /// The radius of the capsule
-        float radius = 1.0f;
+        BoundFloat radius = PositiveFloat(1.0f);
         /// The length of the capsule's cylinder along the Y-axis
-        float height = 1.0f;
+        BoundFloat height = PositiveFloat(1.0f);
 
         CapsuleCollider() : Collider() {}
         CapsuleCollider(const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale) : Collider(position, rotation, scale) {}
@@ -530,10 +532,10 @@ class ConeCollider : public Collider
 
     public:
         /// The radius of the cone along the Z-axis
-        float radius = 1.0f;
+        BoundFloat radius = PositiveFloat(1.0f);
 
         /// The angle between the Z-axis of the cone and its extremes, in radians [0, PI / 2]
-        float aperture = M_PI / 6;
+        BoundFloat aperture = BoundFloat(0.0f, M_PI/2, M_PI/6);
 
         ConeCollider() : Collider() {}
         ConeCollider(const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale) : Collider(position, rotation, scale) {}
@@ -561,7 +563,7 @@ class ConeCollider : public Collider
             res.insert(getGlobalPosition());
             res.insert(toGlobalSpace({0, 0, radius}));
 
-            glm::vec3 sidePointer = glm::rotate(MAT4_I, aperture, VEC3_X) * glm::vec4(VEC3_Z, 1);
+            glm::vec3 sidePointer = glm::rotate(MAT4_I, (float)aperture, VEC3_X) * glm::vec4(VEC3_Z, 1);
             const float delta = radius / POINT_PARAMETER;
             constexpr float loopAngle = glm::radians(360.0f / POINT_PARAMETER);
             glm::vec3 capPointers[] = {
