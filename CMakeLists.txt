@@ -18,8 +18,12 @@ set(MAIN_DIR source)
 set(SRC_DIR ${MAIN_DIR}/src/game)
 set(INCLUDE_DIR ${MAIN_DIR}/include)
 set(ENGINE_DIR ${MAIN_DIR}/src/engine)
-set(UTILS_DIR ${MAIN_DIR}/src/utils)
-
+set(UTIL_DIR ${ENGINE_DIR}/utils)
+set(CAM_DIR ${ENGINE_DIR}/cameras)
+set(COL_DIR ${ENGINE_DIR}/colliders)
+set(UI_DIR ${ENGINE_DIR}/ui)
+set(LIGHT_DIR ${ENGINE_DIR}/lights)
+set(REND_DIR ${ENGINE_DIR}/rendering)
 file(GLOB SRC_FILES CONFIGURE_DEPENDS "${SRC_DIR}/*.cpp")
 
 
@@ -27,7 +31,12 @@ add_executable(${PROJECT_NAME} ${SRC_FILES})
 target_include_directories(${PROJECT_NAME} PRIVATE 
     "${INCLUDE_DIR}"
     "${ENGINE_DIR}"
-    "${UTILS_DIR}"
+    "${UTIL_DIR}"
+    "${CAM_DIR}"
+    "${COL_DIR}"
+    "${UI_DIR}"
+    "${LIGHT_DIR}"
+    "${REND_DIR}"
 )
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)

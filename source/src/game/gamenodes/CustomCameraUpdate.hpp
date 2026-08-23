@@ -1,5 +1,5 @@
-#include "OrthoCamera.hpp"
-#include "PerspectiveCamera.hpp"
+#include "../../engine/cameras/OrthoCamera.hpp"
+#include "../../engine/cameras/PerspectiveCamera.hpp"
 #include "UpdateNode3D.hpp"
 #include "Engine.hpp"
 #include "glm/trigonometric.hpp"

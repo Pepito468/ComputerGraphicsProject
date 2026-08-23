@@ -1,7 +1,7 @@
 #ifndef ENGINE_SPRITE2D_H
 #define ENGINE_SPRITE2D_H
 
-#include "Node2D.hpp"
+#include "../Node2D.hpp"
 #include <string>
 
 class Sprite2D : public Node2D {

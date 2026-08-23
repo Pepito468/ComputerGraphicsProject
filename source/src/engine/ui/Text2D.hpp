@@ -1,7 +1,7 @@
 #ifndef ENGINE_TEXT2D_H
 #define ENGINE_TEXT2D_H
 
-#include "Node2D.hpp"
+#include "../Node2D.hpp"
 #include <string>
 
 class Text2D : public Node2D {
