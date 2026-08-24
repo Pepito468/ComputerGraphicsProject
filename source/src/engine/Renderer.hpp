@@ -11,6 +11,10 @@ struct ShadowMapUniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
 };
 
+struct SceneDepthUniformBufferObject {
+    alignas(16) glm::mat4 mvpMat;
+};
+
 struct SkyboxUniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
 };
@@ -57,17 +61,17 @@ class Renderer {
         }
 
         ///Must be called inside Renderer.descriptorSetsInits()
-        void descriptorSetsInits(BaseProject* bp, RenderPass* rp, RenderPass* RPoffScreen) {
+        void descriptorSetsInits(BaseProject* bp, RenderPass* rp, RenderPass* RPoffScreen, RenderPass* RPsceneDepth) {
             pipeline.create(rp);
 
             for (auto& p : pool) {
-                modelDescriptorSetInit(bp, p, RPoffScreen);
+                modelDescriptorSetInit(bp, p, RPoffScreen, RPsceneDepth);
             }
         }
 
         //TODO: non so se mi piace questa soluzione
-        void modelDescriptorSetInit(BaseProject* bp, Model3D* model, RenderPass* RPoffScreen) {
-            model->descriptorSetInit(bp, localLayout, RPoffScreen);
+        void modelDescriptorSetInit(BaseProject* bp, Model3D* model, RenderPass* RPoffScreen, RenderPass* RPsceneDepth) {
+            model->descriptorSetInit(bp, localLayout, RPoffScreen, RPsceneDepth);
         }
 
         ///Must be called inside Renderer.descriptorSetsCleanup()
@@ -147,6 +151,12 @@ class Renderer {
     DescriptorSet offScreen, skybox;
     RenderPass RPoffScreen;
     Pipeline PoffScreen, Pskybox;
+
+    //Scene depth
+    DescriptorSetLayout sceneDepthLayout;
+    DescriptorSet sceneDepth;
+    RenderPass RPsceneDepth;
+    Pipeline PsceneDepth;
 
     Texture TenvMap;   // environment cubemap
     Model SkyboxCube;
@@ -319,7 +329,7 @@ class Renderer {
         pipelinesMap.at(model3D->getShaderType())->addModel3D(model3D);
 
         //Model local descriptor set init
-        pipelinesMap.at(model3D->getShaderType())->modelDescriptorSetInit(bp, model3D, &RPoffScreen);
+        pipelinesMap.at(model3D->getShaderType())->modelDescriptorSetInit(bp, model3D, &RPoffScreen, &RPsceneDepth);
 
         screenUpdate();
     }
@@ -441,7 +451,8 @@ class Renderer {
             {1,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,VK_SHADER_STAGE_ALL_GRAPHICS,0,1}, //albedo
             {2,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,VK_SHADER_STAGE_ALL_GRAPHICS,1,1}, //arm
             {3,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,VK_SHADER_STAGE_ALL_GRAPHICS,2,1}, //normalMap
-            {4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1} //shadowMap
+            {4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1}, //shadowMap
+            {5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4, 1} //sceneDepth
           });
 
         globalLayout.init(bp, {
@@ -454,6 +465,10 @@ class Renderer {
 
         offScreenLayout.init(bp, {
                     {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(ShadowMapUniformBufferObject), 1}
+                    });
+
+        sceneDepthLayout.init(bp, {
+                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(SceneDepthUniformBufferObject), 1}
                     });
 
         skyboxLayout.init(bp, {
@@ -492,8 +507,15 @@ class Renderer {
                     RenderPass::getStandardAttchmentsProperties(AT_DEPTH_ONLY, bp),
                     RenderPass::getStandardDependencies(ATDEP_DEPTH_TRANS), true);
 
+        //TODO: temp
+        RPsceneDepth.init(bp, 800, 600, 1,
+                    RenderPass::getStandardAttchmentsProperties(AT_DEPTH_ONLY, bp),
+                    RenderPass::getStandardDependencies(ATDEP_DEPTH_TRANS), true);
+
+
 
         PoffScreen.init(bp, &vertexDescriptor, "shaders/ShadowMap.vert.spv", "shaders/ShadowMap.frag.spv", {&offScreenLayout, &localLayout});
+        PsceneDepth.init(bp, &vertexDescriptor, "shaders/SceneDepth.vert.spv", "shaders/SceneDepth.frag.spv", {&sceneDepthLayout, &localLayout});
 
         Pskybox.init(bp, &VDskybox, "shaders/Skybox.vert.spv", "shaders/Skybox.frag.spv", {&skyboxLayout} );
         Pskybox.setCompareOp(VK_COMPARE_OP_LESS_OR_EQUAL);
@@ -515,18 +537,21 @@ class Renderer {
     void descriptorSetsInits() {
 
         RPoffScreen.create();
+        RPsceneDepth.create();
 
         global.init(bp, &globalLayout, {});
         offScreen.init(bp, &offScreenLayout, {});
+        sceneDepth.init(bp, &sceneDepthLayout, {});
 
         skybox.init(bp, &skyboxLayout, {
             TenvMap.getViewAndSampler()
         });
         PoffScreen.create(&RPoffScreen);
+        PsceneDepth.create(&RPsceneDepth);
         Pskybox.create(rp);
 
         for (auto& p : pipelinesMap) {
-            p.second->descriptorSetsInits(bp, rp, &RPoffScreen);
+            p.second->descriptorSetsInits(bp, rp, &RPoffScreen, &RPsceneDepth);
         }
     }
 
@@ -535,15 +560,19 @@ class Renderer {
 
         global.cleanup();
         offScreen.cleanup();
+        sceneDepth.cleanup();
         skybox.cleanup();
-
-        RPoffScreen.cleanup();
-        PoffScreen.cleanup();
-        Pskybox.cleanup();
 
         for (auto& p : pipelinesMap) {
             p.second->descriptorSetsCleanup();
         }
+
+        RPoffScreen.cleanup();
+        RPsceneDepth.cleanup();
+
+        PoffScreen.cleanup();
+        PsceneDepth.cleanup();
+        Pskybox.cleanup();
     }
 
     ///This method prepare stuff for Vulkan, must be called inside Engine.localCleanup()
@@ -551,6 +580,7 @@ class Renderer {
 
         globalLayout.cleanup();
         offScreenLayout.cleanup();
+        sceneDepthLayout.cleanup();
         skyboxLayout.cleanup();
 
         localLayout.cleanup();
@@ -577,6 +607,7 @@ class Renderer {
 
 
         PoffScreen.destroy();
+        PsceneDepth.destroy();
         Pskybox.destroy();
         for (auto& p : pipelinesMap) {
             p.second->localCleanup();
@@ -594,6 +625,19 @@ class Renderer {
         }
 
         RPoffScreen.end(commandBuffer);
+    }
+
+    void populateSceneDepthCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
+        RPsceneDepth.begin(commandBuffer, 0);
+        PsceneDepth.bind(commandBuffer);
+        sceneDepth.bind(commandBuffer, PsceneDepth, 0, currentImage);
+
+        for (auto& o : sceneObjects) {
+            if (o.get()->getShaderType() != ShaderType::WATER)
+            o->populateCommandBuffer(commandBuffer, currentImage, PsceneDepth);
+        }
+
+        RPsceneDepth.end(commandBuffer);
     }
 
     ///This method prepare stuff for Vulkan, must be called inside Engine.populateCommandBuffer()
@@ -675,6 +719,11 @@ class Renderer {
                       glm::inverse(lightView);
         subo.mvpMat = offVP;
         offScreen.map(currentImage, &subo, 0);
+
+        SceneDepthUniformBufferObject sdubo{};
+
+        sdubo.mvpMat = Projection*View;
+        sceneDepth.map(currentImage, &sdubo, 0);
 
         SkyboxUniformBufferObject skyboxUBO{};
 

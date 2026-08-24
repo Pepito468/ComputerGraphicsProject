@@ -9,6 +9,7 @@ layout (location = 1) in vec3 fragNorm;
 layout (location = 2) in vec2 fragUV;
 layout (location = 3) in vec4 fragTan;
 layout (location = 4) in vec3 shadowPos;
+layout (location = 5) in vec4 screenPos;
 
 // now we need to read the values in the uniforms
 // in this shader, we need the local uniforms
@@ -26,6 +27,7 @@ layout (binding = 1, set = 1) uniform sampler2D tex;
 layout (binding = 2, set = 1) uniform sampler2D armTex;
 layout (binding = 3, set = 1) uniform sampler2D normalTex;
 layout (binding = 4, set = 1) uniform sampler2D shadowMap;
+layout (binding = 5, set = 1) uniform sampler2D sceneDepth;
 
 // and also the global
 layout(binding = 0, set = 0) uniform GlobalUniformBufferObject {
@@ -55,10 +57,6 @@ layout(binding = 0, set = 0) uniform GlobalUniformBufferObject {
     int  spotInstanceCount;
 
     float time;
-
-    mat4 camView;
-    mat4 camProj;
-    mat4 camInvVP;
 } gubo;
 
 
@@ -103,6 +101,15 @@ float blinn(vec3 L, vec3 N, vec3 V, float smoothness){
 	return pow(max(dot(H, N), 0.0), smoothness);
 }
 
+float linearizeDepth(float depth)
+{
+    const float nearPlane = 0.1;
+    const float farPlane = 100.0;
+
+    return (nearPlane * farPlane) /
+           (farPlane - depth * (farPlane - nearPlane));
+}
+
 void main()
 {
     float t = gubo.time;
@@ -120,6 +127,24 @@ void main()
 
 	mat3 TBN = computeTBN(fragNorm, fragTan.xyz, fragTan.w);
 
+    vec2 screenUV = screenPos.xy / screenPos.w;
+    screenUV = screenUV * 0.5 + 0.5;
+
+    float sceneDepthValue = texture(sceneDepth, screenUV).r;
+
+    float waterDepth = linearizeDepth(sceneDepthValue) - screenPos.w;
+
+    float fadeDistance = 2.0;
+    float fade = 1 - clamp(waterDepth / fadeDistance, 0.0, 1.0);
+
+    vec3 shallowColor = vec3(0.1, 0.6, 0.8);
+    vec3 deepColor    = vec3(0.01, 0.05, 0.15);
+
+    vec3 wc = mix(shallowColor, deepColor, fade);
+
+    outColor = vec4(vec3(wc), 1.0);
+
+    /*
     //6. Lighting
     vec3 tangentNormal = blendedNormals(normalSpeed, normalScale, normalStrength);
     vec3 N = normalize(TBN * tangentNormal);
@@ -143,5 +168,5 @@ void main()
 
     color = color / (color + vec3(1.0));
     color = pow(color, vec3(1.0 / 2.2));
-    outColor = vec4(color, 1.0);
+    outColor = vec4(color, 1.0);*/
 }

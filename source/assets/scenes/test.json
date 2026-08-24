@@ -39,6 +39,8 @@
     ]
   },
   "instances": [
-      {"model": "Water.gltf", "material": "mat6", "position": [0.0, 0.0, 0.0], "rotation": [0.0, 0.0, 0.0] ,"scale": [10, 10, 10]}
+      {"model": "Water.gltf", "material": "mat6", "position": [0.0, 0.1, 0.0], "rotation": [0.0, 0.0, 0.0] ,"scale": [10, 10, 10]}
+
+
   ]
 }

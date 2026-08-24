@@ -29,11 +29,12 @@ class Model3D : public Node3D {
     ~Model3D() = default;
 
     ///This must be called inside PipelineRender.descriptorSetsInits()
-    void descriptorSetInit(BaseProject* bp, DescriptorSetLayout* localLayout, RenderPass* RPoffScreen) {
+    void descriptorSetInit(BaseProject* bp, DescriptorSetLayout* localLayout, RenderPass* RPoffScreen, RenderPass* RPsceneDepth) {
         local.init(bp, localLayout, {material->getAlbedoTex()->getViewAndSampler(),
             material->getArmTex()->getViewAndSampler(),
             material->getNormalTex()->getViewAndSampler(),
-            RPoffScreen->attachments[0].getViewAndSampler()});
+            RPoffScreen->attachments[0].getViewAndSampler(),
+            RPsceneDepth->attachments[0].getViewAndSampler()});
     }
 
     ///This must be called inside PipelineRender.descriptorSetsCleanups()

@@ -93,7 +93,7 @@ class Engine : public BaseProject {
         // Descriptor Layouts [what will be passed to the shaders]
 
         renderer.loadSceneFromJSON();
-        
+
         renderer.setAmbientLight(glm::vec3(0.20, 0.50, 0.80), glm::vec3(0.2f, 0.15f, 0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
         renderer.createDirectionalLight(1.0, glm::vec3(1.0f, 0.95f, 0.8f), glm::normalize(glm::vec3(0.4f, 0.8f, 0.4f)));
 
@@ -189,6 +189,7 @@ class Engine : public BaseProject {
 
     void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
 
+        renderer.populateSceneDepthCommandBuffer(commandBuffer, currentImage);
         renderer.populateShadowCommandBuffer(commandBuffer, currentImage);
 
         // Offscreen pass - always required
