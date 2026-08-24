@@ -3,6 +3,7 @@
 #define ENGINE_CAMERA_H
 
 #include "Node3D.hpp"
+#include "Types.hpp"
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include "glm/matrix.hpp"
@@ -15,10 +16,10 @@ class Camera : public Node3D
     protected:
 
         /// The distance of the near plane
-        float nearPlane;
+        BoundFloat nearPlane = PositiveFloat(0.0f);
 
         /// The distance of the far plane
-        float farPlane;
+        BoundFloat farPlane = PositiveFloat(0.0f);
 
 
     public:

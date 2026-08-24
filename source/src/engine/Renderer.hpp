@@ -337,7 +337,7 @@ class Renderer {
     }
 
     ///Create the directional light (Only one directional light can exists)
-    void createDirectionalLight( float radiance, glm::vec3 color, glm::vec3 direction) {
+    void createDirectionalLight(float radiance, glm::vec3 color, glm::vec3 direction) {
         directionalLight = DirectionalLight(radiance, color, direction);
     }
 
@@ -650,13 +650,13 @@ class Renderer {
         gubo.ambientDir   = ambientLight.dir;
 
         gubo.lightDir   = glm::vec4(directionalLight.getGlobalRotation(), 0.0f);
-        gubo.lightColor = glm::vec4(directionalLight.color, 0.0f) * directionalLight.radiance;
+        gubo.lightColor = glm::vec4(directionalLight.color, 0.0f) * (float)directionalLight.radiance;
 
         int j = 0;
         for (size_t i = 0; i < pointlights.size(); i++) {
             if (pointlights[i]->isOn) {
                 gubo.pointLightPos[j]    = glm::vec4(pointlights[i].get()->getLocalPosition(), 0.0f);
-                gubo.pointLightColor[j]  = glm::vec4(pointlights[i].get()->color, 0.0f) * pointlights[i].get()->radiance;
+                gubo.pointLightColor[j]  = glm::vec4(pointlights[i].get()->color, 0.0f) * (float)pointlights[i].get()->radiance;
                 gubo.pointLightParams[j] = glm::vec4(pointlights[i].get()->decay, pointlights[i].get()->radius, 0.0f, 0.0f);
                 j++;
             }
@@ -669,10 +669,10 @@ class Renderer {
             if (spotlights[i]->isOn) {
                 gubo.spotLightPos[j]    = glm::vec4(spotlights[i].get()->getLocalPosition(), 0.0f);
                 gubo.spotLightDir[j]    = glm::vec4(spotlights[i].get()->getGlobalRotation(), 0.0f);
-                gubo.spotLightColor[j]  = glm::vec4(spotlights[i].get()->color, 0.0f) * spotlights[i].get()->radiance;
+                gubo.spotLightColor[j]  = glm::vec4(spotlights[i].get()->color, 0.0f) * (float)spotlights[i].get()->radiance;
                 gubo.spotLightParams[j] = glm::vec4(
-                    cos(glm::radians(spotlights[i].get()->aperture)),   // cIN  = cos(alpha_IN/2)
-                    cos(glm::radians(spotlights[i].get()->decay)),    // cOUT = cos(alpha_OUT/2)
+                    cos(glm::radians((float)spotlights[i].get()->aperture)),   // cIN  = cos(alpha_IN/2)
+                    cos(glm::radians((float)spotlights[i].get()->decay)),    // cOUT = cos(alpha_OUT/2)
                     0.0f,
                     0.0f
                     );

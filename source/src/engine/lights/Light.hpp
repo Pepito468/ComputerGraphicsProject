@@ -2,6 +2,7 @@
 #define ENGINE_LIGHT_H
 
 #include "Node3D.hpp"
+#include "Types.hpp"
 
 /// Base class for all light emitting nodes
 class Light : public Node3D {
@@ -12,7 +13,7 @@ class Light : public Node3D {
         glm::vec3 color;
 
         /// The intensity of the light
-        float radiance = 0.0f;
+        BoundFloat radiance = PositiveFloat(0.0f);
 
         /// True if the node is currently emitting light; false otherwise
         bool isOn;

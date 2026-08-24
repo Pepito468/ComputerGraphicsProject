@@ -2,6 +2,7 @@
 #define ENGINE_POINTLIGHT_H
 
 #include "Light.hpp"
+#include "Types.hpp"
 
 /// Emits light in a sphere around the node
 class PointLight : public Light {
@@ -9,9 +10,9 @@ class PointLight : public Light {
     public:
 
         /** Light radius */
-        float radius;
+        BoundFloat radius = PositiveFloat(0.0f);
         /** Light decay */
-        float decay;
+        float decay = PositiveFloat(0.0f);
 
 
         /* Default constructor */

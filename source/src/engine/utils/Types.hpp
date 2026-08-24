@@ -10,8 +10,8 @@
 struct BoundFloat
 {
 private:
-    const float min;
-    const float max;
+    float min;
+    float max;
     float value;
 
 public:

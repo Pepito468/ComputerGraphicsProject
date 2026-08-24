@@ -10,10 +10,10 @@ class SpotLight : public Light {
     public:
 
         /// The half-angle of the spotlight's cone (alpha_in), in degrees
-        float aperture;
+        BoundFloat aperture = PositiveFloat(0.0f);
 
         /// The half-angle of the spotlight's decay cone (alpha_out), in degrees
-        float decay;
+        BoundFloat decay = PositiveFloat(0.0f);
 
         /* Default constructor */
         SpotLight() {
