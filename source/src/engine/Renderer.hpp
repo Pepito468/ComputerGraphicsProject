@@ -657,7 +657,7 @@ class Renderer {
             if (pointlights[i]->isOn) {
                 gubo.pointLightPos[j]    = glm::vec4(pointlights[i].get()->getLocalPosition(), 0.0f);
                 gubo.pointLightColor[j]  = glm::vec4(pointlights[i].get()->color, 0.0f) * (float)pointlights[i].get()->radiance;
-                gubo.pointLightParams[j] = glm::vec4(pointlights[i].get()->decay, pointlights[i].get()->radius, 0.0f, 0.0f);
+                gubo.pointLightParams[j] = glm::vec4(pointlights[i].get()->decay, (float)pointlights[i].get()->radius, 0.0f, 0.0f);
                 j++;
             }
         }

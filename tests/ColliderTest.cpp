@@ -1,6 +1,6 @@
 ﻿#include <cmath>
 #include <format>
-#include "Collider.hpp"
+#include "ColliderLib.hpp"
 #include "Debug.hpp"
 #include "Relations.hpp"
 #include <glm/glm.hpp>
@@ -100,7 +100,7 @@ void boxTest() {
     box.localTranslate(glm::vec3(-0.5f));
 
     println("\t\tSPHERE BOUNDS TEST -- Basic");
-    glm::vec3 v = glm::vec3(box.width, box.height, box.depth) * box.getGlobalScale()* glm::vec3(0.5f);
+    glm::vec3 v = glm::vec3((float)box.width, (float)box.height, (float)box.depth) * box.getGlobalScale()* glm::vec3(0.5f);
     float expectedR = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
     sphereCheck(box.getSphereBounds(), VEC3_ZERO, expectedR);
 
@@ -118,7 +118,7 @@ void boxTest() {
     box.width = 1.7f;
     box.depth = 0.45f;
     box.localScaleAll(glm::vec3(16.3f, 0.42f, 61.54f));
-    v = glm::vec3(box.width, box.height, box.depth) * box.getGlobalScale ()* glm::vec3(0.5f);
+    v = glm::vec3((float)box.width, (float)box.height, (float)box.depth) * box.getGlobalScale ()* glm::vec3(0.5f);
     expectedR = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
     sphereCheck(box.getSphereBounds(), VEC3_ZERO, expectedR);
     box.width = 1;

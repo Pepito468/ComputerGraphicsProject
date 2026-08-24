@@ -1,7 +1,5 @@
 ﻿#ifndef TYPES
 #define TYPES
-
-#include <float.h>
 #include <algorithm>
 #include <functional>
 #include "Debug.hpp"
@@ -10,8 +8,8 @@
 struct BoundFloat
 {
 private:
-    float min;
-    float max;
+    const float min;
+    const float max;
     float value;
 
 public:
@@ -40,6 +38,17 @@ public:
             warning(std::format("Tried setting BoundFloat above max {}, set to {} instead.", v, max));
 
         value = std::clamp(v, min, max);
+        return *this;
+    }
+
+    BoundFloat& operator=(const BoundFloat& other)
+    {
+        this->value = other.value;
+        return *this;
+    }
+    BoundFloat& operator=(BoundFloat&& other) noexcept
+    {
+        this->value = other.value;
         return *this;
     }
 };

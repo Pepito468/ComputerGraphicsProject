@@ -82,7 +82,10 @@ class Physics
     {
         //log(std::format("Receiver {} has: {}", receiver, receiver->collidersInTrigger));
         if (!receiver->isTrigger)
+        {
             receiver->onCollision(moving);
+            moving->onCollision(receiver);
+        }
         else if (!receiver->collidersInTrigger.contains(moving))
         {
             receiver->onTriggerEnter(moving);
@@ -160,7 +163,7 @@ class Physics
                 return c->isActive && (c->movementStatus == MOBILE_HAS_MOVED || isInTrigger);
             });
 
-
+            std::set<Collider*> checked;
             for (Collider* coll : toCheck)
             {
                 Bounds bounds = Bounds(coll);
@@ -168,10 +171,10 @@ class Physics
                 //Find collisions
                 std::set<Bounds> collisions;
                 std::ranges::copy_if(sceneBounds, std::inserter(collisions, collisions.begin()),
-                [bounds](const Bounds& b)
+                [bounds, checked](const Bounds& b)
                 {
-                    //Identity
-                    if (b.collider->UUID == bounds.collider->UUID) return false;
+                    if (checked.contains(b.collider)) return false; //Skip checked colliders
+                    if (b.collider->UUID == bounds.collider->UUID) return false; //Skip self
                     return hasCollision(bounds, b);
                 });
 
@@ -181,6 +184,8 @@ class Physics
                 //Reset flag values
                 coll->movementStatus = MOBILE_UNMOVED;
                 coll->previousMatrix = coll->getGlobalMatrix();
+
+                checked.insert(coll);
             }
         }
 

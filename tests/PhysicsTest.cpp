@@ -1,4 +1,5 @@
 ﻿#include "Physics.hpp"
+#include "BoxCollider.hpp"
 #include "Debug.hpp"
 #include "Relations.hpp"
 #include <format>
@@ -91,7 +92,7 @@ int main()
     Physics::checkCollisions();
     _assert(box.movementStatus == MOBILE_UNMOVED, "Box marked as moved");
     _assert(box.getGlobalPosition().x == 2, "Box movement not reversed");
-    _assert(!boxColl, "Box collided");
+    _assert(boxColl, "Box didn't collide");
     _assert(w1ColID == box.name, std::format("Wall1 collided with {} instead ox box", w1ColID));
     _assert(!w1Trig, "Wall1 triggered");
     _assert(w2ColID.empty(), std::format("Wall2 collided with {}", w2ColID));
@@ -99,6 +100,7 @@ int main()
     _assert(w2TrigExtID.empty(), std::format("Wall2 trigger-exit with {}", w2TrigExtID));
     _assert(w2TrigStayID.empty(), std::format("Wall2 trigger-stay with {}", w2TrigStayID));
     w1ColID = "";
+    boxColl = false;
 
     println("\tTRIGGER ENTER WALL 2");
     box.globalTranslate({-2, 0, 5});
