@@ -62,7 +62,7 @@ int main() {
                 for (Node* child : child->children) {
                     printf("%s\n", child->name.c_str());
                     assert(child->name == "Jolyne");
-                    printf("%f\n", (float)dynamic_cast<PerspectiveCamera*>(child)->nearPlane);
+                    printf("%f\n", (float)dynamic_cast<PerspectiveCamera*>(child)->getNearPlane());
                 }
             }
         } else {

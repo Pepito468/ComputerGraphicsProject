@@ -1,7 +1,9 @@
 #include "Engine.hpp"
 #include <iostream>
 #include <ostream>
-#include "Light.hpp"
+#include "PointLight.hpp"
+#include "DirectionalLight.hpp"
+#include "AmbientLight.hpp"
 #include "Model3D.hpp"
 #include "OrthoCamera.hpp"
 #include "PerspectiveCamera.hpp"
@@ -41,7 +43,7 @@ int main() {
     statue->name = "Statue";
     models->adopt(statue);
 
-    Model3D *plane = new Model3D("Plane.gltf", {0, 0, 0}, {0, 0, 0}, {10, 10, 10}, &mat1);
+    Model3D *plane = new Model3D("Plane.gltf", {0, 0, 0}, {0, 0, 0}, {30, 30, 30}, &mat1);
     plane->name = "Plane";
     models->adopt(plane);
 

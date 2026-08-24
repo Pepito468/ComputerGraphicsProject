@@ -3,7 +3,10 @@
 #include <unordered_map>
 
 #include "common.h"
-#include "Light.hpp"
+#include "AmbientLight.hpp"
+#include "SpotLight.hpp"
+#include "DirectionalLight.hpp"
+#include "PointLight.hpp"
 #include "Model3D.hpp"
 
 
@@ -194,7 +197,7 @@ class Renderer {
         nlohmann::json data = nlohmann::json::parse(f);
 
         nlohmann::json mat_info = data["materials"]["LambertBlinnTexture"];
-        for (int i = 0; i < mat_info.size(); i++) {
+        for (size_t i = 0; i < mat_info.size(); i++) {
 
             materialAssets.insert({mat_info[i]["id"].get<std::string>(), std::make_unique<LambertTexMaterial>(
                 glm::vec3(
@@ -212,7 +215,7 @@ class Renderer {
         }
 
         mat_info = data["materials"]["Toon"];
-        for (int i = 0; i < mat_info.size(); i++) {
+        for (size_t i = 0; i < mat_info.size(); i++) {
 
             materialAssets.insert({mat_info[i]["id"].get<std::string>(), std::make_unique<ToonMaterial>(
                 glm::vec3(
@@ -236,7 +239,7 @@ class Renderer {
 
         mat_info = data["instances"];
         sceneObjects.reserve(sceneObjects.size() + mat_info.size());
-        for (int i = 0; i < mat_info.size(); i++) {
+        for (size_t i = 0; i < mat_info.size(); i++) {
             sceneObjects.emplace_back(std::make_unique<Model3D>(mat_info[i]["model"].get<std::string>(),
                 glm::vec3(mat_info[i]["position"][0], mat_info[i]["position"][1], mat_info[i]["position"][2]),
                 glm::vec3(mat_info[i]["rotation"][0], mat_info[i]["rotation"][1], mat_info[i]["rotation"][2]),
@@ -329,15 +332,13 @@ class Renderer {
     }
 
     ///add a new spotlight on screen
-    void addSpotLight(glm::vec3 position ,float radiance, glm::vec3 color, float aperture, float decay, bool isOn = true) {
-        spotlights.emplace_back(std::make_unique<SpotLight>(position, radiance,color,aperture, decay, isOn));
+    void addSpotLight(glm::vec3 position ,float radiance, glm::vec3 color, float aperture, float decay, glm::vec3 direction, bool isOn = true) {
+        spotlights.emplace_back(std::make_unique<SpotLight>(position, radiance,color,aperture, decay, direction, isOn));
     }
 
     ///Create the directional light (Only one directional light can exists)
-    void createDirectionalLight(const float radiance, const glm::vec3 color, const glm::vec3 direction) {
-        directionalLight.radiance = radiance;
-        directionalLight.color = color;
-        directionalLight.setGlobalMatrix(glm::lookAt(directionalLight.getGlobalPosition(), directionalLight.getGlobalPosition() + direction, VEC3_Z));
+    void createDirectionalLight( float radiance, glm::vec3 color, glm::vec3 direction) {
+        directionalLight = DirectionalLight(radiance, color, direction);
     }
 
     /**Set ambient light parameters
@@ -648,14 +649,14 @@ class Renderer {
         gubo.ambientLower = ambientLight.lower;
         gubo.ambientDir   = ambientLight.dir;
 
-        gubo.lightDir   = glm::vec4(directionalLight.getZAxis(), 0.0f);
-        gubo.lightColor = glm::vec4(directionalLight.color, 0.0f) * (float)directionalLight.radiance;
+        gubo.lightDir   = glm::vec4(directionalLight.getGlobalRotation(), 0.0f);
+        gubo.lightColor = glm::vec4(directionalLight.color, 0.0f) * directionalLight.radiance;
 
         int j = 0;
-        for (int i = 0; i < pointlights.size(); i++) {
+        for (size_t i = 0; i < pointlights.size(); i++) {
             if (pointlights[i]->isOn) {
                 gubo.pointLightPos[j]    = glm::vec4(pointlights[i].get()->getLocalPosition(), 0.0f);
-                gubo.pointLightColor[j]  = glm::vec4(pointlights[i].get()->color, 0.0f) * (float)pointlights[i].get()->radiance;
+                gubo.pointLightColor[j]  = glm::vec4(pointlights[i].get()->color, 0.0f) * pointlights[i].get()->radiance;
                 gubo.pointLightParams[j] = glm::vec4(pointlights[i].get()->decay, pointlights[i].get()->radius, 0.0f, 0.0f);
                 j++;
             }
@@ -664,14 +665,14 @@ class Renderer {
         gubo.pointInstanceCount = j;
 
         j = 0;
-        for (int i = 0; i < spotlights.size(); i++) {
+        for (size_t i = 0; i < spotlights.size(); i++) {
             if (spotlights[i]->isOn) {
                 gubo.spotLightPos[j]    = glm::vec4(spotlights[i].get()->getLocalPosition(), 0.0f);
-                gubo.spotLightDir[j]    = glm::vec4(spotlights[i].get()->getZAxis(),0.0f);
-                gubo.spotLightColor[j]  = glm::vec4(spotlights[i].get()->color, 0.0f) * (float)spotlights[i].get()->radiance;
+                gubo.spotLightDir[j]    = glm::vec4(spotlights[i].get()->getGlobalRotation(), 0.0f);
+                gubo.spotLightColor[j]  = glm::vec4(spotlights[i].get()->color, 0.0f) * spotlights[i].get()->radiance;
                 gubo.spotLightParams[j] = glm::vec4(
-                    cos(glm::radians((float)spotlights[i].get()->aperture)),   // cIN  = cos(alpha_IN/2)
-                    cos(glm::radians((float)spotlights[i].get()->decay)),    // cOUT = cos(alpha_OUT/2)
+                    cos(glm::radians(spotlights[i].get()->aperture)),   // cIN  = cos(alpha_IN/2)
+                    cos(glm::radians(spotlights[i].get()->decay)),    // cOUT = cos(alpha_OUT/2)
                     0.0f,
                     0.0f
                     );
@@ -723,7 +724,7 @@ class Renderer {
     }
 
     ///Remove an object from screen and memory
-    void removeObject(int i) {
+    void removeObject(size_t i) {
         if (i < 0 || i >= sceneObjects.size()) {
             std::cout << "RENDERER - no object found at " << i << " index (removeObject function)" << std::endl;
             return;

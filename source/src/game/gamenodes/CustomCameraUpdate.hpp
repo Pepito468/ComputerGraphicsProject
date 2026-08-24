@@ -1,5 +1,5 @@
-#include "../../engine/cameras/OrthoCamera.hpp"
-#include "../../engine/cameras/PerspectiveCamera.hpp"
+#include "PerspectiveCamera.hpp"
+#include "OrthoCamera.hpp"
 #include "UpdateNode3D.hpp"
 #include "Engine.hpp"
 #include "glm/trigonometric.hpp"
@@ -23,6 +23,11 @@ class CustomCameraUpdate : public UpdateNode3D {
 
     void update() override {
 
+        // Check for escape
+        if(Engine::MainEngine->isKeyBeingPressed(GLFW_KEY_ESCAPE)) {
+            Engine::MainEngine->shutdown();
+        }
+
         // Camera change
         if (Engine::MainEngine->isKeyBeingPressed(GLFW_KEY_P))
             Engine::MainEngine->setMainCamera(PCamera);
@@ -31,30 +36,30 @@ class CustomCameraUpdate : public UpdateNode3D {
 
         // FOV update (ortho does not have FOV)
         if (Engine::MainEngine->isKeyBeingPressed(GLFW_KEY_F))
-            this->PCamera->fov = PCamera->fov + glm::radians(Engine::MainEngine->deltaTime * 10);
+            this->PCamera->setFOV(PCamera->getFOV() + glm::radians(Engine::MainEngine->getDeltaTime() * 10));
 
         // update the camera position and direction with the inputs
         glm::vec3 xdir = glm::normalize(glm::vec3(this->getXAxis().x, 0, this->getXAxis().z));
         glm::vec3 zdir = glm::normalize(glm::vec3(this->getZAxis().x, 0, this->getZAxis().z));
 
-        if (Engine::MainEngine->inputTranslation.x == 1)
-            this->globalTranslate(xdir * Engine::MainEngine->deltaTime);
-        else if (Engine::MainEngine->inputTranslation.x == -1)
-            this->globalTranslate(xdir * Engine::MainEngine->deltaTime * -1.0f);
+        if (Engine::MainEngine->getInputTranslation().x == 1)
+            this->globalTranslate(xdir * Engine::MainEngine->getDeltaTime());
+        else if (Engine::MainEngine->getInputTranslation().x == -1)
+            this->globalTranslate(xdir * Engine::MainEngine->getDeltaTime() * -1.0f);
         // Z axis is positive on the back
-        if (Engine::MainEngine->inputTranslation.z == 1)
-            this->globalTranslate(zdir * Engine::MainEngine->deltaTime);
-        else if (Engine::MainEngine->inputTranslation.z == -1)
-            this->globalTranslate(zdir * Engine::MainEngine->deltaTime * -1.0f);
+        if (Engine::MainEngine->getInputTranslation().z == 1)
+            this->globalTranslate(zdir * Engine::MainEngine->getDeltaTime());
+        else if (Engine::MainEngine->getInputTranslation().z == -1)
+            this->globalTranslate(zdir * Engine::MainEngine->getDeltaTime() * -1.0f);
 
-        this->globalRotateX(-Engine::MainEngine->inputRotation.x * Engine::MainEngine->deltaTime);
-        this->globalRotateY(-Engine::MainEngine->inputRotation.y * Engine::MainEngine->deltaTime);
+        this->globalRotateX(-Engine::MainEngine->getInputRotation().x * Engine::MainEngine->getDeltaTime());
+        this->globalRotateY(-Engine::MainEngine->getInputRotation().y * Engine::MainEngine->getDeltaTime());
 
         // Vertical movement
         if (Engine::MainEngine->isKeyBeingPressed(GLFW_KEY_SPACE))
-            this->globalTranslate(VEC3_Y * Engine::MainEngine->deltaTime);
+            this->globalTranslate(VEC3_Y * Engine::MainEngine->getDeltaTime());
         else if (Engine::MainEngine->isKeyBeingPressed(GLFW_KEY_V))
-            this->globalTranslate(VEC3_Y * Engine::MainEngine->deltaTime * -1.0f);
+            this->globalTranslate(VEC3_Y * Engine::MainEngine->getDeltaTime() * -1.0f);
 
     }
 

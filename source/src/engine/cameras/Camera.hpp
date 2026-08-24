@@ -3,34 +3,33 @@
 #define ENGINE_CAMERA_H
 
 #include "Node3D.hpp"
-#include "Types.hpp"
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/matrix.hpp>
-
-/*
- *  TODO:
- *  global OK
- *  view (view matrix is the inverse of the camera global matrix) OK
- *  projection (orthogonal, use its matrix) OK
- *  normalization (for every point)
- *  screen (pixel coordinates)
- *  Engine does the last 2?
- * */
+#include "glm/matrix.hpp"
+#include <glm/ext/matrix_clip_space.hpp>
 
 /// A camera in the scene
 class Camera : public Node3D
 {
-    public:
+
+    protected:
+
         /// The distance of the near plane
-        BoundFloat nearPlane = PositiveFloat(0.1f);
+        float nearPlane;
 
         /// The distance of the far plane
-        BoundFloat farPlane = PositiveFloat(100.0f);
+        float farPlane;
+
+
+    public:
 
         /** Default constructor */
-        Camera() {}
-        Camera(const float nearPlane, const float farPlane) {
+        Camera() {
+            this->nearPlane = 0.1f;
+            this->farPlane = 100.0f;
+        }
+
+        Camera(float nearPlane, float farPlane) {
             this->nearPlane = nearPlane;
             this->farPlane = farPlane;
         }
@@ -38,13 +37,29 @@ class Camera : public Node3D
         /** Returns the projection matrix of this camera */
         virtual const glm::mat4 getProjectionMatrix() = 0;
 
+        float getNearPlane() const {
+            return this->nearPlane;
+        }
+
+        float getFarPlane() const {
+            return this->farPlane;
+        }
+
+        void setNearPlane(float nearPlane) {
+            this->nearPlane = nearPlane;
+        }
+
+        void setFarPlane(float farPlane) {
+            this->farPlane = farPlane;
+        }
+
         /** Returns the view matrix */
-        glm::mat4 getViewMatrix() const {
+        const glm::mat4 getViewMatrix() const {
             return glm::inverse(this->getGlobalMatrix());
         }
 
         /** Returns the direction that the camera is looking at */
-        glm::vec3 getLookingDirection() const {
+        const glm::vec3 getLookingDirection() const {
             return -1.0f * this->getZAxis();
         }
 };
