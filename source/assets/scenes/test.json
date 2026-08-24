@@ -33,9 +33,12 @@
         "specular": [1.0, 1.0, 1.0, 100.0],
         "params": [0.3, 1.0, 0.3, 0.95, 1.0, 0.0]
       }
+    ],
+    "Water": [
+      {"id": "mat6", "diffuse": [1.0, 1.0, 1.0], "specular": [1.0, 1.0, 1.0, 100.0],"texture": "water.png"}
     ]
   },
   "instances": [
-      {"model": "Plane.gltf", "material": "mat1", "position": [0.0, 0.0, 0.0], "rotation": [0.0, 0.0, 0.0] ,"scale": [10, 10, 10]}
+      {"model": "Water.gltf", "material": "mat6", "position": [0.0, 0.0, 0.0], "rotation": [0.0, 0.0, 0.0] ,"scale": [10, 10, 10]}
   ]
 }

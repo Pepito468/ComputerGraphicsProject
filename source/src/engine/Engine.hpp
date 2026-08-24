@@ -93,9 +93,9 @@ class Engine : public BaseProject {
         // Descriptor Layouts [what will be passed to the shaders]
 
         renderer.loadSceneFromJSON();
-
-        renderer.setAmbientLight(glm::vec3(0.01f, 0.01f, 0.01f), glm::vec3(0.2f, 0.15f, 0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
-        renderer.createDirectionalLight(0.5f, glm::vec3(1.0f, 0.95f, 0.8f), glm::normalize(glm::vec3(0.4f, 0.8f, 0.4f)));
+        
+        renderer.setAmbientLight(glm::vec3(0.20, 0.50, 0.80), glm::vec3(0.2f, 0.15f, 0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
+        renderer.createDirectionalLight(1.0, glm::vec3(1.0f, 0.95f, 0.8f), glm::normalize(glm::vec3(0.4f, 0.8f, 0.4f)));
 
         //renderer.addPointLight(glm::vec3(-1.0f, 2.0f, -5.0f), 0.1f, glm::vec3(1.0f, 1.0f, 1.0f), 5.0f, 2.0f);
         //renderer.addPointLight(glm::vec3(-3.0f, 2.0f, 4.0f), 0.1f, glm::vec3(0.0f, 0.0f, 1.0f), 5.0f, 2.0f);
@@ -200,6 +200,7 @@ class Engine : public BaseProject {
         RP.end(commandBuffer);
     }
 
+    float time = 0;
     glm::vec3 CamPos = {0.0f, 1.0f, 4.0f};
     float Pitch = 0.0f, Yaw = 0.0f;
     // Here is where you update the uniforms.
@@ -226,7 +227,6 @@ class Engine : public BaseProject {
         } else {
             test = true;
         }*/
-int n;
         if (glfwGetKey(window, GLFW_KEY_Z)) {
             if (test__) {
                 if (j%2 == 0 ) {
@@ -291,7 +291,9 @@ int n;
                glm::rotate   (glm::mat4(1), -Yaw,   glm::vec3(0,1,0)) *
                glm::translate(glm::mat4(1), -CamPos);
 
-        renderer.updateUniformBuffer(currentImage, CamPos, Projection, View);
+        time += deltaT;
+        renderer.updateUniformBuffer(currentImage, CamPos, Projection, View, time);
+
 
         renderer.updateLightCulling(CamPos, 10.0f);
 

@@ -1,0 +1,147 @@
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
+
+// the default render pass has just one attchment of type vec4, representing the pixel on screen
+layout (location = 0) out vec4 outColor;
+
+layout (location = 0) in vec3 fragPos;
+layout (location = 1) in vec3 fragNorm;
+layout (location = 2) in vec2 fragUV;
+layout (location = 3) in vec4 fragTan;
+layout (location = 4) in vec3 shadowPos;
+
+// now we need to read the values in the uniforms
+// in this shader, we need the local uniforms
+layout (binding = 0, set = 1) uniform UniformBufferObject {
+	mat4 mvpMat;
+	mat4 mMat;
+	mat4 nMat;
+	vec3 diffuse;
+	vec4 specular;
+} ubo;
+
+
+// the shaders now receives also the texture in a separate set
+layout (binding = 1, set = 1) uniform sampler2D tex;
+layout (binding = 2, set = 1) uniform sampler2D armTex;
+layout (binding = 3, set = 1) uniform sampler2D normalTex;
+layout (binding = 4, set = 1) uniform sampler2D shadowMap;
+
+// and also the global
+layout(binding = 0, set = 0) uniform GlobalUniformBufferObject {
+    // --- Directional Light ---
+    vec4 lightDir;          // xyz = direction TOWARDS the light (normalized)
+    vec4 lightColor;        // xyz = color * intensity
+    vec3 eyePos;
+
+
+    // --- Hemispheric ambient ---
+    vec4 ambientUpper;  // xyz = sky / upper  color  (lU)
+    vec4 ambientLower;  // xyz = ground / lower color (lD)
+    vec4 ambientDir;    // xyz = "up" direction for blending (d)
+
+
+    // --- Point Light ---
+    vec4 pointLightPos[8];     // xyz = world position
+    vec4 pointLightColor[8];   // xyz = color * intensity
+    vec4 pointLightParams[8];  // x = beta (decay exponent), y = g (target distance)
+    int pointInstanceCount;
+
+    // --- Spotlight ---
+    vec4 spotLightPos[8];      // xyz = world position
+    vec4 spotLightDir[8];      // xyz = cone direction (normalized)
+    vec4 spotLightColor[8];    // xyz = color * intensity
+    vec4 spotLightParams[8];   // x = cIN = cos(alpha_IN/2), y = cOUT = cos(alpha_OUT/2)
+    int  spotInstanceCount;
+
+    float time;
+
+    mat4 camView;
+    mat4 camProj;
+    mat4 camInvVP;
+} gubo;
+
+
+float fresnelSchlick(float dotVH) {
+    float F0 = 0.02; //water value
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - dotVH, 0.0, 1.0), 5.0);
+}
+
+mat3 computeTBN(vec3 N, vec3 T, float tangentW) {
+   vec3 n = normalize(N);
+   vec3 t = normalize(T);
+   t = normalize(t - dot(t,n) * n);
+   vec3 b = cross(n, t) * tangentW;
+
+   return mat3(t, b, n);
+}
+
+vec3 getTangentNormal(vec2 UV) {
+    return texture(normalTex, UV).rgb * 2.0 - 1.0;
+}
+
+vec2 panningUV(vec2 uv,vec2 tiling,vec2 direction,float speed,vec2 offset,float time)
+{
+    return uv * tiling + direction * speed * time + offset;
+}
+
+vec3 blendedNormals(float normalSpeed, float normalScale, float normalStrength){
+    vec2 panningUV1 = fragUV * (1.0/(0.5*normalScale)) + gubo.time * normalSpeed*(-0.5);
+    vec2 panningUV2 = fragUV * (1.0/normalScale) + gubo.time * normalSpeed;
+
+    vec3 n1 = getTangentNormal(panningUV1);
+    vec3 n2 = getTangentNormal(panningUV2);
+
+    //blending normals
+    vec3 blend = normalize(vec3(n1.xy + n2.xy, n1.z * n2.z));
+    blend *= normalStrength;
+    return normalize(blend);
+}
+
+float blinn(vec3 L, vec3 N, vec3 V, float smoothness){
+    vec3 H = normalize(V + L);
+	return pow(max(dot(H, N), 0.0), smoothness);
+}
+
+void main()
+{
+    float t = gubo.time;
+    vec3 waterColor =  vec3(0.02, 0.25, 0.45);
+    vec3 horizonColor =  vec3(0.15, 0.65, 0.85);
+    float smoothness = 200;
+    float lightingHardness = 0.9;
+    vec3 specularColor = vec3(1.0, 1.0, 1.0);
+    float normalSpeed = 0.05;
+    float normalScale = 0.25;
+    float normalStrength = 0.5;
+
+	vec3 V = normalize(gubo.eyePos - fragPos);
+	vec3 L = normalize(gubo.lightDir.xyz);
+
+	mat3 TBN = computeTBN(fragNorm, fragTan.xyz, fragTan.w);
+
+    //6. Lighting
+    vec3 tangentNormal = blendedNormals(normalSpeed, normalScale, normalStrength);
+    vec3 N = normalize(TBN * tangentNormal);
+
+    vec3 H = normalize(V + L);
+
+    float dotNH = max(dot(N, H), 0.0);
+
+    float fresnel = fresnelSchlick(dotNH);
+
+	vec3 color = mix(waterColor, horizonColor, fresnel);
+
+    float specular = blinn(L, N, V, smoothness);
+    vec3 specular_ = mix(specular, step(0.5, specular), lightingHardness) * specularColor;
+
+    float dotNL = max(dot(N,L), 0.6);
+    vec3 directLight = gubo.lightColor.rgb * dotNL;
+    color *= directLight;
+
+    color += specular_;
+
+    color = color / (color + vec3(1.0));
+    color = pow(color, vec3(1.0 / 2.2));
+    outColor = vec4(color, 1.0);
+}

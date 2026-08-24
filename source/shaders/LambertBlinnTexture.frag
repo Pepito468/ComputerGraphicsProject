@@ -66,7 +66,7 @@ mat3 computeTBN(vec3 N, vec3 T, float tangentW) {
 }
 
 vec3 getNormalFromMap(mat3 TBN) {
-    vec3 tangentN = 2*texture(normalTex,fragUV).rgb * 2.0 - 1.0;
+    vec3 tangentN = texture(normalTex,fragUV).rgb * 2.0 - 1.0;
 
     return normalize(TBN*tangentN);
 }

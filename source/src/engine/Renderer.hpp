@@ -209,6 +209,24 @@ class Renderer {
                 mat_info[i]["texture"].get<std::string>())});
         }
 
+        mat_info = data["materials"]["Water"];
+        for (int i = 0; i < mat_info.size(); i++) {
+
+            materialAssets.insert({mat_info[i]["id"].get<std::string>(), std::make_unique<WaterMaterial>(
+                glm::vec3(
+                    mat_info[i]["diffuse"][0],
+                    mat_info[i]["diffuse"][1],
+                    mat_info[i]["diffuse"][2]
+                         ),
+            glm::vec4(
+                    mat_info[i]["specular"][0],
+                    mat_info[i]["specular"][1],
+                    mat_info[i]["specular"][2],
+                    mat_info[i]["specular"][3]
+                    ),
+            mat_info[i]["texture"].get<std::string>())});
+        }
+
         mat_info = data["materials"]["Toon"];
         for (int i = 0; i < mat_info.size(); i++) {
 
@@ -593,7 +611,7 @@ class Renderer {
     }
 
     ///This method prepare stuff for Vulkan, must be called inside Engine.updateUniformBuffer()
-    void updateUniformBuffer(uint32_t currentImage,  glm::vec3 CamPos, glm::mat4 Projection, glm::mat4 View) {
+    void updateUniformBuffer(uint32_t currentImage,  glm::vec3 CamPos, glm::mat4 Projection, glm::mat4 View, float time) {
         GlobalUniformBufferObject gubo;
 
         gubo.ambientUpper = ambientLight.upper;
@@ -635,6 +653,7 @@ class Renderer {
 
         // now the eye position corresponds to the position of the camera
         gubo.eyePos = glm::vec4(CamPos,0.0f);
+        gubo.time = time;
 
         // transfers the data to the GPU, by mapping it to its
         // descriptor set
@@ -645,7 +664,6 @@ class Renderer {
         const glm::mat4 lightView = glm::rotate(glm::mat4(1), glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
                                     glm::rotate(glm::mat4(1), glm::radians(-45.0f), glm::vec3(1.0f, 0.0f, 0.0f));
         const glm::vec3 lightDir =  glm::vec3(lightView * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f));
-
 
         ShadowMapUniformBufferObject subo{};
         const float hw = 24.0f;

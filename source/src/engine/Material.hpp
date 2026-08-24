@@ -71,6 +71,23 @@ class LambertMaterial : public Material {
     }
 };
 
+class WaterMaterial : public Material {
+    public:
+    WaterMaterial(glm::vec3 diffuse, glm::vec4 specular, std::string textureName = "Default.png") {
+        this->diffuse = diffuse;
+        this->specular = specular;
+        this->textureName = textureName;
+
+
+        shaderType = ShaderType::WATER;
+    }
+    ~WaterMaterial() override = default;
+    void updateUBO(UniformBufferObject& ubo) override {
+        ubo.color = diffuse;
+        ubo.specular = specular;
+    }
+};
+
 class ToonMaterial : public Material {
 public:
     float tD, mD1, mD2;
