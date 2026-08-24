@@ -508,7 +508,8 @@ class Renderer {
                     RenderPass::getStandardDependencies(ATDEP_DEPTH_TRANS), true);
 
         //TODO: temp
-        RPsceneDepth.init(bp, 800, 600, 1,
+        float sceneDepthSize = 800;
+        RPsceneDepth.init(bp, sceneDepthSize, sceneDepthSize, 1,
                     RenderPass::getStandardAttchmentsProperties(AT_DEPTH_ONLY, bp),
                     RenderPass::getStandardDependencies(ATDEP_DEPTH_TRANS), true);
 

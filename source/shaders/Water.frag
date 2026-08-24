@@ -110,23 +110,41 @@ float linearizeDepth(float depth)
            (farPlane - depth * (farPlane - nearPlane));
 }
 
+
 void main()
 {
     float t = gubo.time;
-    vec3 waterColor =  vec3(0.02, 0.25, 0.45);
-    vec3 horizonColor =  vec3(0.15, 0.65, 0.85);
+
+    //COLORS
+    vec3 waterColor    = vec3(0.005, 0.025, 0.035);
+    vec3 horizonColor  = vec3(0.10, 0.25, 0.29);
+    vec3 specularColor = vec3(0.80, 0.90, 0.92);
+
+    vec3 shallowColor  = vec3(0.025, 0.16, 0.19);
+    vec3 deepColor     = vec3(0.002, 0.012, 0.020);
+
+    vec3 foamColor     = vec3(0.70, 0.82, 0.80);
+
+    //Lighting params
     float smoothness = 200;
-    float lightingHardness = 0.9;
-    vec3 specularColor = vec3(1.0, 1.0, 1.0);
+    float lightingHardness = 0.8;
     float normalSpeed = 0.05;
     float normalScale = 0.25;
     float normalStrength = 0.5;
+
+    //Foam params
+    float intersectionFoamDepth = 0.3;
+    float intersectionFoamCutoff = 0.55;
+    vec2 intersectionFoamTiling = vec2(80);
+    vec2 intersectionFoamDirection = vec2(1.0, 0.15);
+    float intersectionFoamSpeed = 0.03;
 
 	vec3 V = normalize(gubo.eyePos - fragPos);
 	vec3 L = normalize(gubo.lightDir.xyz);
 
 	mat3 TBN = computeTBN(fragNorm, fragTan.xyz, fragTan.w);
 
+    // Water Depth
     vec2 screenUV = screenPos.xy / screenPos.w;
     screenUV = screenUV * 0.5 + 0.5;
 
@@ -137,15 +155,18 @@ void main()
     float fadeDistance = 2.0;
     float fade = 1 - clamp(waterDepth / fadeDistance, 0.0, 1.0);
 
-    vec3 shallowColor = vec3(0.1, 0.6, 0.8);
-    vec3 deepColor    = vec3(0.01, 0.05, 0.15);
 
-    vec3 wc = mix(shallowColor, deepColor, fade);
+    vec3 baseColor = mix(shallowColor, deepColor, fade);
 
-    outColor = vec4(vec3(wc), 1.0);
+    //Foam
+    float foam = 1.0 - smoothstep(0.0, intersectionFoamDepth, waterDepth);
 
-    /*
-    //6. Lighting
+    vec2 foamUV = panningUV(fragUV, intersectionFoamTiling, intersectionFoamDirection, intersectionFoamSpeed, vec2(0.0), gubo.time);
+    float foamTex = texture(armTex, foamUV).r;
+    float foamPattern = step(intersectionFoamCutoff, foamTex);
+    foam *= foamPattern;
+
+    // Lighting
     vec3 tangentNormal = blendedNormals(normalSpeed, normalScale, normalStrength);
     vec3 N = normalize(TBN * tangentNormal);
 
@@ -155,7 +176,7 @@ void main()
 
     float fresnel = fresnelSchlick(dotNH);
 
-	vec3 color = mix(waterColor, horizonColor, fresnel);
+	vec3 color = mix(baseColor, horizonColor, fresnel);
 
     float specular = blinn(L, N, V, smoothness);
     vec3 specular_ = mix(specular, step(0.5, specular), lightingHardness) * specularColor;
@@ -166,7 +187,10 @@ void main()
 
     color += specular_;
 
+    //overlay foam
+    color = mix(color, foamColor, foam);
+
     color = color / (color + vec3(1.0));
     color = pow(color, vec3(1.0 / 2.2));
-    outColor = vec4(color, 1.0);*/
+    outColor = vec4(color, 1.0);
 }

@@ -228,13 +228,14 @@ class Engine : public BaseProject {
         } else {
             test = true;
         }*/
+
         if (glfwGetKey(window, GLFW_KEY_Z)) {
             if (test__) {
                 if (j%2 == 0 ) {
-                    renderer.instantiate("Statue.gltf" , {1.0f, 0.0f, j},{0.0f, 0.0f, 0.0f},glm::vec3(2.0f), &mat1);
+                    renderer.instantiate("Statue.gltf" , {1.0f, -1.0f, j},{0.0f, 0.0f, 0.0f},glm::vec3(2.0f), &mat1);
                 }
                 else {
-                    renderer.instantiate("Statue.gltf" , {-1.0f, 0.0f, j},{0.0f, 0.0f, 0.0f},glm::vec3(2.0f), &mat1);
+                    renderer.instantiate("Statue.gltf" , {-1.0f, -1.0f, j},{0.0f, 0.0f, 0.0f},glm::vec3(2.0f), &mat1);
                 }
 
                 test__ = false;
