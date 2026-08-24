@@ -1,14 +1,18 @@
-#include "Engine.hpp"
 #include <iostream>
 #include <ostream>
+
+#include "Engine.hpp"
+
+#include "PerspectiveCamera.hpp"
+#include "OrthoCamera.hpp"
+
+#include "Model3D.hpp"
+
 #include "PointLight.hpp"
 #include "DirectionalLight.hpp"
 #include "AmbientLight.hpp"
-#include "Model3D.hpp"
-#include "OrthoCamera.hpp"
-#include "PerspectiveCamera.hpp"
+
 #include "gamenodes/CustomCameraUpdate.hpp"
-#include "glm/geometric.hpp"
 
 int main() {
 
@@ -20,7 +24,7 @@ int main() {
     cameraContainer->name = "CameraContainer";
     PerspectiveCamera *camera1 = new PerspectiveCamera(0.01, 100, glm::radians(90.0f), 4.0f/3.0f);
     camera1->name = "PerspectiveCamera";
-    OrthoCamera *camera2 = new OrthoCamera(-4, 4, -2, 2, 0.01, 100);
+    OrthoCamera *camera2 = new OrthoCamera(-4, 4, -2, 2, 0.01, 200);
     camera2->name = "OrthoCamera";
     root->adopt(cameraContainer);
     cameraContainer->adopt(camera1);
@@ -39,11 +43,11 @@ int main() {
     models->name = "ModelContainer";
     root->adopt(models);
 
-    Model3D *statue = new Model3D("Statue.gltf", {1, 0, 0}, {0, 0, 0}, {1, 1, 1}, &mat1);
+    Model3D *statue = new Model3D("Statue.gltf", {1, 0, 0}, {0, 0, 0}, {4, 4, 4}, &mat1);
     statue->name = "Statue";
     models->adopt(statue);
 
-    Model3D *plane = new Model3D("Plane.gltf", {0, 0, 0}, {0, 0, 0}, {30, 30, 30}, &mat1);
+    Model3D *plane = new Model3D("Plane.gltf", {0, 0, 0}, {0, 0, 0}, {100, 100, 100}, &mat1);
     plane->name = "Plane";
     models->adopt(plane);
 

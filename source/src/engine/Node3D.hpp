@@ -2,7 +2,10 @@
 #ifndef ENGINE_NODE3D_H
 #define ENGINE_NODE3D_H
 
+// Force radians
 #define GLM_FORCE_RADIANS
+// Needed for projections
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
 #include "Debug.hpp"
 #include "Node.hpp"

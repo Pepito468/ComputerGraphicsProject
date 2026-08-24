@@ -4,10 +4,6 @@
 
 #include "Node3D.hpp"
 #include "Types.hpp"
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include "glm/matrix.hpp"
-#include <glm/ext/matrix_clip_space.hpp>
 
 /// A camera in the scene
 class Camera : public Node3D

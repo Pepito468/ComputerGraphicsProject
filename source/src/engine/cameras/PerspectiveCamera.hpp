@@ -2,7 +2,6 @@
 #define ENGINE_PERSPECTIVECAMERA_H
 
 #include "Camera.hpp"
-#include "glm/trigonometric.hpp"
 #include <glm/ext/matrix_clip_space.hpp>
 #include "Types.hpp"
 

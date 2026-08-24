@@ -11,7 +11,8 @@ class CustomCameraUpdate : public UpdateNode3D {
 
     void onEnter() override {
         // Position over the plane
-        this->globalTranslate({0, 0.2f, 0});
+        this->globalTranslate({-1, 2, 0});
+        this->globalRotateY(glm::radians(-90.0f));
 
         for (Node *child : this->children) {
             if (PerspectiveCamera *camera = dynamic_cast<PerspectiveCamera*>(child))

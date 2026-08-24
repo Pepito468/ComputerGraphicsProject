@@ -10,13 +10,13 @@ class OrthoCamera : public Camera {
     protected:
 
         /// Camera lower bound
-        BoundFloat bottomBound = PositiveFloat(0.0f);
+        BoundFloat bottomBound = NegativeFloat(0.0f);
 
         /// Camera higher bound
         BoundFloat topBound = PositiveFloat(0.0f);
 
         /// Camera leftmost bound
-        BoundFloat leftBound = PositiveFloat(0.0f);
+        BoundFloat leftBound = NegativeFloat(0.0f);
 
         /// Camera rightmost bound
         BoundFloat rightBound = PositiveFloat(0.0f);

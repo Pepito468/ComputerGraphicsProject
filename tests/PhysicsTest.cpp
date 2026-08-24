@@ -1,6 +1,7 @@
 ﻿#include "Physics.hpp"
 #include "BoxCollider.hpp"
 #include "Debug.hpp"
+#include "GLMDebug.hpp"
 #include "Relations.hpp"
 #include <format>
 #include <memory>

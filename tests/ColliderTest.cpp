@@ -2,6 +2,7 @@
 #include <format>
 #include "ColliderLib.hpp"
 #include "Debug.hpp"
+#include "GLMDebug.hpp"
 #include "Relations.hpp"
 #include <glm/glm.hpp>
 

@@ -6,16 +6,20 @@
 #include <json.hpp>
 #include <vulkan/vulkan_core.h>
 
-#include "AmbientLight.hpp"
-#include "PointLight.hpp"
-#include "SpotLight.hpp"
-#include "DirectionalLight.hpp"
 #include "Node.hpp"
 #include "Node3D.hpp"
-#include "Model3D.hpp"
-#include "Camera.hpp"
-#include "UpdateNode3D.hpp"
 #include "Node2D.hpp"
+
+#include "Camera.hpp"
+
+#include "Model3D.hpp"
+
+#include "AmbientLight.hpp"
+#include "DirectionalLight.hpp"
+#include "PointLight.hpp"
+#include "SpotLight.hpp"
+
+#include "UpdateNode3D.hpp"
 
 #include "Renderer.hpp"
 #include "common.h"
