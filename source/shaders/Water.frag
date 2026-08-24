@@ -11,6 +11,7 @@ layout (location = 3) in vec4 fragTan;
 layout (location = 4) in vec3 shadowPos;
 layout (location = 5) in vec4 screenPos;
 
+
 // now we need to read the values in the uniforms
 // in this shader, we need the local uniforms
 layout (binding = 0, set = 1) uniform UniformBufferObject {
@@ -28,6 +29,7 @@ layout (binding = 2, set = 1) uniform sampler2D armTex;
 layout (binding = 3, set = 1) uniform sampler2D normalTex;
 layout (binding = 4, set = 1) uniform sampler2D shadowMap;
 layout (binding = 5, set = 1) uniform sampler2D sceneDepth;
+layout (binding = 6, set = 1) uniform sampler2D sceneColor;
 
 // and also the global
 layout(binding = 0, set = 0) uniform GlobalUniformBufferObject {
@@ -139,22 +141,31 @@ void main()
     vec2 intersectionFoamDirection = vec2(1.0, 0.15);
     float intersectionFoamSpeed = 0.03;
 
+    //Refraction params
+    float refractionStrength = 0.005;
+
 	vec3 V = normalize(gubo.eyePos - fragPos);
 	vec3 L = normalize(gubo.lightDir.xyz);
 
 	mat3 TBN = computeTBN(fragNorm, fragTan.xyz, fragTan.w);
 
+    vec3 tangentNormal = blendedNormals(normalSpeed, normalScale, normalStrength);
+    vec3 N = normalize(TBN * tangentNormal);
+
     // Water Depth
     vec2 screenUV = screenPos.xy / screenPos.w;
     screenUV = screenUV * 0.5 + 0.5;
+
+    //Refraction
+    vec2 refractedUV = screenUV + N.xz * refractionStrength;
+    vec3 sceneColorValue = texture(sceneColor, refractedUV).rgb;
 
     float sceneDepthValue = texture(sceneDepth, screenUV).r;
 
     float waterDepth = linearizeDepth(sceneDepthValue) - screenPos.w;
 
-    float fadeDistance = 2.0;
-    float fade = 1 - clamp(waterDepth / fadeDistance, 0.0, 1.0);
-
+    float fadeDistance = 1.5;
+    float fade = clamp(waterDepth / fadeDistance, 0.0, 1.0);
 
     vec3 baseColor = mix(shallowColor, deepColor, fade);
 
@@ -167,8 +178,6 @@ void main()
     foam *= foamPattern;
 
     // Lighting
-    vec3 tangentNormal = blendedNormals(normalSpeed, normalScale, normalStrength);
-    vec3 N = normalize(TBN * tangentNormal);
 
     vec3 H = normalize(V + L);
 
@@ -176,7 +185,8 @@ void main()
 
     float fresnel = fresnelSchlick(dotNH);
 
-	vec3 color = mix(baseColor, horizonColor, fresnel);
+    vec3 underwaterColor = sceneColorValue * baseColor;
+	vec3 color = mix(underwaterColor, horizonColor, fresnel);
 
     float specular = blinn(L, N, V, smoothness);
     vec3 specular_ = mix(specular, step(0.5, specular), lightingHardness) * specularColor;
@@ -193,4 +203,5 @@ void main()
     color = color / (color + vec3(1.0));
     color = pow(color, vec3(1.0 / 2.2));
     outColor = vec4(color, 1.0);
+
 }

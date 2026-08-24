@@ -15,6 +15,10 @@ struct SceneDepthUniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
 };
 
+struct SceneColorUniformBufferObject {
+    alignas(16) glm::mat4 mvpMat;
+};
+
 struct SkyboxUniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
 };
@@ -61,17 +65,17 @@ class Renderer {
         }
 
         ///Must be called inside Renderer.descriptorSetsInits()
-        void descriptorSetsInits(BaseProject* bp, RenderPass* rp, RenderPass* RPoffScreen, RenderPass* RPsceneDepth) {
+        void descriptorSetsInits(BaseProject* bp, RenderPass* rp, RenderPass* RPoffScreen, RenderPass* RPsceneDepth, RenderPass* RPsceneColor) {
             pipeline.create(rp);
 
             for (auto& p : pool) {
-                modelDescriptorSetInit(bp, p, RPoffScreen, RPsceneDepth);
+                modelDescriptorSetInit(bp, p, RPoffScreen, RPsceneDepth, RPsceneColor);
             }
         }
 
         //TODO: non so se mi piace questa soluzione
-        void modelDescriptorSetInit(BaseProject* bp, Model3D* model, RenderPass* RPoffScreen, RenderPass* RPsceneDepth) {
-            model->descriptorSetInit(bp, localLayout, RPoffScreen, RPsceneDepth);
+        void modelDescriptorSetInit(BaseProject* bp, Model3D* model, RenderPass* RPoffScreen, RenderPass* RPsceneDepth, RenderPass* RPsceneColor) {
+            model->descriptorSetInit(bp, localLayout, RPoffScreen, RPsceneDepth, RPsceneColor);
         }
 
         ///Must be called inside Renderer.descriptorSetsCleanup()
@@ -157,6 +161,12 @@ class Renderer {
     DescriptorSet sceneDepth;
     RenderPass RPsceneDepth;
     Pipeline PsceneDepth;
+
+    //Scene color
+    DescriptorSetLayout sceneColorLayout;
+    DescriptorSet sceneColor;
+    RenderPass RPsceneColor;
+    Pipeline PsceneColor;
 
     Texture TenvMap;   // environment cubemap
     Model SkyboxCube;
@@ -329,7 +339,7 @@ class Renderer {
         pipelinesMap.at(model3D->getShaderType())->addModel3D(model3D);
 
         //Model local descriptor set init
-        pipelinesMap.at(model3D->getShaderType())->modelDescriptorSetInit(bp, model3D, &RPoffScreen, &RPsceneDepth);
+        pipelinesMap.at(model3D->getShaderType())->modelDescriptorSetInit(bp, model3D, &RPoffScreen, &RPsceneDepth, &RPsceneColor);
 
         screenUpdate();
     }
@@ -452,7 +462,8 @@ class Renderer {
             {2,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,VK_SHADER_STAGE_ALL_GRAPHICS,1,1}, //arm
             {3,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,VK_SHADER_STAGE_ALL_GRAPHICS,2,1}, //normalMap
             {4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1}, //shadowMap
-            {5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4, 1} //sceneDepth
+            {5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4, 1}, //sceneDepth
+            {6, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 5, 1} //sceneColor
           });
 
         globalLayout.init(bp, {
@@ -469,6 +480,10 @@ class Renderer {
 
         sceneDepthLayout.init(bp, {
                     {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(SceneDepthUniformBufferObject), 1}
+                    });
+
+        sceneColorLayout.init(bp, {
+                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(UniformBufferObject), 1}
                     });
 
         skyboxLayout.init(bp, {
@@ -513,10 +528,16 @@ class Renderer {
                     RenderPass::getStandardAttchmentsProperties(AT_DEPTH_ONLY, bp),
                     RenderPass::getStandardDependencies(ATDEP_DEPTH_TRANS), true);
 
+        float sceneColorSize = 800;
+        RPsceneColor.init(bp, sceneColorSize, sceneColorSize, 1,
+                    RenderPass::getStandardAttchmentsProperties(AT_ONE_COLOR_AND_DEPTH, bp),
+                    RenderPass::getStandardDependencies(ATDEP_DEPTH_TRANS), true);
+
 
 
         PoffScreen.init(bp, &vertexDescriptor, "shaders/ShadowMap.vert.spv", "shaders/ShadowMap.frag.spv", {&offScreenLayout, &localLayout});
         PsceneDepth.init(bp, &vertexDescriptor, "shaders/SceneDepth.vert.spv", "shaders/SceneDepth.frag.spv", {&sceneDepthLayout, &localLayout});
+        PsceneColor.init(bp, &vertexDescriptor, "shaders/SceneColor.vert.spv", "shaders/SceneColor.frag.spv", {&sceneColorLayout, &localLayout});
 
         Pskybox.init(bp, &VDskybox, "shaders/Skybox.vert.spv", "shaders/Skybox.frag.spv", {&skyboxLayout} );
         Pskybox.setCompareOp(VK_COMPARE_OP_LESS_OR_EQUAL);
@@ -539,20 +560,24 @@ class Renderer {
 
         RPoffScreen.create();
         RPsceneDepth.create();
+        RPsceneColor.create();
 
         global.init(bp, &globalLayout, {});
         offScreen.init(bp, &offScreenLayout, {});
         sceneDepth.init(bp, &sceneDepthLayout, {});
+        sceneColor.init(bp, &sceneColorLayout, {});
 
         skybox.init(bp, &skyboxLayout, {
             TenvMap.getViewAndSampler()
         });
         PoffScreen.create(&RPoffScreen);
         PsceneDepth.create(&RPsceneDepth);
+        PsceneColor.create(&RPsceneColor);
+
         Pskybox.create(rp);
 
         for (auto& p : pipelinesMap) {
-            p.second->descriptorSetsInits(bp, rp, &RPoffScreen, &RPsceneDepth);
+            p.second->descriptorSetsInits(bp, rp, &RPoffScreen, &RPsceneDepth, &RPsceneColor);
         }
     }
 
@@ -562,6 +587,7 @@ class Renderer {
         global.cleanup();
         offScreen.cleanup();
         sceneDepth.cleanup();
+        sceneColor.cleanup();
         skybox.cleanup();
 
         for (auto& p : pipelinesMap) {
@@ -570,6 +596,7 @@ class Renderer {
 
         RPoffScreen.cleanup();
         RPsceneDepth.cleanup();
+        RPsceneColor.cleanup();
 
         PoffScreen.cleanup();
         PsceneDepth.cleanup();
@@ -582,6 +609,7 @@ class Renderer {
         globalLayout.cleanup();
         offScreenLayout.cleanup();
         sceneDepthLayout.cleanup();
+        sceneColorLayout.cleanup();
         skyboxLayout.cleanup();
 
         localLayout.cleanup();
@@ -609,12 +637,15 @@ class Renderer {
 
         PoffScreen.destroy();
         PsceneDepth.destroy();
+        PsceneColor.destroy();
         Pskybox.destroy();
         for (auto& p : pipelinesMap) {
             p.second->localCleanup();
         }
 
     }
+
+
 
     void populateShadowCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
         RPoffScreen.begin(commandBuffer, 0);
@@ -626,6 +657,19 @@ class Renderer {
         }
 
         RPoffScreen.end(commandBuffer);
+    }
+
+    void populateSceneColorCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
+        RPsceneColor.begin(commandBuffer, 0);
+        PsceneColor.bind(commandBuffer);
+        sceneColor.bind(commandBuffer, PsceneColor, 0, currentImage);
+
+        for (auto& o : sceneObjects) {
+            if (o.get()->getShaderType() != ShaderType::WATER)
+                o->populateCommandBuffer(commandBuffer, currentImage, PsceneColor);
+        }
+
+        RPsceneColor.end(commandBuffer);
     }
 
     void populateSceneDepthCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
@@ -725,6 +769,12 @@ class Renderer {
 
         sdubo.mvpMat = Projection*View;
         sceneDepth.map(currentImage, &sdubo, 0);
+
+        //TODO: sceneColor
+        SceneColorUniformBufferObject scubo{};
+
+        scubo.mvpMat = Projection*View;
+        sceneColor.map(currentImage, &scubo, 0);
 
         SkyboxUniformBufferObject skyboxUBO{};
 

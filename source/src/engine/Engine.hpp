@@ -191,8 +191,8 @@ class Engine : public BaseProject {
 
         renderer.populateSceneDepthCommandBuffer(commandBuffer, currentImage);
         renderer.populateShadowCommandBuffer(commandBuffer, currentImage);
+        renderer.populateSceneColorCommandBuffer(commandBuffer, currentImage);
 
-        // Offscreen pass - always required
         // begin standard pass
         RP.begin(commandBuffer, currentImage);
 
