@@ -73,7 +73,7 @@ class Model3D : public Node3D {
         if (isVisible) {
             UniformBufferObject ubo;
 
-            glm::mat4 world = getLocalMatrix();
+            glm::mat4 world = getGlobalMatrix();
 
             // now we fill the uniforms
             ubo.mMat = world;

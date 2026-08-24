@@ -1,5 +1,6 @@
 #ifndef ENGINE_RENDERER_HPP
 #define ENGINE_RENDERER_HPP
+#include <stdexcept>
 #include <unordered_map>
 
 #include "common.h"
@@ -140,12 +141,12 @@ class Renderer {
     std::unordered_map <std::string, Texture> normalTexAssets;
     std::unordered_map <std::string, Texture> roughnessTexAssets;
     std::unordered_map <std::string, std::unique_ptr<Material>> materialAssets;
-    std::vector<std::unique_ptr<Model3D>> sceneObjects; //stores all the models assigned to Renderer
+    std::vector<Model3D*> sceneObjects; //stores all the models assigned to Renderer
 
-    DirectionalLight directionalLight;
-    std::vector<std::unique_ptr<PointLight>> pointlights;
-    std::vector<std::unique_ptr<SpotLight>> spotlights;
-    AmbientLight ambientLight;
+    DirectionalLight *directionalLight;
+    std::vector<PointLight*> pointlights;
+    std::vector<SpotLight*> spotlights;
+    AmbientLight *ambientLight;
 
     //Shadow map
     DescriptorSetLayout offScreenLayout;
@@ -240,13 +241,13 @@ class Renderer {
         mat_info = data["instances"];
         sceneObjects.reserve(sceneObjects.size() + mat_info.size());
         for (size_t i = 0; i < mat_info.size(); i++) {
-            sceneObjects.emplace_back(std::make_unique<Model3D>(mat_info[i]["model"].get<std::string>(),
+            sceneObjects.emplace_back(dynamic_cast<Model3D*>(mat_info[i]["model"].get<std::string>(),
                 glm::vec3(mat_info[i]["position"][0], mat_info[i]["position"][1], mat_info[i]["position"][2]),
                 glm::vec3(mat_info[i]["rotation"][0], mat_info[i]["rotation"][1], mat_info[i]["rotation"][2]),
                 glm::vec3(mat_info[i]["scale"][0],mat_info[i]["scale"][1],mat_info[i]["scale"][2]),
                 materialAssets.at(mat_info[i]["material"].get<std::string>()).get()));
 
-            preLoadModel(sceneObjects[i].get());
+            preLoadModel(sceneObjects[i]);
         }
 
         std::cout << "RENDERER - JSON PARSED: " << sceneName << std::endl;
@@ -259,22 +260,27 @@ class Renderer {
      *<li>This method is meant to be called on runtime</li>
      *<li>If you want to load models on advance, use "preLoadModel" instead</li>
      */
-    void instantiate(std::string modelPath, glm::vec3 position, glm::vec3 rotation, glm::vec3 scale, Material* material, bool updateScreen = true) {
-        sceneObjects.emplace_back(std::make_unique<Model3D>( modelPath, position, rotation, scale, material));
+    void instantiate(Model3D *model, bool updateScreen = true) {
+        sceneObjects.push_back(model);
 
-        Model3D* model3D = sceneObjects.back().get();
+        Model3D* model3D = sceneObjects.back();
 
         //Key doesn't exist
-        if (modelAssets.find(model3D->getModelPath()) == modelAssets.end()) {
-            modelAssets.insert({model3D->getModelPath(), {}});
+        try {
+            if (modelAssets.find(model3D->getModelPath()) == modelAssets.end()) {
+                modelAssets.insert({model3D->getModelPath(), {}});
 
-            Model* m = &modelAssets.at(model3D->getModelPath());
-            if (model3D->getModelPath().find(".obj") != std::string::npos)
-                m->init(bp, &vertexDescriptor, "assets/models/" + model3D->getModelPath(),OBJ);
-            else if (model3D->getModelPath().find(".gltf") != std::string::npos)
-                m->init(bp, &vertexDescriptor, "assets/models/" + model3D->getModelPath(),GLTF);
-            else
-                std::cout << "Error: " <<  model3D->getModelPath() << ", not a valid object file" << std::endl;
+                Model* m = &modelAssets.at(model3D->getModelPath());
+                if (model3D->getModelPath().find(".obj") != std::string::npos)
+                    m->init(bp, &vertexDescriptor, "assets/models/" + model3D->getModelPath(),OBJ);
+                else if (model3D->getModelPath().find(".gltf") != std::string::npos)
+                    m->init(bp, &vertexDescriptor, "assets/models/" + model3D->getModelPath(),GLTF);
+                else
+                    std::cout << "Error: " <<  model3D->getModelPath() << ", not a valid object file" << std::endl;
+            }
+        } catch(std::runtime_error& e) {
+            // Error is thrown by Starter.hpp if the model does not exist
+            error(e.what());
         }
 
         if ( albedoTexAssets.find(model3D->getMaterial()->getTextureName()) == albedoTexAssets.end()) {
@@ -327,18 +333,18 @@ class Renderer {
     }
 
     ///add a new point light on screen
-    void addPointLight(glm::vec3 position ,float radiance, glm::vec3 color, float radius, float decay, bool isOn = true) {
-        pointlights.emplace_back(std::make_unique<PointLight>(position,radiance,color,radius, decay, isOn));
+    void addPointLight(PointLight *light) {
+        pointlights.push_back(light);
     }
 
     ///add a new spotlight on screen
-    void addSpotLight(glm::vec3 position ,float radiance, glm::vec3 color, float aperture, float decay, glm::vec3 direction, bool isOn = true) {
-        spotlights.emplace_back(std::make_unique<SpotLight>(position, radiance,color,aperture, decay, direction, isOn));
+    void addSpotLight(SpotLight *light) {
+        spotlights.push_back(light);
     }
 
     ///Create the directional light (Only one directional light can exists)
-    void createDirectionalLight(float radiance, glm::vec3 color, glm::vec3 direction) {
-        directionalLight = DirectionalLight(radiance, color, direction);
+    void createDirectionalLight(DirectionalLight *light) {
+        directionalLight = light;
     }
 
     /**Set ambient light parameters
@@ -346,10 +352,8 @@ class Renderer {
      *<li>lower: ground reflection</li>
      *<li>dir: world direction</li>
      */
-    void setAmbientLight(glm::vec3 upper, glm::vec3 lower, glm::vec3 dir) {
-        ambientLight.upper = glm::vec4(upper, 0.0f);
-        ambientLight.lower = glm::vec4(lower, 0.0f);
-        ambientLight.dir = glm::vec4(dir, 0.0f);
+    void setAmbientLight(AmbientLight *light) {
+        ambientLight = light;
     }
 
     ///Turn off light that are too far away
@@ -645,19 +649,19 @@ class Renderer {
     void updateUniformBuffer(uint32_t currentImage,  glm::vec3 CamPos, glm::mat4 Projection, glm::mat4 View) {
         GlobalUniformBufferObject gubo;
 
-        gubo.ambientUpper = ambientLight.upper;
-        gubo.ambientLower = ambientLight.lower;
-        gubo.ambientDir   = ambientLight.dir;
+        gubo.ambientUpper = ambientLight->upper;
+        gubo.ambientLower = ambientLight->lower;
+        gubo.ambientDir   = ambientLight->dir;
 
-        gubo.lightDir   = glm::vec4(directionalLight.getGlobalRotation(), 0.0f);
-        gubo.lightColor = glm::vec4(directionalLight.color, 0.0f) * (float)directionalLight.radiance;
+        gubo.lightDir   = glm::vec4(directionalLight->getGlobalRotation(), 0.0f);
+        gubo.lightColor = glm::vec4(directionalLight->color, 0.0f) * (float)directionalLight->radiance;
 
         int j = 0;
         for (size_t i = 0; i < pointlights.size(); i++) {
             if (pointlights[i]->isOn) {
-                gubo.pointLightPos[j]    = glm::vec4(pointlights[i].get()->getLocalPosition(), 0.0f);
-                gubo.pointLightColor[j]  = glm::vec4(pointlights[i].get()->color, 0.0f) * (float)pointlights[i].get()->radiance;
-                gubo.pointLightParams[j] = glm::vec4(pointlights[i].get()->decay, (float)pointlights[i].get()->radius, 0.0f, 0.0f);
+                gubo.pointLightPos[j]    = glm::vec4(pointlights[i]->getGlobalPosition(), 0.0f);
+                gubo.pointLightColor[j]  = glm::vec4(pointlights[i]->color, 0.0f) * (float)pointlights[i]->radiance;
+                gubo.pointLightParams[j] = glm::vec4(pointlights[i]->decay, (float)pointlights[i]->radius, 0.0f, 0.0f);
                 j++;
             }
         }
@@ -667,12 +671,12 @@ class Renderer {
         j = 0;
         for (size_t i = 0; i < spotlights.size(); i++) {
             if (spotlights[i]->isOn) {
-                gubo.spotLightPos[j]    = glm::vec4(spotlights[i].get()->getLocalPosition(), 0.0f);
-                gubo.spotLightDir[j]    = glm::vec4(spotlights[i].get()->getGlobalRotation(), 0.0f);
-                gubo.spotLightColor[j]  = glm::vec4(spotlights[i].get()->color, 0.0f) * (float)spotlights[i].get()->radiance;
+                gubo.spotLightPos[j]    = glm::vec4(spotlights[i]->getGlobalPosition(), 0.0f);
+                gubo.spotLightDir[j]    = glm::vec4(spotlights[i]->getGlobalRotation(), 0.0f);
+                gubo.spotLightColor[j]  = glm::vec4(spotlights[i]->color, 0.0f) * (float)spotlights[i]->radiance;
                 gubo.spotLightParams[j] = glm::vec4(
-                    cos(glm::radians((float)spotlights[i].get()->aperture)),   // cIN  = cos(alpha_IN/2)
-                    cos(glm::radians((float)spotlights[i].get()->decay)),    // cOUT = cos(alpha_OUT/2)
+                    cos(glm::radians((float)spotlights[i]->aperture)),   // cIN  = cos(alpha_IN/2)
+                    cos(glm::radians((float)spotlights[i]->decay)),    // cOUT = cos(alpha_OUT/2)
                     0.0f,
                     0.0f
                     );
@@ -720,7 +724,7 @@ class Renderer {
 
     ///Return an instance of a model inside sceneObjects
     Model3D* getObject(int i) {
-        return sceneObjects[i].get();
+        return sceneObjects[i];
     }
 
     ///Remove an object from screen and memory
@@ -730,7 +734,7 @@ class Renderer {
             return;
         }
 
-        sceneObjects[i].get()->descriptorSetCleanup();
+        sceneObjects[i]->descriptorSetCleanup();
         sceneObjects.erase(sceneObjects.begin() + i);
     }
 

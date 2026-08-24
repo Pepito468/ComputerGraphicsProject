@@ -25,6 +25,7 @@
 #include "common.h"
 
 #define POOL_SIZE 200
+#define LIGHT_RENDER_DISTANCE 20.0f
 
 class Engine : public BaseProject {
 
@@ -137,15 +138,15 @@ class Engine : public BaseProject {
 
             // Node specific initialization
             if (Model3D *model = dynamic_cast<Model3D*>(node)) {
-                renderer.instantiate(model->getModelPath(), model->getGlobalPosition(), model->getGlobalRotation(), model->getGlobalScale(), model->getMaterial(), false);
+                renderer.instantiate(model, false);
             } else if (DirectionalLight *light = dynamic_cast<DirectionalLight*>(node)) {
-                renderer.createDirectionalLight(light->radiance, light->color, light->getGlobalRotation());
+                renderer.createDirectionalLight(light);
             } else if (AmbientLight *light = dynamic_cast<AmbientLight*>(node)) {
-                renderer.setAmbientLight(light->upper, light->lower, light->dir);
+                renderer.setAmbientLight(light);
             } else if (PointLight *light = dynamic_cast<PointLight*>(node)) {
-                renderer.addPointLight(light->getGlobalPosition(), light->radiance, light->color, light->radius, light->decay, light->isOn);
+                renderer.addPointLight(light);
             } else if (SpotLight *light = dynamic_cast<SpotLight*>(node)) {
-                renderer.addSpotLight(light->getGlobalPosition(), light->radiance, light->color, light->aperture, light->decay, light->getGlobalRotation());
+                renderer.addSpotLight(light);
             }
 
             log(std::format("Loaded Node [{}, ID: {}]", node->name, node->UUID));
@@ -319,7 +320,7 @@ class Engine : public BaseProject {
                     this->mainCamera->getProjectionMatrix(),
                     this->mainCamera->getViewMatrix());
 
-            renderer.updateLightCulling(this->mainCamera->getGlobalPosition(), 10.0f);
+            renderer.updateLightCulling(this->mainCamera->getGlobalPosition(), LIGHT_RENDER_DISTANCE);
 
             txt.updateCommandBuffer();
         }

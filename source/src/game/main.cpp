@@ -13,6 +13,8 @@
 #include "AmbientLight.hpp"
 
 #include "gamenodes/CustomCameraUpdate.hpp"
+#include "gamenodes/MovingPlanetUpdate.hpp"
+#include "gamenodes/MovingPlanetChildUpdate.hpp"
 
 int main() {
 
@@ -51,6 +53,16 @@ int main() {
     plane->name = "Plane";
     models->adopt(plane);
 
+    for (int i = -5; i <= 5; i++) {
+        Model3D *m = new Model3D("Statue.gltf", {-1, 0, i}, {0, 0, 0}, {1, 1, 1}, &mat1);
+        m->name = std::format("Statue-{}", i);
+        models->adopt(m);
+    }
+
+    Model3D *suzanne = new Model3D("SuzanneUV.obj", {4, 0, 1}, {0, glm::radians(-90.0f), 0}, {1, 1, 1}, &mat2);
+    suzanne->name = "Suzanne";
+    models->adopt(suzanne);
+
     // Lights
     AmbientLight *ambientLight = new AmbientLight({0.01, 0.01, 0.01}, {0.2, 0.15, 0.1}, {0, 1, 0});
     ambientLight->name = "AmbientLight";
@@ -58,11 +70,39 @@ int main() {
 
     DirectionalLight *directionalLight = new DirectionalLight(0.01, {1, 0.95, 0.8}, glm::normalize(glm::vec3(0.4, 0.8, 0.4)));
     directionalLight->name = "DirectionalLight";
-    // root->adopt(directionalLight);
+    root->adopt(directionalLight);
 
-    PointLight *pointLight = new PointLight({1, 1, 0}, 1, {1, 0, 0}, 20, 2);
-    pointLight->name = "PointLight";
-    root->adopt(pointLight);
+    PointLight *redLight = new PointLight({-10, 4, 0}, 1, {1, 0, 0}, 5, 2);
+    redLight->name = "RedLight";
+    root->adopt(redLight);
+
+    PointLight *yellowLight = new PointLight({0, 4, 10}, 1, {1, 1, 0}, 5, 2);
+    yellowLight->name = "YellowLight";
+    root->adopt(yellowLight);
+
+    PointLight *blueLight = new PointLight({0, 4, -10}, 1, {0, 0, 1}, 5, 2);
+    blueLight->name = "BlueLight";
+    root->adopt(blueLight);
+
+    // Planet
+    MovingPlanetUpdate *planet = new MovingPlanetUpdate();
+    planet->name = "Planet";
+    root->adopt(planet);
+    // Moving child
+    PointLight *planetLight = new PointLight({0, 0, 0}, 3, {1, 1, 1}, 5, 2);
+    planet->adopt(planetLight);
+    // Moving statue
+    Model3D *planetStatue = new Model3D("Statue.gltf", {0, 0, 0}, {0, 0, 0}, {1, 1, 1}, &mat1);
+    planetStatue->name = "PlanetStatue";
+    planet->adopt(planetStatue);
+    // Planet child
+    MovingPlanetChildUpdate *movingChild = new MovingPlanetChildUpdate();
+    planet->adopt(movingChild);
+    // Rotates around the planet
+    Model3D *orbitingStatue = new Model3D("Statue.gltf", {0, 0, 0}, {0, 0, 0}, {1, 1, 1}, &mat1);
+    orbitingStatue->localTranslate({1, 0, 0});
+    movingChild->adopt(orbitingStatue);
+
 
     try {
         engine.run(false);
