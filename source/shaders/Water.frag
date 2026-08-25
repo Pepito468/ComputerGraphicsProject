@@ -112,6 +112,16 @@ float linearizeDepth(float depth)
            (farPlane - depth * (farPlane - nearPlane));
 }
 
+void pointLight(vec3 pos, out vec3 direction, out vec3 color, int i) {
+    vec3  delta = gubo.pointLightPos[i].xyz - pos;
+    float dist  = length(delta);
+    float beta  = gubo.pointLightParams[i].x;
+    float g     = gubo.pointLightParams[i].y;
+
+    direction = delta/dist;
+    color     = gubo.pointLightColor[i].rgb * pow(g/dist, beta);
+}
+
 
 void main()
 {
@@ -121,7 +131,7 @@ void main()
     vec3 waterColor    = vec3(0.004, 0.018, 0.028);
     vec3 horizonColor  = vec3(0.07, 0.22, 0.30);
     vec3 specularColor = vec3(1.00, 0.96, 0.82);
-    vec3 shallowColor  = vec3(0.18, 0.52, 0.55);
+    vec3 shallowColor  = vec3(0.5, 1, 1);
     vec3 deepColor     = vec3(0.015, 0.055, 0.075);
     vec3 foamColor     = vec3(0.82, 0.94, 0.92);
 
@@ -142,70 +152,67 @@ void main()
     //Refraction params
     float refractionStrength = 0.005;
 
+    //Computed params
 	vec3 V = normalize(gubo.eyePos - fragPos);
 	vec3 L = normalize(gubo.lightDir.xyz);
-
 	mat3 TBN = computeTBN(fragNorm, fragTan.xyz, fragTan.w);
-
     vec3 tangentNormal = blendedNormals(normalSpeed, normalScale, normalStrength);
     vec3 N = normalize(TBN * tangentNormal);
 
     // Water Depth
     vec2 screenUV = screenPos.xy / screenPos.w;
     screenUV = screenUV * 0.5 + 0.5;
+    float sceneDepthValue = texture(sceneDepth, screenUV).r;
+    float waterDepth = linearizeDepth(sceneDepthValue) - screenPos.w;
+
+    //Fading
+    float fadeDistance = 1.5;
+    float fade = clamp(waterDepth / fadeDistance, 0.0, 1.0);
+    vec3 baseColor = mix(shallowColor, deepColor, fade);
 
     //Refraction
     vec2 refractedUV = screenUV + N.xz * refractionStrength;
     vec3 sceneColorValue = texture(sceneColor, refractedUV).rgb;
+    vec3 underwaterColor = sceneColorValue * baseColor;
 
-    float sceneDepthValue = texture(sceneDepth, screenUV).r;
+    // Lighting
+    vec3 H = normalize(V + L);
+    float dotNH = max(dot(N, H), 0.0);
+    float fresnel = fresnelSchlick(dotNH);
+	vec3 color = mix(underwaterColor, horizonColor, fresnel);
 
-    float waterDepth = linearizeDepth(sceneDepthValue) - screenPos.w;
+    //Direct Light
+    float specular = blinn(L, N, V, smoothness);
+    vec3 specular_ = mix(specular, step(0.5, specular), lightingHardness) * specularColor;
+    float dotNL = max(dot(N,L), 0.0);
+    vec3 directLight = gubo.lightColor.rgb * dotNL;
+    color *= directLight;
+    color += specular_;
 
-    float fadeDistance = 1.5;
-    float fade = clamp(waterDepth / fadeDistance, 0.0, 1.0);
+    //Point Lights
+    vec3 Lc;
+    for (int i = 0; i < gubo.pointInstanceCount; i++){
+        pointLight(fragPos, L, Lc, i);
+        float specularSoft = blinn(L, N, V, smoothness*1.5);
+        float specularHard = smoothstep (0.005,0.01, specularSoft);
+        float specularTerm = mix(specularSoft, specularHard, lightingHardness);
+        dotNL = max(dot(N,L), 0.0);
+        color += Lc * (dotNL + specularTerm);
+    }
 
-    vec3 baseColor = mix(shallowColor, deepColor, fade);
+    //Ambient Light
+    vec3 ambient = mix(gubo.ambientLower.rgb,gubo.ambientUpper.rgb,max(dot(N, normalize(gubo.ambientDir.xyz)), 0.0));
+    color += ambient * 0.02;
 
     //Foam
     float foam = 1.0 - smoothstep(0.0, intersectionFoamDepth, waterDepth);
-
     vec2 foamUV = panningUV(fragUV, intersectionFoamTiling, intersectionFoamDirection, intersectionFoamSpeed, vec2(0.0), gubo.time);
     float foamTex = texture(armTex, foamUV).r;
     float foamPattern = step(intersectionFoamCutoff, foamTex);
     foam *= foamPattern;
-
-    // Lighting
-
-    vec3 H = normalize(V + L);
-
-    float dotNH = max(dot(N, H), 0.0);
-
-    float fresnel = fresnelSchlick(dotNH);
-
-    vec3 underwaterColor = sceneColorValue * baseColor;
-	vec3 color = mix(underwaterColor, horizonColor, fresnel);
-
-    float specular = blinn(L, N, V, smoothness);
-    vec3 specular_ = mix(specular, step(0.5, specular), lightingHardness) * specularColor;
-
-    float dotNL = max(dot(N,L), 0.0);
-    vec3 directLight = gubo.lightColor.rgb * dotNL;
-    color *= directLight;
-
-    color += specular_;
-
-    vec3 ambient = mix(
-        gubo.ambientLower.rgb,
-        gubo.ambientUpper.rgb,
-        max(dot(N, normalize(gubo.ambientDir.xyz)), 0.0)
-    );
-
-    color += ambient * 0.02;
-
-    //overlay foam
     color = mix(color, foamColor, foam);
 
+    //Gamma correction
     color = color / (color + vec3(1.0));
     color = pow(color, vec3(1.0 / 2.2));
     outColor = vec4(color, 1.0);
