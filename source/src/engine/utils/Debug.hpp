@@ -13,6 +13,7 @@
 #define COLOR_YELLOW "\033[93m"
 #define COLOR_RED "\033[91m"
 #define COLOR_MAGENTA "\033[35m"
+#define COLOR_BRIGHT_GREEN "\033[92m"
 
 /// Prints a string to stdout
 inline void println(const std::string& string)

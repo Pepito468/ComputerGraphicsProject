@@ -3,6 +3,7 @@ build/*
 # Local config
 .clangd
 .idea
+.vscode
 # Temp files
 *.txt
 !*CMakeLists.txt

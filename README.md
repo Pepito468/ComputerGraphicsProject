@@ -10,4 +10,4 @@
 | Model Rendering  |         0          |        40       |       0        |         0         |
 | Testing          |         3          |        0        |       16       |         3         |
 | Shaders          |         0          |        10       |       0        |         0         |
-| UI               |         15         |        0        |       0        |         0         |
+| UI               |         25         |        0        |       0        |         0         |
