@@ -46,16 +46,16 @@ int main() {
     models->name = "ModelContainer";
     root->adopt(models);
 
-    Model3D *statue = new Model3D("Statue.gltf", {1, 0, 0}, {0, 0, 0}, {4, 4, 4}, &mat1);
+    Model3D *statue = new Model3D("Statue.gltf", {1, -0.5, 0}, {0, 0, 0}, {4, 4, 4}, &mat1);
     statue->name = "Statue";
     models->adopt(statue);
 
-    Model3D *plane = new Model3D("Water.gltf", {0, 0, 0}, {0, 0, 0}, {100, 100, 100}, &mat4);
+    Model3D *plane = new Model3D("Water.gltf", {0, 0.1, 0}, {0, 0, 0}, {10, 10, 10}, &mat4);
     plane->name = "Plane";
     models->adopt(plane);
 
     for (int i = -5; i <= 5; i++) {
-        Model3D *m = new Model3D("Statue.gltf", {-1, 0, i}, {0, 0, 0}, {1, 1, 1}, &mat1);
+        Model3D *m = new Model3D("Statue.gltf", {-1, -0.25, i}, {0, 0, 0}, {1, 1, 1}, &mat1);
         m->name = std::format("Statue-{}", i);
         models->adopt(m);
     }
@@ -65,7 +65,7 @@ int main() {
     models->adopt(suzanne);
 
     // Lights
-    AmbientLight *ambientLight = new AmbientLight({0.01, 0.01, 0.01}, {0.2, 0.15, 0.1}, {0, 1, 0});
+    AmbientLight *ambientLight = new AmbientLight({0.08f, 0.14f, 0.20f},{0.035f, 0.04f, 0.045f}, {0.0f, 1.0f, 0.0f});
     ambientLight->name = "AmbientLight";
     root->adopt(ambientLight);
 
@@ -92,8 +92,8 @@ int main() {
     planet->name = "Planet";
     root->adopt(planet);
     // Moving child
-    //PointLight *planetLight = new PointLight({0, 0, 0}, 0.1, {1, 1, 1}, 5, 2);
-    //planet->adopt(planetLight);
+    PointLight *planetLight = new PointLight({0, 0, 0}, 0.075, {0.9, 0.5, 0}, 4, 2);
+    planet->adopt(planetLight);
     // Moving statue
     Model3D *planetStatue = new Model3D("Statue.gltf", {0, 0, 0}, {0, 0, 0}, {1, 1, 1}, &mat1);
     planetStatue->name = "PlanetStatue";

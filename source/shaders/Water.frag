@@ -105,7 +105,8 @@ float blinn(vec3 L, vec3 N, vec3 V, float smoothness){
 
 float linearizeDepth(float depth)
 {
-    const float nearPlane = 0.1;
+    //TODO: should always be coherent with the current camera
+    const float nearPlane = 0.01;
     const float farPlane = 100.0;
 
     return (nearPlane * farPlane) /
@@ -131,20 +132,20 @@ void main()
     vec3 waterColor    = vec3(0.004, 0.018, 0.028);
     vec3 horizonColor  = vec3(0.07, 0.22, 0.30);
     vec3 specularColor = vec3(1.00, 0.96, 0.82);
-    vec3 shallowColor = vec3(0.15, 0.40, 0.43);
-    vec3 deepColor    = vec3(0.015, 0.055, 0.075);
+    vec3 shallowColor  = vec3(0.5, 1, 1);
+    vec3 deepColor     = vec3(0.015, 0.055, 0.075);
     vec3 foamColor     = vec3(0.82, 0.94, 0.92);
 
     //Lighting params
     float smoothness = 200;
     float lightingHardness = 0.35;
     float normalSpeed = 0.05;
-    float normalScale = 0.005;
+    float normalScale = 0.1;
     float normalStrength = 0.5;
 
     //Foam params
-    float intersectionFoamDepth = 0.3;
-    float intersectionFoamCutoff = 0.55;
+    float intersectionFoamDepth = 0.1;
+    float intersectionFoamCutoff = 0.3;
     vec2 intersectionFoamTiling = vec2(80);
     vec2 intersectionFoamDirection = vec2(1.0, 0.15);
     float intersectionFoamSpeed = 0.03;
@@ -216,5 +217,6 @@ void main()
     color = color / (color + vec3(1.0));
     color = pow(color, vec3(1.0 / 2.2));
     outColor = vec4(color, 1.0);
+
 
 }
