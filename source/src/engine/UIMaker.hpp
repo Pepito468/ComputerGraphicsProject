@@ -54,10 +54,9 @@ class UIMaker {
 		UIOriginV RegV;
 
 		Pipeline P;
-		Model* M = nullptr;
+		Model* M = nullptr;	//TODO cleanup model after it's no longer in use
 		UITextureData T;
 		DescriptorSet DS;
-		bool update = false;
 
 		UIElement() {}
 
@@ -72,17 +71,20 @@ class UIMaker {
 			this->sy = sy;
 			this->RegH = RegH;
 			this->RegV = RegV;
-
-			update = true;
 		}
 
 		void createMesh(VertexDescriptor* VD, int screenW, int screenH, BaseProject* BP) {
 			int mainStride = sizeof(UIVertex);
+			// if(this-> M) {
+			// 	M->cleanup();
+			// 	delete(M);
+			// }
+
 			this->M = new Model();
 			
 			this->M->indices.resize(6);
 			this->M->vertices.resize(4 * mainStride);
-			// std::cout << "[UI DEBUG] mainStride: " << mainStride << std::endl;
+			// std::cout << COLOR_BRIGHT_GREEN << "[ui DEBUG]" << COLOR_DEFAULT << " mainStride: " << mainStride << std::endl;
 
 			float tpx = 0;
 			float tpy = 0;
@@ -122,7 +124,7 @@ class UIMaker {
 			this->M->indices[4] = 2;
 			this->M->indices[5] = 3;
 
-			// std::cout << "[UI DEBUG] init mesh" << std::endl;
+			// std::cout << COLOR_BRIGHT_GREEN << "[ui DEBUG]" << COLOR_DEFAULT << " init mesh" << std::endl;
 			this->M->initMesh(BP, VD, false);
 		}
 
@@ -135,7 +137,7 @@ class UIMaker {
 		}
 
 		void makeUIVertex(UIVertex *V, int px, int py, int tx, int ty, int screenW, int screenH) {
-			// std::cout << "[UI DEBUG] makeUIVertex: ";
+			// std::cout << COLOR_BRIGHT_GREEN << "[ui DEBUG]" << COLOR_DEFAULT << " makeUIVertex: ";
 			pixelToScr(px, py, V->pos.x, V->pos.y, screenW, screenH);
 			V->uv.x = (float)tx;
 			V->uv.y = (float)ty;
@@ -160,8 +162,7 @@ class UIMaker {
 	
 	std::unordered_map<int, UIElement> UIElementsMap = {};
 	
-	bool commandBufferMustUpdate = false;	//if true, at least one UI element needs updating
-	bool forceUpdate = false;				//if true, all UI elements need updating
+	bool commandBufferMustUpdate = false;
 	
 public:
 	void init(int sW, int sH, std::list<std::vector<std::string>> TextureFiles = {}, std::list<std::vector<ProceduralTextures::TextureData>> TextureDataList = {}, int so = DEFAULT_SUBMIT_ORDER);
@@ -199,7 +200,7 @@ inline UIMaker::UIMaker(BaseProject *_BP) {
 inline UIMaker::~UIMaker() = default;
 
 inline void UIMaker::debugPrint() {
-	std::cout << "[UI DEBUG] DEBUG PRINTING -------------------------------" << std::endl;
+	std::cout << COLOR_BRIGHT_GREEN << "[ui DEBUG]" << COLOR_DEFAULT << " DEBUG PRINTING -------------------------------" << std::endl;
 
 	std::cout << "UIElements map size: " << UIElementsMap.size() << std::endl;
 	for (auto e : UIElementsMap) {
@@ -216,11 +217,9 @@ inline void UIMaker::debugPrint() {
 		std::cout << std::endl;
 
 		std::cout << "\tTextures: #" << e.second.T.textureVec.size() << " " << e.second.T.width << " x " << e.second.T.height << std::endl;
-
-		std::cout << "\tUpdate: " << e.second.update << std::endl;
 	}
 
-	std::cout << "[UI DEBUG] END DEBUG PRINTING ---------------------------" << std::endl;
+	std::cout << COLOR_BRIGHT_GREEN << "[ui DEBUG]" << COLOR_DEFAULT << " END DEBUG PRINTING ---------------------------" << std::endl;
 }
 
 /**
@@ -228,7 +227,7 @@ inline void UIMaker::debugPrint() {
  * If not passed, TextureFiles and TextureDataList are empty lists, and so = DEFAULT_SUBMIT_ORDER
  */
 inline void UIMaker::init(int sW, int sH, std::list<std::vector<std::string>> TextureFiles, std::list<std::vector<ProceduralTextures::TextureData>> TextureDataList, int so) {
-	// std::cout << "[UI DEBUG] UI init" << std::endl;
+	// std::cout << COLOR_BRIGHT_GREEN << "[ui DEBUG]" << COLOR_DEFAULT << " UI init" << std::endl;
 	screenW = sW;
 	screenH = sH;
 	submitOrder = so;
@@ -282,7 +281,7 @@ inline void UIMaker::init(int sW, int sH, std::list<std::vector<std::string>> Te
  * Sets up the Vertex Descriptor and Descriptor Set Layout
  */
 inline void UIMaker::createUIDescriptorSetAndVertexLayout() {
-	// std::cout << "[UI DEBUG] Create UI descriptor sets and vertex layouts" << std::endl;
+	// std::cout << COLOR_BRIGHT_GREEN << "[ui DEBUG]" << COLOR_DEFAULT << " Create UI descriptor sets and vertex layouts" << std::endl;
 	UI_VD.init(BP, {{0, sizeof(UIVertex), }}, {
 		{0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(UIVertex, pos), sizeof(glm::vec2), POSITION},
 		{0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(UIVertex, uv), sizeof(glm::vec2), UV}
@@ -295,7 +294,7 @@ inline void UIMaker::createUIDescriptorSetAndVertexLayout() {
  * Sets up the main Pipeline with a default shader
  */
 inline void UIMaker::createUIPipeline(int pipelinesNumber) {
-	// std::cout << "[UI DEBUG] Creating " << pipelinesNumber << " UI pipelines with UI_VD = " << &UI_VD << std::endl;
+	// std::cout << COLOR_BRIGHT_GREEN << "[ui DEBUG]" << COLOR_DEFAULT << " Creating " << pipelinesNumber << " UI pipelines with UI_VD = " << &UI_VD << std::endl;
 	for (int i = 0; i < pipelinesNumber; i++) {
 		UIElementsMap[i].P.init(BP, &UI_VD, "shaders/UIElement.vert.spv", "shaders/UIElement.frag.spv", {&UI_DSL});
 		UIElementsMap[i].P.setCompareOp(VK_COMPARE_OP_LESS_OR_EQUAL);
@@ -308,7 +307,7 @@ inline void UIMaker::createUIPipeline(int pipelinesNumber) {
  * Notifies that the UI element with the given id needs to be updated
  */
 inline int UIMaker::renderUI(float x, float y, int id, UIOriginH RegH, UIOriginV RegV, float sx, float sy) {
-	// std::cout << "[UI DEBUG] renderUI id = " << id << std::endl;
+	// std::cout << COLOR_BRIGHT_GREEN << "[ui DEBUG]" << COLOR_DEFAULT << " renderUI id = " << id << std::endl;
 	auto elem = UIElementsMap.find(id);
 
 	if (elem == UIElementsMap.end()) {
@@ -325,7 +324,7 @@ inline int UIMaker::renderUI(float x, float y, int id, UIOriginH RegH, UIOriginV
  * Removes a single UI element, given its id
  */
 inline void UIMaker::removeUIElement(int id) {
-	// std::cout << "[UI DEBUG] removeUIElement id = " << id << std::endl;
+	// std::cout << COLOR_BRIGHT_GREEN << "[ui DEBUG]" << COLOR_DEFAULT << " removeUIElement id = " << id << std::endl;
 	//TODO implement proper deconstructor
 	UIElementsMap.erase(id);
 	commandBufferMustUpdate = true;
@@ -335,7 +334,7 @@ inline void UIMaker::removeUIElement(int id) {
  * Removes all UI elements
  */
 inline void UIMaker::removeUI() {
-	// std::cout << "[UI DEBUG] removeUI" << std::endl;
+	// std::cout << COLOR_BRIGHT_GREEN << "[ui DEBUG]" << COLOR_DEFAULT << " removeUI" << std::endl;
 	//TODO implement proper deconstructor
 	UIElementsMap.clear();
 	commandBufferMustUpdate = true;
@@ -345,21 +344,20 @@ inline void UIMaker::removeUI() {
  * Rearranges UI elements on screen resize
  */
 inline void UIMaker::resizeScreen(int sW, int sH) {
-	// std::cout << "[UI DEBUG] UI resizeScreen" << std::endl;
+	// std::cout << COLOR_BRIGHT_GREEN << "[ui DEBUG]" << COLOR_DEFAULT << " UI resizeScreen" << std::endl;
 	screenW = sW;
 	screenH = sH;
 	UI_RP.width = sW;
 	UI_RP.height = sH;
 
 	commandBufferMustUpdate = true;
-	forceUpdate = true;
 }
 
 /**
  * Creates the mesh for the given UI element
  */
 inline void UIMaker::createUIMesh(int id) {
-	// std::cout << "[UI DEBUG] createUImesh with id " << id << std::endl;
+	// std::cout << COLOR_BRIGHT_GREEN << "[ui DEBUG]" << COLOR_DEFAULT << " createUImesh with id " << id << std::endl;
 	auto elem = UIElementsMap.find(id);
 
 	if (elem == UIElementsMap.end()) {
@@ -370,18 +368,18 @@ inline void UIMaker::createUIMesh(int id) {
 }
 
 inline void UIMaker::createUIDescriptorSets() {
-	// std::cout << "[UI DEBUG] UI descritor sets init";
+	// std::cout << COLOR_BRIGHT_GREEN << "[ui DEBUG]" << COLOR_DEFAULT << " UI descritor sets init";
 	for (auto& e : UIElementsMap) {
 		e.second.createDescriptorSet(&UI_DSL, BP);
 	}
 }
 
 inline void UIMaker::pipelinesAndDescriptorSetsInit() {
-	// std::cout << "[UI DEBUG] UI pipelines and descriptor sets init" << std::endl;
+	// std::cout << COLOR_BRIGHT_GREEN << "[ui DEBUG]" << COLOR_DEFAULT << " UI pipelines and descriptor sets init" << std::endl;
 	UI_RP.create();
 
 	for (auto& e : UIElementsMap) {
-		// std::cout << "[UI DEBUG] creating pipeline #" << e.first << std::endl;
+		// std::cout << COLOR_BRIGHT_GREEN << "[ui DEBUG]" << COLOR_DEFAULT << " creating pipeline #" << e.first << std::endl;
 		e.second.P.create(&UI_RP);
 	}
 
@@ -389,7 +387,7 @@ inline void UIMaker::pipelinesAndDescriptorSetsInit() {
 }
 
 inline void UIMaker::pipelinesAndDescriptorSetsCleanup() {
-	// std::cout << "[UI DEBUG] UI pipelines and descript sets cleanup" << std::endl;
+	// std::cout << COLOR_BRIGHT_GREEN << "[ui DEBUG]" << COLOR_DEFAULT << " UI pipelines and descript sets cleanup" << std::endl;
 	for (auto& e : UIElementsMap)
 		e.second.P.cleanup();
 
@@ -400,7 +398,7 @@ inline void UIMaker::pipelinesAndDescriptorSetsCleanup() {
 }
 
 inline void UIMaker::localCleanup() {
-	// std::cout << "[UI DEBUG] local cleanup" << std::endl;
+	// std::cout << COLOR_BRIGHT_GREEN << "[ui DEBUG]" << COLOR_DEFAULT << " local cleanup" << std::endl;
 	for (auto& e : UIElementsMap) 
 		for (auto& t : e.second.T.textureVec)
 			t.cleanup();
@@ -418,32 +416,27 @@ inline void UIMaker::localCleanup() {
 }
 
 inline void UIMaker::populateCommandBufferAccess(VkCommandBuffer commandBuffer, int currentImage, void *Params) {
-	// std::cout << "[UI DEBUG] populate command buffer access" << std::endl;
+	// std::cout << COLOR_BRIGHT_GREEN << "[ui DEBUG]" << COLOR_DEFAULT << " populate command buffer access" << std::endl;
 	UIMaker *T = ((UIMakerAndModel *)Params)->ui;
 	T->populateCommandBuffer(commandBuffer, currentImage);
 }
 
 inline void UIMaker::populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
-	// std::cout << "[UI DEBUG] populate command buffer" << std::endl;
+	// std::cout << COLOR_BRIGHT_GREEN << "[ui DEBUG]" << COLOR_DEFAULT << " populate command buffer" << std::endl;
 	UI_RP.begin(commandBuffer, currentImage);
 
-	for (auto& e : UIElementsMap) 
+	for (auto& e : UIElementsMap) {
 		e.second.P.bind(commandBuffer);
-
-	for (auto& e : UIElementsMap) 
 		e.second.M->bind(commandBuffer);
-	
-	for (auto& e : UIElementsMap) 
 		e.second.DS.bind(commandBuffer, e.second.P, 0, currentImage);
-	
-	for(auto& e : UIElementsMap)	
 		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(e.second.M->indices.size()), 1, 0, 0, 0);
+	}
 	
 	UI_RP.end(commandBuffer);
 }
 
 inline void UIMaker::freeCommandBuffer(void *Params) {
-	// std::cout << "[UI DEBUG] free command buffer" << std::endl;
+	// std::cout << COLOR_BRIGHT_GREEN << "[ui DEBUG]" << COLOR_DEFAULT << " free command buffer" << std::endl;
 	Model *M = ((UIMakerAndModel *)Params)->M;
 	M->cleanup();
 	
@@ -451,24 +444,19 @@ inline void UIMaker::freeCommandBuffer(void *Params) {
 }
 
 inline void UIMaker::updateCommandBuffer() {
-	// std::cout << "[UI DEBUG] UI update command buffer" << std::endl;
+	// std::cout << COLOR_BRIGHT_GREEN << "[ui DEBUG]" << COLOR_DEFAULT << " UI update command buffer" << std::endl;
 	// debugPrint();
-	if (forceUpdate || commandBufferMustUpdate) {
+	if (commandBufferMustUpdate) {
 		for (auto& e : UIElementsMap) {
-			if (forceUpdate || e.second.update) {
-				createUIMesh(e.first);	// creates the new mesh
-				
-				UIMakerAndModel *uim = (UIMakerAndModel *)malloc(sizeof(UIMakerAndModel));
-				uim->ui = this;
-				uim->M = e.second.M;
-				BP->submitCommandBuffer("ui" + std::to_string(e.first), submitOrder,UIMaker::populateCommandBufferAccess, uim, UIMaker::freeCommandBuffer);
-
-				e.second.update = false;
-			}
+			createUIMesh(e.first);	// creates the new mesh
+			
+			UIMakerAndModel *uim = (UIMakerAndModel *)malloc(sizeof(UIMakerAndModel));
+			uim->ui = this;
+			uim->M = e.second.M;
+			BP->submitCommandBuffer("ui" + std::to_string(e.first), submitOrder,UIMaker::populateCommandBufferAccess, uim, UIMaker::freeCommandBuffer);
 		}
 
 		commandBufferMustUpdate = false;
-		forceUpdate = false;
 	}
 }
 
