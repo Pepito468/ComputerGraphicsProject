@@ -54,7 +54,7 @@ public:
     }
 
     static TextureData generateMenuBackgroundTint(int width, int height) {
-        return generateTexture(width, height, 255, 255, 255, 100);
+        return generateTexture(width, height, 0, 0, 0, 20); //TODO fix transparency
     }
 
 private:

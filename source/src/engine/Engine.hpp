@@ -24,6 +24,7 @@
 #include "Renderer.hpp"
 #include "common.h"
 #include "Physics.hpp"
+#include "UIMaker.hpp"
 
 #define POOL_SIZE 200
 #define LIGHT_RENDER_DISTANCE 20.0f
@@ -60,7 +61,7 @@ class Engine : public BaseProject {
         Engine() : renderer(this,
                 &RP,
                 [this]() {submitCommandBuffer("main", 0, populateCommandBufferAccess, this); }
-                ) {
+                ), ui(this) {
 
             // Set static reference to this
             Engine::MainEngine = this;
@@ -221,6 +222,8 @@ class Engine : public BaseProject {
             // updates the FPS
             static float elapsedT = 0.0f;
             static int countedFrames = 0;
+            static float loadingBarSize = 1.0f;
+            static int direction = 1;
 
             countedFrames++;
             elapsedT += this->deltaTime;
@@ -234,6 +237,12 @@ class Engine : public BaseProject {
 
                 elapsedT = 0.0f;
                 countedFrames = 0;
+
+                loadingBarSize += 1.0f * direction;
+                if (loadingBarSize >= 10.0f || loadingBarSize <= 1.0f) {
+                    direction = -1 * direction;
+                }
+                ui.renderUI(-0.95f, 0.95f, 0, UIO_LEFT, UIO_BOTTOM, loadingBarSize, 1.0f);
             }
 
         }
@@ -273,6 +282,8 @@ class Engine : public BaseProject {
         // to provide textual feedback
         TextMaker txt;
 
+        UIMaker ui;
+
         void localInit() {
 
             // renderer.loadSceneFromJSON();
@@ -292,6 +303,10 @@ class Engine : public BaseProject {
 
             // initializes the textual output
             txt.init(this, windowWidth, windowHeight);
+            ui.init(windowWidth, windowHeight, {}, {
+                {ProceduralTextures::generateTexture(16, 16, 255, 0, 0)},
+                {ProceduralTextures::generateTexture(16, 16, 0, 255, 255), ProceduralTextures::generateTexture(16, 16, 0, 0, 255)},
+            });
 
             // submits the main command buffer
             submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
@@ -300,6 +315,8 @@ class Engine : public BaseProject {
             txt.print(1.0f, 1.0f, "FPS:",1,"CO",false,false,true,TAL_RIGHT,TRH_RIGHT,TRV_BOTTOM,{1.0f,0.0f,0.0f,1.0f},{0.8f,0.8f,0.0f,1.0f});
             txt.print(-1.0f, -1.0f ,  "Testo di prova", 2, "CO", false, false, false, TAL_LEFT, TRH_LEFT, TRV_TOP, {0.5f, 0.5f, 0.0f, 0.5f}, {0.5f,0.5f,0.0f,0.5f});
 
+            ui.renderUI(-0.95f, 0.95f, 0, UIO_LEFT, UIO_BOTTOM, 1.0f, 1.0f);
+            ui.renderUI(-1.0f, 1.0f, 1, UIO_LEFT, UIO_BOTTOM, 5.0f, 5.0f);
         }
 
         // Here you create your pipelines and Descriptor Sets!
@@ -310,6 +327,7 @@ class Engine : public BaseProject {
             renderer.descriptorSetsInits();
 
             txt.pipelinesAndDescriptorSetsInit();
+            ui.pipelinesAndDescriptorSetsInit();
         }
 
         // Here you destroy your pipelines and Descriptor Sets!
@@ -317,6 +335,7 @@ class Engine : public BaseProject {
             RP.cleanup();
             renderer.descriptorSetsCleanup();
             txt.pipelinesAndDescriptorSetsCleanup();
+            ui.pipelinesAndDescriptorSetsCleanup();
         }
 
         // Here you destroy all the Models, Texture and Desc. Set Layouts you created!
@@ -327,6 +346,7 @@ class Engine : public BaseProject {
             renderer.localCleanup();
 
             txt.localCleanup();
+            ui.localCleanup();
         }
 
         // Here it is the creation of the command buffer:
@@ -369,6 +389,7 @@ class Engine : public BaseProject {
             renderer.updateLightCulling(this->mainCamera->getGlobalPosition(), LIGHT_RENDER_DISTANCE);
 
             txt.updateCommandBuffer();
+            ui.updateCommandBuffer();
         }
 
         // Here you set the main application parameters
@@ -392,6 +413,7 @@ class Engine : public BaseProject {
 
             // updates the textual output
             txt.resizeScreen(w, h);
+            ui.resizeScreen(w, h);
         }
 
 };
