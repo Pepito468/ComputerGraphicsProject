@@ -11,10 +11,12 @@
 #include "PointLight.hpp"
 #include "DirectionalLight.hpp"
 #include "AmbientLight.hpp"
+#include "ColliderLib.hpp"
 
 #include "gamenodes/CustomCameraUpdate.hpp"
 #include "gamenodes/MovingPlanetUpdate.hpp"
 #include "gamenodes/MovingPlanetChildUpdate.hpp"
+#include "gamenodes/PlayerNode.hpp"
 
 int main() {
 
@@ -22,18 +24,32 @@ int main() {
 
     Node *root = new Node();
     root->name = "root";
-    CustomCameraUpdate *cameraContainer = new CustomCameraUpdate();
-    cameraContainer->name = "CameraContainer";
-    PerspectiveCamera *camera1 = new PerspectiveCamera(0.01, 100, glm::radians(90.0f), 4.0f/3.0f);
-    camera1->name = "PerspectiveCamera";
-    OrthoCamera *camera2 = new OrthoCamera(-4, 4, -2, 2, 0.01, 200);
-    camera2->name = "OrthoCamera";
-    root->adopt(cameraContainer);
-    cameraContainer->adopt(camera1);
-    cameraContainer->adopt(camera2);
+    CapsuleCollider* playerCollider = new CapsuleCollider();
+    playerCollider->name = "PlayerCollider";
+    playerCollider->layer = PLAYER;
+    root->adopt(playerCollider);
+    PlayerNode* player = new PlayerNode();
+    player->name = "Player";
+    playerCollider->adopt(player);
+    PerspectiveCamera *camera = new PerspectiveCamera(0.01, 100, glm::radians(90.0f), 4.0f/3.0f);
+    camera->name = "PerspectiveCamera";
+    player->adopt(camera);
+    playerCollider->globalTranslate({-2, 5, 0});
+    player->localTranslate({0, 1.25f, 0});
+
+    //CustomCameraUpdate *cameraContainer = new CustomCameraUpdate();
+    //cameraContainer->name = "CameraContainer";
+    //PerspectiveCamera *camera1 = new PerspectiveCamera(0.01, 100, glm::radians(90.0f), 4.0f/3.0f);
+    //camera1->name = "PerspectiveCamera";
+    //OrthoCamera *camera2 = new OrthoCamera(-4, 4, -2, 2, 0.01, 200);
+    //camera2->name = "OrthoCamera";
+    //root->adopt(cameraContainer);
+    //cameraContainer->adopt(camera1);
+    //cameraContainer->adopt(camera2);
 
     engine.setSceneRoot(root);
-    engine.setMainCamera(camera1);
+    engine.setMainCamera(camera);
+    //engine.setMainCamera(camera1);
 
     // Models
     LambertMaterial mat3 = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}};
@@ -51,7 +67,12 @@ int main() {
     models->adopt(statue);
 
     Model3D *plane = new Model3D("Water.gltf", {0, 0.1, 0}, {0, 0, 0}, {10, 10, 10}, &mat4);
+    BoxCollider* planeColl = new BoxCollider(2.0f, 0.01f, 2.0f);
+    planeColl->name = "PlaneHB";
+    planeColl->movementStatus = STATIC;
+    planeColl->layer = ENVIRONMENT;
     plane->name = "Plane";
+    plane->adopt(planeColl);
     models->adopt(plane);
 
     for (int i = -5; i <= 5; i++) {

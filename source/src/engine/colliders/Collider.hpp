@@ -95,74 +95,100 @@ NLOHMANN_JSON_SERIALIZE_ENUM(MovementStatus, {
     {MOBILE_UNMOVED, "dynamic"}
 })
 
+enum PhysicsLayer
+{
+    NONE = 0,
+    ENVIRONMENT = 1,
+    PLAYER = 2,
+    ALL = ENVIRONMENT | PLAYER
+};
+NLOHMANN_JSON_SERIALIZE_ENUM(PhysicsLayer, {
+    {ENVIRONMENT, "env"},
+    {PLAYER, "player"},
+    {ALL, "all"}
+})
+
 /// A node with a physics collider
 class Collider: public Node3D
 {
-    public:
-        /// If the collider is to be used in physics checks
-        bool isActive = true;
-        /// The collider's movement status
-        MovementStatus movementStatus = MOBILE_UNMOVED;
-        /// The collider's global matrix at the start of the previous frame
-        glm::mat4 previousMatrix = MAT4_I;
-        /// If the collider allows objects to pass through it
-        bool isTrigger = false;
-        /// Colliders that are within this trigger's bounds
-        std::set<Collider*> collidersInTrigger = std::set<Collider*>();
+public:
+    /// If the collider is to be used in physics checks
+    bool isActive = true;
+    /// The collider's movement status
+    MovementStatus movementStatus = MOBILE_UNMOVED;
+    /// The collider's global matrix at the start of the previous frame
+    glm::mat4 previousMatrix = MAT4_I;
+    /// If the collider allows objects to pass through it
+    bool isTrigger = false;
+    /// Colliders that are within this trigger's bounds
+    std::set<Collider*> collidersInTrigger = std::set<Collider*>();
+    /// Physics layer the collider is included in
+    PhysicsLayer layer = ALL;
 
-        typedef Function<void(Collider*)> CollisionCallback;
-        /// External function to call when another collider collides with this one
-        CollisionCallback onCollision;
-        /// External function to call when another collider enters this trigger collider
-        CollisionCallback onTriggerEnter;
-        /// External function to call when another collider exits this trigger collider
-        CollisionCallback onTriggerExit;
-        /// External function to call when another collider remains in this trigger collider
-        CollisionCallback onTriggerStay;
+    typedef Function<void(Collider*)> CollisionCallback;
+    /// External function to call when another collider collides with this one
+    CollisionCallback onCollision;
+    /// External function to call when another collider enters this trigger collider
+    CollisionCallback onTriggerEnter;
+    /// External function to call when another collider exits this trigger collider
+    CollisionCallback onTriggerExit;
+    /// External function to call when another collider remains in this trigger collider
+    CollisionCallback onTriggerStay;
 
-        Collider() : Node3D() {}
-        Collider(const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale) : Node3D(position, rotation, scale)
-        {
-            previousMatrix = getGlobalMatrix();
-        }
-        explicit Collider(const bool isTrigger) : Node3D()
-        {
-            this->isTrigger = isTrigger;
-            previousMatrix = getGlobalMatrix();
-        }
-        Collider(const bool isTrigger, const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale) : Node3D(position, rotation, scale)
-        {
-            this->isTrigger = isTrigger;
-            previousMatrix = getGlobalMatrix();
-        }
+    Collider() : Node3D() {}
+    Collider(const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale) : Node3D(position, rotation, scale)
+    {
+        previousMatrix = getGlobalMatrix();
+    }
+    explicit Collider(const bool isTrigger) : Node3D()
+    {
+        this->isTrigger = isTrigger;
+        previousMatrix = getGlobalMatrix();
+    }
+    Collider(const bool isTrigger, const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale) : Node3D(position, rotation, scale)
+    {
+        this->isTrigger = isTrigger;
+        previousMatrix = getGlobalMatrix();
+    }
 
-        /// @return True if the point is within the bounds of the collider.
-        virtual bool inBounds(glm::vec3 point) const = 0;
+    /// @return True if the point is within the bounds of the collider.
+    virtual bool inBounds(glm::vec3 point) const = 0;
 
-        /// @return A set containing points within the collider.
-        virtual PointSet getPointSet() const = 0;
+    /// @return A set containing points within the collider.
+    virtual PointSet getPointSet() const = 0;
 
-        /// @return The sphere bounds containing the collider.
-        virtual SphereBounds getSphereBounds() const = 0;
+    /// @return The sphere bounds containing the collider.
+    virtual SphereBounds getSphereBounds() const = 0;
 
-        /// @return The bounding box containing the collider.
-        virtual AABBExtents getAABBExtents() const = 0;
+    /// @return The bounding box containing the collider.
+    virtual AABBExtents getAABBExtents() const = 0;
 
-        void commitGlobalUpdate() override
-        {
-            if (movementStatus == STATIC) warning(std::format("Collider {} has moved, even though it was marked static!", name));
+    void commitGlobalUpdate() override
+    {
+        if (movementStatus == STATIC) warning(std::format("Collider {} has moved, even though it was marked static!", name));
 
-            movementStatus = MOBILE_HAS_MOVED;
-            Node3D::commitGlobalUpdate();
-        }
+        movementStatus = MOBILE_HAS_MOVED;
+        Node3D::commitGlobalUpdate();
+    }
 
-        void commitLocalUpdate() override
-        {
-            if (movementStatus == STATIC) warning(std::format("Collider {} has moved, even though it was marked static!", name));
+    void commitLocalUpdate() override
+    {
+        if (movementStatus == STATIC) warning(std::format("Collider {} has moved, even though it was marked static!", name));
 
-            movementStatus = MOBILE_HAS_MOVED;
-            Node3D::commitLocalUpdate();
-        }
+        movementStatus = MOBILE_HAS_MOVED;
+        Node3D::commitLocalUpdate();
+    }
+
+protected:
+
+    void collFromJSON(const nlohmann::json& json)
+    {
+        Node3D::fromJSON(json, this);
+
+        if (json.contains("isTrigger")) isTrigger = json.at("isTrigger").get<bool>();
+        if (json.contains("movement")) movementStatus = json.at("movement").get<MovementStatus>();
+        if (json.contains("layer")) layer = json.at("layer").get<PhysicsLayer>();
+    }
 };
 
 /// std::format specialisations

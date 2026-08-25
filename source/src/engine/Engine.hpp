@@ -23,6 +23,7 @@
 
 #include "Renderer.hpp"
 #include "common.h"
+#include "Physics.hpp"
 
 #define POOL_SIZE 200
 #define LIGHT_RENDER_DISTANCE 20.0f
@@ -30,7 +31,6 @@
 class Engine : public BaseProject {
 
     public:
-
         /** Static reference to the only Engine */
         inline static Engine *MainEngine = NULL;
 
@@ -62,22 +62,22 @@ class Engine : public BaseProject {
                 ) {}
 
         /** Global getters */
-        float getDeltaTime() const {
-            return this->deltaTime;
+        static float getDeltaTime() {
+            return MainEngine->deltaTime;
         }
 
-        const glm::vec3 getInputTranslation() const {
-            return this->inputTranslation;
+        static glm::vec3 getInputTranslation() {
+            return MainEngine->inputTranslation;
         }
 
-        const glm::vec3 getInputRotation() const {
-            return this->inputRotation;
+        static glm::vec3 getInputRotation()
+        {
+            return MainEngine->inputRotation;
         }
-
 
         /** Returns true if the given key is being pressed */
-        bool isKeyBeingPressed(int key) {
-            return glfwGetKey(this->window, key);
+        static bool isKeyBeingPressed(int key) {
+            return glfwGetKey(MainEngine->window, key);
         }
 
         /** Sets the given node as the current scene */
@@ -159,6 +159,8 @@ class Engine : public BaseProject {
         void engineInit() {
             info("Starting Engine");
 
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
             // Engine checks
             if (!scene)
                 error("Scene not set");
@@ -171,8 +173,8 @@ class Engine : public BaseProject {
             // Load scene
             info("Loading Scene");
             this->loadScene(this->scene);
+            Physics::loadScene(this->scene);
             info("Succesfully loaded scene");
-
         }
 
         bool isFirstEngineLoop = true;
@@ -197,6 +199,7 @@ class Engine : public BaseProject {
             this->recompute3DNodeHierarchy(this->scene, MAT4_I);
             this->recompute2DNodeHierarchy(this->scene, MAT4_I);
 
+            Physics::checkCollisions();
             // TODO: move txt to its node
 
             // updates the FPS

@@ -125,109 +125,122 @@ class Physics
         }
     }
 
-    public:
-        /// Loads a new scene into the physics system and finds all colliders within it.
-        static void loadScene(Node* root)
+public:
+    /// Loads a new scene into the physics system and finds all colliders within it.
+    static void loadScene(Node* root)
+    {
+        sceneRoot = root;
+
+        colliders.clear();
+        dynamicColliders.clear();
+        staticBounds.clear();
+
+        findCollidersRecursive(root);
+    }
+
+    /// Checks if there have been any collisions since the last call of this method
+    static void checkCollisions()
+    {
+        std::set<Bounds> sceneBounds;
+        std::ranges::transform(dynamicColliders, std::inserter(sceneBounds, sceneBounds.begin()),
+        [](Collider* c) { return Bounds(c); });
+        std::ranges::copy(staticBounds, std::inserter(sceneBounds, sceneBounds.begin()));
+
+        std::set<Collider*> toCheck; //Cols that have moved since last check
+        std::ranges::copy_if(dynamicColliders, std::inserter(toCheck, toCheck.begin()),
+        [](Collider* c)
         {
-            sceneRoot = root;
-
-            colliders.clear();
-            dynamicColliders.clear();
-            staticBounds.clear();
-
-            findCollidersRecursive(root);
-        }
-
-        /// Checks if there have been any collisions since the last call of this method
-        static void checkCollisions()
-        {
-            std::set<Bounds> sceneBounds;
-            std::ranges::transform(dynamicColliders, std::inserter(sceneBounds, sceneBounds.begin()),
-            [](Collider* c) { return Bounds(c); });
-            std::ranges::copy(staticBounds, std::inserter(sceneBounds, sceneBounds.begin()));
-
-            std::set<Collider*> toCheck; //Cols that have moved since last check
-            std::ranges::copy_if(dynamicColliders, std::inserter(toCheck, toCheck.begin()),
-            [](Collider* c)
+            bool isInTrigger = false;
+            for (const Collider* coll : colliders)
             {
-                bool isInTrigger = false;
-                for (const Collider* coll : colliders)
+                if (coll->isActive && coll->isTrigger && coll->collidersInTrigger.contains(c))
                 {
-                    if (coll->isActive && coll->isTrigger && coll->collidersInTrigger.contains(c))
-                    {
-                        isInTrigger = true;
-                        break;
-                    }
+                    isInTrigger = true;
+                    break;
                 }
+            }
 
-                return c->isActive && (c->movementStatus == MOBILE_HAS_MOVED || isInTrigger);
+            return c->isActive && (c->movementStatus == MOBILE_HAS_MOVED || isInTrigger);
+        });
+
+        std::set<Collider*> checked;
+        for (Collider* coll : toCheck)
+        {
+            Bounds bounds = Bounds(coll);
+
+            //Find collisions
+            std::set<Bounds> collisions;
+            std::ranges::copy_if(sceneBounds, std::inserter(collisions, collisions.begin()),
+            [bounds, checked](const Bounds& b)
+            {
+                if (checked.contains(b.collider)) return false; //Skip checked colliders
+                if (b.collider->UUID == bounds.collider->UUID) return false; //Skip self
+                return hasCollision(bounds, b);
             });
 
-            std::set<Collider*> checked;
-            for (Collider* coll : toCheck)
-            {
-                Bounds bounds = Bounds(coll);
+            //Process collisions
+            processCollisions(coll, collisions, sceneBounds);
 
-                //Find collisions
-                std::set<Bounds> collisions;
-                std::ranges::copy_if(sceneBounds, std::inserter(collisions, collisions.begin()),
-                [bounds, checked](const Bounds& b)
-                {
-                    if (checked.contains(b.collider)) return false; //Skip checked colliders
-                    if (b.collider->UUID == bounds.collider->UUID) return false; //Skip self
-                    return hasCollision(bounds, b);
-                });
+            //Reset flag values
+            coll->movementStatus = MOBILE_UNMOVED;
+            coll->previousMatrix = coll->getGlobalMatrix();
 
-                //Process collisions
-                processCollisions(coll, collisions, sceneBounds);
-
-                //Reset flag values
-                coll->movementStatus = MOBILE_UNMOVED;
-                coll->previousMatrix = coll->getGlobalMatrix();
-
-                checked.insert(coll);
-            }
+            checked.insert(coll);
         }
+    }
 
-        struct RaycastHit
-        {
-            glm::vec3 point = VEC3_ZERO;
-            float distance = 0.0f;
-            Collider* collider = nullptr;
-        };
-        /**
-         * Shoots a ray from an origin point in a given direction and checks if it hits a collider.
-         * @param origin The origin point of the ray.
-         * @param direction The direction of the ray.
-         * @param hit The struct in which to store the hit result.
-         * @param maxDistance The maximum length of the ray.
-         * @param step The distance between each point to check.
-         * @return True if the ray hit something.
-         */
-        static bool raycast(const glm::vec3 origin, glm::vec3 direction, RaycastHit* hit = nullptr, const float maxDistance = 100.0f, const float step = 10 * EPSILON)
-        {
-            const int stepNum = maxDistance / step;
-            direction = glm::normalize(direction);
+    struct RaycastHit
+    {
+        glm::vec3 point = VEC3_ZERO;
+        float distance = 0.0f;
+        Collider* collider = nullptr;
+    };
+    /**
+     * Shoots a ray from an origin point in a given direction and checks if it hits a collider.
+     * @param origin The origin point of the ray.
+     * @param direction The direction of the ray.
+     * @param hit The struct in which to store the hit result.
+     * @param maxDistance The maximum length of the ray.
+     * @param step The distance between each point to check.
+     * @param layer Physics layer flags to check.
+     * @return True if the ray hit something.
+     */
+    static bool raycast(const glm::vec3 origin, glm::vec3 direction, RaycastHit* hit = nullptr, const float maxDistance = 100.0f, const float step = 10 * EPSILON, const PhysicsLayer layer = ALL)
+    {
+        const int stepNum = maxDistance / step;
+        direction = glm::normalize(direction);
 
-            for (int i = 0; i < stepNum; i++)
+        for (int i = 0; i < stepNum; i++)
+        {
+            const glm::vec3 p = origin + direction * (step * i);
+            for (Collider* coll : colliders)
             {
-                const glm::vec3 p = origin + direction * (step * i);
-                for (Collider* coll : colliders)
+                if (!(coll->layer & layer)) continue;
+                if (!coll->isActive) continue;
+                if (coll->inBounds(p))
                 {
-                    if (!coll->isActive) continue;
-                    if (coll->inBounds(p))
+                    if (hit)
                     {
-                        if (hit)
-                        {
-                            hit->point = p;
-                            hit->distance = step * i;
-                            hit->collider = coll;
-                        }
-                        return true;
+                        hit->point = p;
+                        hit->distance = step * i;
+                        hit->collider = coll;
                     }
+                    return true;
                 }
             }
-            return false;
         }
+        return false;
+    }
+    struct RaycastOptions
+    {
+        RaycastHit* hit = nullptr;
+        float maxDistance = 100.0f;
+        float step = 10 * EPSILON;
+        PhysicsLayer layer = ALL;
+    };
+    static bool raycast(const glm::vec3 origin, glm::vec3 direction, const RaycastOptions& opts)
+    {
+        return raycast(origin, direction, opts.hit, opts.maxDistance, opts.step, opts.layer);
+    }
 };
 #endif
