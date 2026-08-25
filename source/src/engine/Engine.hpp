@@ -39,6 +39,8 @@ class Engine : public BaseProject {
 
         // Time elapsed from last frame
         float deltaTime = 0.0f;
+        // Time elapsed since the start
+        float time;
         // Translation input
         glm::vec3 inputTranslation = VEC3_ZERO;
         // Rotation input
@@ -295,9 +297,9 @@ class Engine : public BaseProject {
         void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
 
             renderer.populateShadowCommandBuffer(commandBuffer, currentImage);
+            renderer.populateSceneDepthCommandBuffer(commandBuffer, currentImage);
+            renderer.populateSceneColorCommandBuffer(commandBuffer, currentImage);
 
-            // Offscreen pass - always required
-            // begin standard pass
             RP.begin(commandBuffer, currentImage);
 
             renderer.populateCommandBuffer(commandBuffer, currentImage);
@@ -312,13 +314,13 @@ class Engine : public BaseProject {
             // Engine logic
             this->engineLoop();
 
-
+            time += deltaTime;
             // Renderer updates
             // Update with camera data
             renderer.updateUniformBuffer(currentImage,
                     this->mainCamera->getGlobalPosition(),
                     this->mainCamera->getProjectionMatrix(),
-                    this->mainCamera->getViewMatrix());
+                    this->mainCamera->getViewMatrix(), time);
 
             renderer.updateLightCulling(this->mainCamera->getGlobalPosition(), LIGHT_RENDER_DISTANCE);
 

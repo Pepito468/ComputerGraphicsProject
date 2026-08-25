@@ -131,15 +131,15 @@ void main()
     vec3 waterColor    = vec3(0.004, 0.018, 0.028);
     vec3 horizonColor  = vec3(0.07, 0.22, 0.30);
     vec3 specularColor = vec3(1.00, 0.96, 0.82);
-    vec3 shallowColor  = vec3(0.5, 1, 1);
-    vec3 deepColor     = vec3(0.015, 0.055, 0.075);
+    vec3 shallowColor = vec3(0.15, 0.40, 0.43);
+    vec3 deepColor    = vec3(0.015, 0.055, 0.075);
     vec3 foamColor     = vec3(0.82, 0.94, 0.92);
 
     //Lighting params
     float smoothness = 200;
     float lightingHardness = 0.35;
     float normalSpeed = 0.05;
-    float normalScale = 0.1;
+    float normalScale = 0.005;
     float normalStrength = 0.5;
 
     //Foam params

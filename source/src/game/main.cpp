@@ -40,6 +40,7 @@ int main() {
     ToonMaterial mat2 = {glm::vec3(0.9f, 0.45f, 0.9f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
     LambertTexMaterial mat1 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "rock.png"};
     //LambertTexMaterial mat2 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "VChecker.png"};
+    WaterMaterial mat4 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "water.png"};
 
     Node *models = new Node();
     models->name = "ModelContainer";
@@ -49,7 +50,7 @@ int main() {
     statue->name = "Statue";
     models->adopt(statue);
 
-    Model3D *plane = new Model3D("Plane.gltf", {0, 0, 0}, {0, 0, 0}, {100, 100, 100}, &mat1);
+    Model3D *plane = new Model3D("Water.gltf", {0, 0, 0}, {0, 0, 0}, {100, 100, 100}, &mat4);
     plane->name = "Plane";
     models->adopt(plane);
 
@@ -68,29 +69,31 @@ int main() {
     ambientLight->name = "AmbientLight";
     root->adopt(ambientLight);
 
-    DirectionalLight *directionalLight = new DirectionalLight(0.01, {1, 0.95, 0.8}, glm::normalize(glm::vec3(0.4, 0.8, 0.4)));
+    DirectionalLight *directionalLight = new DirectionalLight(0.5,glm::vec3(1.0f, 0.95f, 0.8f),glm::normalize(glm::vec3(0.8f, 0.25f, 0.4f)));
     directionalLight->name = "DirectionalLight";
     root->adopt(directionalLight);
 
-    PointLight *redLight = new PointLight({-10, 4, 0}, 1, {1, 0, 0}, 5, 2);
+    /*
+    PointLight *redLight = new PointLight({-10, 4, 0}, 0.1, {1, 0, 0}, 5, 2);
     redLight->name = "RedLight";
     root->adopt(redLight);
 
-    PointLight *yellowLight = new PointLight({0, 4, 10}, 1, {1, 1, 0}, 5, 2);
+    PointLight *yellowLight = new PointLight({0, 4, 10}, 0.1, {1, 1, 0}, 5, 2);
     yellowLight->name = "YellowLight";
     root->adopt(yellowLight);
 
-    PointLight *blueLight = new PointLight({0, 4, -10}, 1, {0, 0, 1}, 5, 2);
+    PointLight *blueLight = new PointLight({0, 4, -10}, 0.1, {0, 0, 1}, 5, 2);
     blueLight->name = "BlueLight";
     root->adopt(blueLight);
+    */
 
     // Planet
     MovingPlanetUpdate *planet = new MovingPlanetUpdate();
     planet->name = "Planet";
     root->adopt(planet);
     // Moving child
-    PointLight *planetLight = new PointLight({0, 0, 0}, 3, {1, 1, 1}, 5, 2);
-    planet->adopt(planetLight);
+    //PointLight *planetLight = new PointLight({0, 0, 0}, 0.1, {1, 1, 1}, 5, 2);
+    //planet->adopt(planetLight);
     // Moving statue
     Model3D *planetStatue = new Model3D("Statue.gltf", {0, 0, 0}, {0, 0, 0}, {1, 1, 1}, &mat1);
     planetStatue->name = "PlanetStatue";
