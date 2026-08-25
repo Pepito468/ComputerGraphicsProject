@@ -32,9 +32,20 @@ inline void log(const std::string& string)
     std::cout << COLOR_MAGENTA << "[LOG] " << COLOR_DEFAULT << string << std::endl;
 }
 
-/// Prints a warning to stdout
-inline void warning(const std::string& string) {
-    std::cout << COLOR_YELLOW << "[WARNING] " << COLOR_DEFAULT << string << std::endl;
+inline std::set<std::string>warningsNotToPrintAgain = std::set<std::string>();
+/// Prints a warning to stdout.
+/// Setting 'doNotWarnAgain' will prevent a warning with the same message from being printed again (to avoid spam)
+inline void warning(const std::string& string, bool doNotWarnAgain = false) {
+    if (!doNotWarnAgain) {
+        std::cout << COLOR_YELLOW << "[WARNING] " << COLOR_DEFAULT << string << std::endl;
+        return;
+    }
+
+    // Do not wargn again
+    if (warningsNotToPrintAgain.contains(string))
+        return;
+    std::cout << COLOR_YELLOW << "[WARNING (once)] " << COLOR_DEFAULT << string << std::endl;
+    warningsNotToPrintAgain.insert(string);
 }
 
 /// Prints an error to console and then throws the error itself

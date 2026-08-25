@@ -188,6 +188,7 @@ class Engine : public BaseProject {
             this->inputTranslation = VEC3_ZERO;
             this->inputRotation = VEC3_ZERO;
             getSixAxis(this->deltaTime, this->inputTranslation, this->inputRotation, fire);
+            this->time += this->deltaTime;
 
             // Call update() on all UpdateNodes
             this->updateUpdate3DNodes(this->scene);
@@ -314,7 +315,6 @@ class Engine : public BaseProject {
             // Engine logic
             this->engineLoop();
 
-            time += deltaTime;
             // Renderer updates
             // Update with camera data
             renderer.updateUniformBuffer(currentImage,

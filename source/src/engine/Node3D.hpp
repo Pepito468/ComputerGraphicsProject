@@ -540,7 +540,7 @@ class Node3D : public Node {
             const glm::vec3 yAxis = this->getLocalYAxis();
             const glm::vec3 zAxis = this->getLocalZAxis();
             if (glm::epsilonEqual(std::abs(zAxis[1]), 1.0f, NODE3D_EPSILON)) {
-                warning(std::format("Gimbal Lock on [{}] (local)", this->UUID));
+                warning(std::format("Gimbal Lock on [{}] (local)", this->UUID), true);
             }
             this->localRotation =  glm::vec3(
                     std::asin(-zAxis[1]),
@@ -598,7 +598,7 @@ class Node3D : public Node {
             const glm::vec3 yAxis = this->getYAxis();
             const glm::vec3 zAxis = this->getZAxis();
             if (glm::epsilonEqual(std::abs(zAxis[1]), 1.0f, NODE3D_EPSILON)) {
-                warning(std::format("Gimbal Lock on [{}] (global)", this->UUID));
+                warning(std::format("Gimbal Lock on [{}] (global)", this->UUID), true);
             }
             this->globalRotation =  glm::vec3(
                     std::asin(-zAxis[1]),
