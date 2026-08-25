@@ -27,6 +27,7 @@
 
 #define POOL_SIZE 200
 #define LIGHT_RENDER_DISTANCE 20.0f
+#define DEFAULT_CURSOR GLFW_CURSOR_NORMAL
 
 class Engine : public BaseProject {
 
@@ -59,7 +60,11 @@ class Engine : public BaseProject {
         Engine() : renderer(this,
                 &RP,
                 [this]() {submitCommandBuffer("main", 0, populateCommandBufferAccess, this); }
-                ) {}
+                ) {
+
+            // Set static reference to this
+            Engine::MainEngine = this;
+        }
 
         /** Global getters */
         static float getDeltaTime() {
@@ -81,18 +86,28 @@ class Engine : public BaseProject {
         }
 
         /** Sets the given node as the current scene */
-        void setSceneRoot(Node *scene) {
-            this->scene = scene;
+        static void setSceneRoot(Node *scene) {
+            MainEngine->scene = scene;
         }
 
         /** Sets the given camera as main camera */
-        void setMainCamera(Camera *camera) {
-            this->mainCamera = camera;
+        static void setMainCamera(Camera *camera) {
+            MainEngine->mainCamera = camera;
         }
 
         /** Shuts down the Engine and closes the window */
-        void shutdown() {
-            glfwSetWindowShouldClose(this->window, GL_TRUE);
+        static void shutdown() {
+            glfwSetWindowShouldClose(MainEngine->window, GL_TRUE);
+        }
+
+        /** Sets the cursor mode to the one given */
+        static void setCursorMode(int mode) {
+            glfwSetInputMode(MainEngine->window, GLFW_CURSOR, mode);
+        }
+
+        /** Returns the current cursor mode */
+        static int getCursorMode() {
+            return glfwGetInputMode(MainEngine->window, GLFW_CURSOR);
         }
 
     private:
@@ -156,10 +171,9 @@ class Engine : public BaseProject {
                 loadScene(child);
         }
 
+        /** Starts the Engine */
         void engineInit() {
             info("Starting Engine");
-
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
             // Engine checks
             if (!scene)
@@ -167,8 +181,8 @@ class Engine : public BaseProject {
             if (!mainCamera)
                 warning("Main camera not set");
 
-            // Set static reference
-            Engine::MainEngine = this;
+            // Set cursor
+            Engine::setCursorMode(DEFAULT_CURSOR);
 
             // Load scene
             info("Loading Scene");
@@ -185,11 +199,10 @@ class Engine : public BaseProject {
                 this->isFirstEngineLoop = false;
             }
 
-            // Update globals
-            bool fire = false; // Maybe we can use this
-            this->inputTranslation = VEC3_ZERO;
-            this->inputRotation = VEC3_ZERO;
-            getSixAxis(this->deltaTime, this->inputTranslation, this->inputRotation, fire);
+            // Read inputs
+            this->getSixAsixFixed(this->deltaTime, this->inputTranslation, this->inputRotation);
+
+            // Update time
             this->time += this->deltaTime;
 
             // Call update() on all UpdateNodes
@@ -199,7 +212,10 @@ class Engine : public BaseProject {
             this->recompute3DNodeHierarchy(this->scene, MAT4_I);
             this->recompute2DNodeHierarchy(this->scene, MAT4_I);
 
+            // Physics checks
             Physics::checkCollisions();
+
+
             // TODO: move txt to its node
 
             // updates the FPS
@@ -222,6 +238,31 @@ class Engine : public BaseProject {
 
         }
 
+        /// Wrapper for input detection
+        float getSixAsixFixed(float &deltaT, glm::vec3 &m, glm::vec3 &r) {
+            // Reset values
+            m = VEC3_ZERO;
+            r = VEC3_ZERO;
+            deltaT = 0.0f;
+            bool fire; // Won't be used
+
+            // Read values from Starter
+            getSixAxis(deltaT, m, r, fire);
+
+            // Capturing the rotation with no 'click' constraint from 'getSixAsix()' in Starter
+            static double old_xpos = 0, old_ypos = 0;
+            double xpos, ypos;
+            glfwGetCursorPos(window, &xpos, &ypos);
+            double m_dx = xpos - old_xpos;
+            double m_dy = ypos - old_ypos;
+            old_xpos = xpos; old_ypos = ypos;
+            const float MOUSE_RES = 10.0f;
+            glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, GLFW_TRUE);
+            r.y = m_dx / MOUSE_RES;
+            r.x = m_dy / MOUSE_RES;
+
+            return deltaT;
+        }
 
 
     protected:

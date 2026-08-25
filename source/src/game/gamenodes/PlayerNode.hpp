@@ -3,9 +3,7 @@
 
 #include "UpdateNode3D.hpp"
 #include "Collider.hpp"
-#include "Camera.hpp"
 #include "Engine.hpp"
-#include "GLMDebug.hpp"
 
 #define WALK_SPEED 4.0f
 #define JUMP_FORCE 5.0f
@@ -27,6 +25,9 @@ public:
 
     void onEnter() override
     {
+        // Set cursor mode
+        Engine::setCursorMode(GLFW_CURSOR_DISABLED);
+
         if (Collider* c = dynamic_cast<Collider*>(this->parent))
         {
             playerColl = c;
@@ -46,6 +47,14 @@ public:
         // Check for escape
         if(Engine::isKeyBeingPressed(GLFW_KEY_ESCAPE)) {
             Engine::MainEngine->shutdown();
+        }
+
+        // Give cursor back if needed
+        if (Engine::isKeyBeingPressed(GLFW_KEY_C)) {
+            if (Engine::getCursorMode() == GLFW_CURSOR_NORMAL)
+                Engine::setCursorMode(GLFW_CURSOR_DISABLED);
+            else
+                Engine::setCursorMode(GLFW_CURSOR_NORMAL);
         }
 
         //Check grounded
