@@ -94,8 +94,9 @@ class Engine : public BaseProject {
 
         renderer.loadSceneFromJSON();
 
-        renderer.setAmbientLight(glm::vec3(0.20, 0.50, 0.80), glm::vec3(0.2f, 0.15f, 0.1f), glm::vec3(0.0f, 1.0f, 0.0f));
-        renderer.createDirectionalLight(1.0, glm::vec3(1.0f, 0.95f, 0.8f), glm::normalize(glm::vec3(0.4f, 0.8f, 0.4f)));
+        renderer.setAmbientLight(glm::vec3(0.08f, 0.14f, 0.20f),glm::vec3(0.035f, 0.04f, 0.045f),glm::vec3(0.0f, 1.0f, 0.0f));
+        renderer.createDirectionalLight(0.5,glm::vec3(1.0f, 0.95f, 0.8f),glm::normalize(glm::vec3(0.8f, 0.25f, 0.4f))
+);
 
         //renderer.addPointLight(glm::vec3(-1.0f, 2.0f, -5.0f), 0.1f, glm::vec3(1.0f, 1.0f, 1.0f), 5.0f, 2.0f);
         //renderer.addPointLight(glm::vec3(-3.0f, 2.0f, 4.0f), 0.1f, glm::vec3(0.0f, 0.0f, 1.0f), 5.0f, 2.0f);

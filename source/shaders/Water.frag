@@ -118,20 +118,18 @@ void main()
     float t = gubo.time;
 
     //COLORS
-    vec3 waterColor    = vec3(0.005, 0.025, 0.035);
-    vec3 horizonColor  = vec3(0.10, 0.25, 0.29);
-    vec3 specularColor = vec3(0.80, 0.90, 0.92);
-
-    vec3 shallowColor  = vec3(0.025, 0.16, 0.19);
-    vec3 deepColor     = vec3(0.002, 0.012, 0.020);
-
-    vec3 foamColor     = vec3(0.70, 0.82, 0.80);
+    vec3 waterColor    = vec3(0.004, 0.018, 0.028);
+    vec3 horizonColor  = vec3(0.07, 0.22, 0.30);
+    vec3 specularColor = vec3(1.00, 0.96, 0.82);
+    vec3 shallowColor  = vec3(0.18, 0.52, 0.55);
+    vec3 deepColor     = vec3(0.015, 0.055, 0.075);
+    vec3 foamColor     = vec3(0.82, 0.94, 0.92);
 
     //Lighting params
     float smoothness = 200;
-    float lightingHardness = 0.8;
+    float lightingHardness = 0.35;
     float normalSpeed = 0.05;
-    float normalScale = 0.25;
+    float normalScale = 0.1;
     float normalStrength = 0.5;
 
     //Foam params
@@ -191,11 +189,19 @@ void main()
     float specular = blinn(L, N, V, smoothness);
     vec3 specular_ = mix(specular, step(0.5, specular), lightingHardness) * specularColor;
 
-    float dotNL = max(dot(N,L), 0.6);
+    float dotNL = max(dot(N,L), 0.0);
     vec3 directLight = gubo.lightColor.rgb * dotNL;
     color *= directLight;
 
     color += specular_;
+
+    vec3 ambient = mix(
+        gubo.ambientLower.rgb,
+        gubo.ambientUpper.rgb,
+        max(dot(N, normalize(gubo.ambientDir.xyz)), 0.0)
+    );
+
+    color += ambient * 0.02;
 
     //overlay foam
     color = mix(color, foamColor, foam);
