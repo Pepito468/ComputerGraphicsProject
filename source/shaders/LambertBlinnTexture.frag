@@ -22,11 +22,9 @@ layout (binding = 0, set = 1) uniform UniformBufferObject {
 
 // the shaders now receives also the texture in a separate set
 layout (binding = 1, set = 1) uniform sampler2D tex;
-layout (binding = 2, set = 1) uniform sampler2D ambientOcclusionTex;
-layout (binding = 3, set = 1) uniform sampler2D metallicTex;
-layout (binding = 4, set = 1) uniform sampler2D normalTex;
-layout (binding = 5, set = 1) uniform sampler2D roughnessTex;
-layout (binding = 6, set = 1) uniform sampler2D shadowMap;
+layout (binding = 2, set = 1) uniform sampler2D armTex;
+layout (binding = 3, set = 1) uniform sampler2D normalTex;
+layout (binding = 4, set = 1) uniform sampler2D shadowMap;
 
 // and also the global
 layout(binding = 0, set = 0) uniform GlobalUniformBufferObject {
@@ -68,9 +66,9 @@ mat3 computeTBN(vec3 N, vec3 T, float tangentW) {
 }
 
 vec3 getNormalFromMap(mat3 TBN) {
-    vec3 m = 2*texture(normalTex,fragUV).rgb - vec3(1.0, 1.0, 1.0);
+    vec3 tangentN = texture(normalTex,fragUV).rgb * 2.0 - 1.0;
 
-    return normalize(TBN*m);
+    return normalize(TBN*tangentN);
 }
 
 vec3 computeF0(vec3 albedo, float metallic) {
@@ -135,7 +133,7 @@ vec3 cookTorranceBRDF(vec3 L, vec3 N, vec3 V, vec3 albedo, float metallic, float
     vec3 f_diffuse  = albedo * NdotL;
     vec3 f_specular = (D * G * F) / max(4.0 * NdotV, 0.001);
 
-    return (vec3(1.0)-F)*(1-metallic)*f_diffuse + f_specular;
+    return (vec3(1.0)-F)*(1.0-metallic)*f_diffuse + f_specular;
 }
 
 void directLight(out vec3 direction, out vec3 color) {
@@ -205,10 +203,12 @@ void main() {
 	// returns a color computed with lambert + blinn
 	//vec3 N = normalize(fragNorm);
 
-    vec3 albedo = texture(tex, fragUV).rgb;
-    float ao = texture(ambientOcclusionTex, fragUV).r;
-    float metallic  = texture(metallicTex, fragUV).r;
-    float roughness = texture(roughnessTex, fragUV).r;
+    vec3 albedo = pow(texture(tex, fragUV).rgb, vec3(2.2));
+    vec3 arm = texture(armTex, fragUV).rgb;
+
+    float ao = arm.r;
+    float roughness = arm.g;
+    float metallic  = arm.b;
 
 	vec3 color = vec3(0.0);
 	vec3 L, Lc;

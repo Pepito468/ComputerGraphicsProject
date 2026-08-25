@@ -37,6 +37,8 @@ struct GlobalUniformBufferObject {
     alignas(16)glm::vec4 spotLightParams[8];   // x = cIN = cos(alpha_IN/2), y = cOUT = cos(alpha_OUT/2)
     alignas(4) int spotInstanceCount;
 
+    alignas(4) float time;
+
 };
 
 struct UniformBufferObject {
@@ -49,9 +51,9 @@ struct UniformBufferObject {
     alignas(16) glm::vec3 param2;
 };
 
-enum ShaderType {LAMBERT_BLINN, LAMBERT_TEX, TOON};
+enum ShaderType {LAMBERT_BLINN, LAMBERT_TEX, WATER, TOON};
 
-constexpr std::initializer_list<ShaderType> allShadersTypes = {LAMBERT_BLINN, LAMBERT_TEX, TOON};
+constexpr std::initializer_list<ShaderType> allShadersTypes = {LAMBERT_BLINN, LAMBERT_TEX,WATER, TOON};
 
 const std::string getShaderFragName(ShaderType s)
 {
@@ -59,6 +61,7 @@ const std::string getShaderFragName(ShaderType s)
     {
         case LAMBERT_BLINN:   return "LambertBlinn";
         case LAMBERT_TEX:     return "LambertBlinnTexture";
+        case WATER: return "Water";
         case TOON:   return "Toon";
         default:      return "Error";
     }
@@ -70,6 +73,7 @@ const std::string getShaderVertName(ShaderType s)
     {
         case LAMBERT_BLINN:   return "PosNorm";
         case LAMBERT_TEX:     return "PosNormUV";
+        case WATER:   return "Water";
         case TOON:   return "PosNorm";
         default:      return "Error";
     }

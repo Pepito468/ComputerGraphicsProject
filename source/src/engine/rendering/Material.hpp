@@ -16,10 +16,8 @@ class Material {
     ShaderType shaderType;
     std::string textureName;
     Texture* albedoTex;
-    Texture* ambientOcclusionTex;
-    Texture* metallicTex;
+    Texture* armTex;
     Texture* normalTex;
-    Texture* roughnessTex;
 
 
     public:
@@ -29,15 +27,11 @@ class Material {
     ShaderType getShaderType() const {return shaderType;}
     std::string getTextureName() const {return textureName;}
     Texture* getAlbedoTex() const {return albedoTex;}
-    Texture* getAmbientOcclusionTex() const {return ambientOcclusionTex;}
-    Texture* getMetallicTex() const {return metallicTex;}
+    Texture* getArmTex() const {return armTex;}
     Texture* getNormalTex() const {return normalTex;}
-    Texture* getRoughnessTex() const {return roughnessTex;}
     void setAlbedoTex(Texture* texture) {this->albedoTex = texture;}
-    void setAmbientOcclusionTex(Texture* texture) {this->ambientOcclusionTex = texture;}
-    void setMetallicTex(Texture* texture) {this->metallicTex = texture;}
+    void setArmTex(Texture* texture) {this->armTex = texture;}
     void setNormalTex(Texture* texture) {this->normalTex = texture;}
-    void setRoughnessTex(Texture* texture) {this->roughnessTex = texture;}
 };
 
 class LambertTexMaterial : public Material {
@@ -71,6 +65,23 @@ class LambertMaterial : public Material {
     }
 
     ~LambertMaterial() override = default;
+    void updateUBO(UniformBufferObject& ubo) override {
+        ubo.color = diffuse;
+        ubo.specular = specular;
+    }
+};
+
+class WaterMaterial : public Material {
+    public:
+    WaterMaterial(glm::vec3 diffuse, glm::vec4 specular, std::string textureName = "Default.png") {
+        this->diffuse = diffuse;
+        this->specular = specular;
+        this->textureName = textureName;
+
+
+        shaderType = ShaderType::WATER;
+    }
+    ~WaterMaterial() override = default;
     void updateUBO(UniformBufferObject& ubo) override {
         ubo.color = diffuse;
         ubo.specular = specular;

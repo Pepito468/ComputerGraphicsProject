@@ -15,6 +15,14 @@ struct ShadowMapUniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
 };
 
+struct SceneDepthUniformBufferObject {
+    alignas(16) glm::mat4 mvpMat;
+};
+
+struct SceneColorUniformBufferObject {
+    alignas(16) glm::mat4 mvpMat;
+};
+
 struct SkyboxUniformBufferObject {
     alignas(16) glm::mat4 mvpMat;
 };
@@ -61,17 +69,17 @@ class Renderer {
         }
 
         ///Must be called inside Renderer.descriptorSetsInits()
-        void descriptorSetsInits(BaseProject* bp, RenderPass* rp, RenderPass* RPoffScreen) {
+        void descriptorSetsInits(BaseProject* bp, RenderPass* rp, RenderPass* RPoffScreen, RenderPass* RPsceneDepth, RenderPass* RPsceneColor) {
             pipeline.create(rp);
 
             for (auto& p : pool) {
-                modelDescriptorSetInit(bp, p, RPoffScreen);
+                modelDescriptorSetInit(bp, p, RPoffScreen, RPsceneDepth, RPsceneColor);
             }
         }
 
         //TODO: non so se mi piace questa soluzione
-        void modelDescriptorSetInit(BaseProject* bp, Model3D* model, RenderPass* RPoffScreen) {
-            model->descriptorSetInit(bp, localLayout, RPoffScreen);
+        void modelDescriptorSetInit(BaseProject* bp, Model3D* model, RenderPass* RPoffScreen, RenderPass* RPsceneDepth, RenderPass* RPsceneColor) {
+            model->descriptorSetInit(bp, localLayout, RPoffScreen, RPsceneDepth, RPsceneColor);
         }
 
         ///Must be called inside Renderer.descriptorSetsCleanup()
@@ -136,10 +144,8 @@ class Renderer {
     std::unordered_map<ShaderType, std::unique_ptr<PipelineRenderer>> pipelinesMap;
     std::unordered_map <std::string, Model> modelAssets;
     std::unordered_map <std::string, Texture> albedoTexAssets;
-    std::unordered_map <std::string, Texture> ambientOcclusionTexAssets;
-    std::unordered_map <std::string, Texture> metallicTexAssets;
+    std::unordered_map <std::string, Texture> armTexAssets;
     std::unordered_map <std::string, Texture> normalTexAssets;
-    std::unordered_map <std::string, Texture> roughnessTexAssets;
     std::unordered_map <std::string, std::unique_ptr<Material>> materialAssets;
     std::vector<Model3D*> sceneObjects; //stores all the models assigned to Renderer
 
@@ -153,6 +159,18 @@ class Renderer {
     DescriptorSet offScreen, skybox;
     RenderPass RPoffScreen;
     Pipeline PoffScreen, Pskybox;
+
+    //Scene depth
+    DescriptorSetLayout sceneDepthLayout;
+    DescriptorSet sceneDepth;
+    RenderPass RPsceneDepth;
+    Pipeline PsceneDepth;
+
+    //Scene color
+    DescriptorSetLayout sceneColorLayout;
+    DescriptorSet sceneColor;
+    RenderPass RPsceneColor;
+    Pipeline PsceneColor;
 
     Texture TenvMap;   // environment cubemap
     Model SkyboxCube;
@@ -213,6 +231,24 @@ class Renderer {
                     mat_info[i]["specular"][3]
                         ),
                 mat_info[i]["texture"].get<std::string>())});
+        }
+
+        mat_info = data["materials"]["Water"];
+        for (size_t i = 0; i < mat_info.size(); i++) {
+
+            materialAssets.insert({mat_info[i]["id"].get<std::string>(), std::make_unique<WaterMaterial>(
+                glm::vec3(
+                    mat_info[i]["diffuse"][0],
+                    mat_info[i]["diffuse"][1],
+                    mat_info[i]["diffuse"][2]
+                         ),
+            glm::vec4(
+                    mat_info[i]["specular"][0],
+                    mat_info[i]["specular"][1],
+                    mat_info[i]["specular"][2],
+                    mat_info[i]["specular"][3]
+                    ),
+            mat_info[i]["texture"].get<std::string>())});
         }
 
         mat_info = data["materials"]["Toon"];
@@ -289,16 +325,10 @@ class Renderer {
             t->init(bp,"assets/textures/albedo_" + model3D->getMaterial()->getTextureName());
         }
 
-        if ( ambientOcclusionTexAssets.find(model3D->getMaterial()->getTextureName()) == ambientOcclusionTexAssets.end()) {
-            ambientOcclusionTexAssets.insert({model3D->getMaterial()->getTextureName(),{}});
-            Texture* t = &ambientOcclusionTexAssets.at(model3D->getMaterial()->getTextureName());
-            t->init(bp,"assets/textures/ao_" + model3D->getMaterial()->getTextureName());
-        }
-
-        if ( metallicTexAssets.find(model3D->getMaterial()->getTextureName()) == metallicTexAssets.end()) {
-            metallicTexAssets.insert({model3D->getMaterial()->getTextureName(),{}});
-            Texture* t = &metallicTexAssets.at(model3D->getMaterial()->getTextureName());
-            t->init(bp,"assets/textures/metallic_" + model3D->getMaterial()->getTextureName());
+        if ( armTexAssets.find(model3D->getMaterial()->getTextureName()) == armTexAssets.end()) {
+            armTexAssets.insert({model3D->getMaterial()->getTextureName(),{}});
+            Texture* t = &armTexAssets.at(model3D->getMaterial()->getTextureName());
+            t->init(bp,"assets/textures/arm_" + model3D->getMaterial()->getTextureName());
         }
 
         if ( normalTexAssets.find(model3D->getMaterial()->getTextureName()) == normalTexAssets.end()) {
@@ -307,26 +337,18 @@ class Renderer {
             t->init(bp,"assets/textures/normal_" + model3D->getMaterial()->getTextureName());
         }
 
-        if ( roughnessTexAssets.find(model3D->getMaterial()->getTextureName()) == roughnessTexAssets.end()) {
-            roughnessTexAssets.insert({model3D->getMaterial()->getTextureName(),{}});
-            Texture* t = &roughnessTexAssets.at(model3D->getMaterial()->getTextureName());
-            t->init(bp,"assets/textures/roughness_" + model3D->getMaterial()->getTextureName());
-        }
-
 
         //Insert model and texture
         model3D->setModel(&modelAssets[model3D->getModelPath()]);
         model3D->getMaterial()->setAlbedoTex(&albedoTexAssets[model3D->getMaterial()->getTextureName()]);
-        model3D->getMaterial()->setAmbientOcclusionTex(&ambientOcclusionTexAssets[model3D->getMaterial()->getTextureName()]);
-        model3D->getMaterial()->setMetallicTex(&metallicTexAssets[model3D->getMaterial()->getTextureName()]);
+        model3D->getMaterial()->setArmTex(&armTexAssets[model3D->getMaterial()->getTextureName()]);
         model3D->getMaterial()->setNormalTex(&normalTexAssets[model3D->getMaterial()->getTextureName()]);
-        model3D->getMaterial()->setRoughnessTex(&roughnessTexAssets[model3D->getMaterial()->getTextureName()]);
 
         //Add to existing pipeline
         pipelinesMap.at(model3D->getShaderType())->addModel3D(model3D);
 
         //Model local descriptor set init
-        pipelinesMap.at(model3D->getShaderType())->modelDescriptorSetInit(bp, model3D, &RPoffScreen);
+        pipelinesMap.at(model3D->getShaderType())->modelDescriptorSetInit(bp, model3D, &RPoffScreen, &RPsceneDepth, &RPsceneColor);
 
         if (updateScreen)
             screenUpdate();
@@ -385,16 +407,10 @@ class Renderer {
             t->init(bp,"assets/textures/albedo_" + model3D->getMaterial()->getTextureName());
         }
 
-        if ( ambientOcclusionTexAssets.find(model3D->getMaterial()->getTextureName()) == ambientOcclusionTexAssets.end()) {
-            ambientOcclusionTexAssets.insert({model3D->getMaterial()->getTextureName(),{}});
-            Texture* t = &ambientOcclusionTexAssets.at(model3D->getMaterial()->getTextureName());
-            t->init(bp,"assets/textures/ao_" + model3D->getMaterial()->getTextureName());
-        }
-
-        if ( metallicTexAssets.find(model3D->getMaterial()->getTextureName()) == metallicTexAssets.end()) {
-            metallicTexAssets.insert({model3D->getMaterial()->getTextureName(),{}});
-            Texture* t = &metallicTexAssets.at(model3D->getMaterial()->getTextureName());
-            t->init(bp,"assets/textures/metallic_" + model3D->getMaterial()->getTextureName());
+        if ( armTexAssets.find(model3D->getMaterial()->getTextureName()) == armTexAssets.end()) {
+            armTexAssets.insert({model3D->getMaterial()->getTextureName(),{}});
+            Texture* t = &armTexAssets.at(model3D->getMaterial()->getTextureName());
+            t->init(bp,"assets/textures/arm_" + model3D->getMaterial()->getTextureName());
         }
 
         if ( normalTexAssets.find(model3D->getMaterial()->getTextureName()) == normalTexAssets.end()) {
@@ -403,20 +419,11 @@ class Renderer {
             t->init(bp,"assets/textures/normal_" + model3D->getMaterial()->getTextureName());
         }
 
-        if ( roughnessTexAssets.find(model3D->getMaterial()->getTextureName()) == roughnessTexAssets.end()) {
-            roughnessTexAssets.insert({model3D->getMaterial()->getTextureName(),{}});
-            Texture* t = &roughnessTexAssets.at(model3D->getMaterial()->getTextureName());
-            t->init(bp,"assets/textures/roughness_" + model3D->getMaterial()->getTextureName());
-        }
-
-
         //Insert model and texture
         model3D->setModel(&modelAssets[model3D->getModelPath()]);
         model3D->getMaterial()->setAlbedoTex(&albedoTexAssets[model3D->getMaterial()->getTextureName()]);
-        model3D->getMaterial()->setAmbientOcclusionTex(&ambientOcclusionTexAssets[model3D->getMaterial()->getTextureName()]);
-        model3D->getMaterial()->setMetallicTex(&metallicTexAssets[model3D->getMaterial()->getTextureName()]);
+        model3D->getMaterial()->setArmTex(&armTexAssets[model3D->getMaterial()->getTextureName()]);
         model3D->getMaterial()->setNormalTex(&normalTexAssets[model3D->getMaterial()->getTextureName()]);
-        model3D->getMaterial()->setRoughnessTex(&roughnessTexAssets[model3D->getMaterial()->getTextureName()]);
 
 
         //Add to existing pipeline
@@ -460,11 +467,11 @@ class Renderer {
             // third  element : the pipeline stage where it will be used
             {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, sizeof(UniformBufferObject), 1},
             {1,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,VK_SHADER_STAGE_ALL_GRAPHICS,0,1}, //albedo
-            {2,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,VK_SHADER_STAGE_ALL_GRAPHICS,1,1}, //ambient occlusion
-            {3,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,VK_SHADER_STAGE_ALL_GRAPHICS,2,1}, //metallic
-            {4,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,VK_SHADER_STAGE_ALL_GRAPHICS,3,1}, //normalMap
-            {5,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,VK_SHADER_STAGE_ALL_GRAPHICS,4,1}, //roughness
-            {6, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 5, 1} //shadowMap
+            {2,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,VK_SHADER_STAGE_ALL_GRAPHICS,1,1}, //arm
+            {3,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,VK_SHADER_STAGE_ALL_GRAPHICS,2,1}, //normalMap
+            {4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1}, //shadowMap
+            {5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4, 1}, //sceneDepth
+            {6, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 5, 1} //sceneColor
           });
 
         globalLayout.init(bp, {
@@ -477,6 +484,14 @@ class Renderer {
 
         offScreenLayout.init(bp, {
                     {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(ShadowMapUniformBufferObject), 1}
+                    });
+
+        sceneDepthLayout.init(bp, {
+                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(SceneDepthUniformBufferObject), 1}
+                    });
+
+        sceneColorLayout.init(bp, {
+                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(UniformBufferObject), 1}
                     });
 
         skyboxLayout.init(bp, {
@@ -498,20 +513,12 @@ class Renderer {
             t.second.init(bp,"assets/textures/albedo_" + t.first);
         }
 
-        for (auto& t : ambientOcclusionTexAssets) {
-            t.second.init(bp,"assets/textures/ao_" + t.first, VK_FORMAT_R8G8B8A8_UNORM);
-        }
-
-        for (auto& t : metallicTexAssets) {
-            t.second.init(bp,"assets/textures/metallic_" + t.first, VK_FORMAT_R8G8B8A8_UNORM);
+        for (auto& t : armTexAssets) {
+            t.second.init(bp,"assets/textures/arm_" + t.first, VK_FORMAT_R8G8B8A8_UNORM);
         }
 
         for (auto& t : normalTexAssets) {
             t.second.init(bp,"assets/textures/normal_" + t.first, VK_FORMAT_R8G8B8A8_UNORM);
-        }
-
-        for (auto& t : roughnessTexAssets) {
-            t.second.init(bp,"assets/textures/roughness_" + t.first, VK_FORMAT_R8G8B8A8_UNORM);
         }
 
         for (auto& p : pipelinesMap) {
@@ -523,8 +530,22 @@ class Renderer {
                     RenderPass::getStandardAttchmentsProperties(AT_DEPTH_ONLY, bp),
                     RenderPass::getStandardDependencies(ATDEP_DEPTH_TRANS), true);
 
+        //TODO: temp
+        float sceneDepthSize = 800;
+        RPsceneDepth.init(bp, sceneDepthSize, sceneDepthSize, 1,
+                    RenderPass::getStandardAttchmentsProperties(AT_DEPTH_ONLY, bp),
+                    RenderPass::getStandardDependencies(ATDEP_DEPTH_TRANS), true);
+
+        float sceneColorSize = 800;
+        RPsceneColor.init(bp, sceneColorSize, sceneColorSize, 1,
+                    RenderPass::getStandardAttchmentsProperties(AT_ONE_COLOR_AND_DEPTH, bp),
+                    RenderPass::getStandardDependencies(ATDEP_DEPTH_TRANS), true);
+
+
 
         PoffScreen.init(bp, &vertexDescriptor, "shaders/ShadowMap.vert.spv", "shaders/ShadowMap.frag.spv", {&offScreenLayout, &localLayout});
+        PsceneDepth.init(bp, &vertexDescriptor, "shaders/SceneDepth.vert.spv", "shaders/SceneDepth.frag.spv", {&sceneDepthLayout, &localLayout});
+        PsceneColor.init(bp, &vertexDescriptor, "shaders/SceneColor.vert.spv", "shaders/SceneColor.frag.spv", {&sceneColorLayout, &localLayout});
 
         Pskybox.init(bp, &VDskybox, "shaders/Skybox.vert.spv", "shaders/Skybox.frag.spv", {&skyboxLayout} );
         Pskybox.setCompareOp(VK_COMPARE_OP_LESS_OR_EQUAL);
@@ -546,18 +567,25 @@ class Renderer {
     void descriptorSetsInits() {
 
         RPoffScreen.create();
+        RPsceneDepth.create();
+        RPsceneColor.create();
 
         global.init(bp, &globalLayout, {});
         offScreen.init(bp, &offScreenLayout, {});
+        sceneDepth.init(bp, &sceneDepthLayout, {});
+        sceneColor.init(bp, &sceneColorLayout, {});
 
         skybox.init(bp, &skyboxLayout, {
             TenvMap.getViewAndSampler()
         });
         PoffScreen.create(&RPoffScreen);
+        PsceneDepth.create(&RPsceneDepth);
+        PsceneColor.create(&RPsceneColor);
+
         Pskybox.create(rp);
 
         for (auto& p : pipelinesMap) {
-            p.second->descriptorSetsInits(bp, rp, &RPoffScreen);
+            p.second->descriptorSetsInits(bp, rp, &RPoffScreen, &RPsceneDepth, &RPsceneColor);
         }
     }
 
@@ -566,15 +594,21 @@ class Renderer {
 
         global.cleanup();
         offScreen.cleanup();
+        sceneDepth.cleanup();
+        sceneColor.cleanup();
         skybox.cleanup();
-
-        RPoffScreen.cleanup();
-        PoffScreen.cleanup();
-        Pskybox.cleanup();
 
         for (auto& p : pipelinesMap) {
             p.second->descriptorSetsCleanup();
         }
+
+        RPoffScreen.cleanup();
+        RPsceneDepth.cleanup();
+        RPsceneColor.cleanup();
+
+        PoffScreen.cleanup();
+        PsceneDepth.cleanup();
+        Pskybox.cleanup();
     }
 
     ///This method prepare stuff for Vulkan, must be called inside Engine.localCleanup()
@@ -582,6 +616,8 @@ class Renderer {
 
         globalLayout.cleanup();
         offScreenLayout.cleanup();
+        sceneDepthLayout.cleanup();
+        sceneColorLayout.cleanup();
         skyboxLayout.cleanup();
 
         localLayout.cleanup();
@@ -598,20 +634,18 @@ class Renderer {
         for (auto& t : albedoTexAssets) {
             t.second.cleanup();
         }
-        for (auto& t : ambientOcclusionTexAssets) {
-            t.second.cleanup();
-        }
-        for (auto& t : metallicTexAssets) {
-            t.second.cleanup();
-        }
-        for (auto& t : normalTexAssets) {
-            t.second.cleanup();
-        }
-        for (auto& t : roughnessTexAssets) {
+        for (auto& t : armTexAssets) {
             t.second.cleanup();
         }
 
+        for (auto& t : normalTexAssets) {
+            t.second.cleanup();
+        }
+
+
         PoffScreen.destroy();
+        PsceneDepth.destroy();
+        PsceneColor.destroy();
         Pskybox.destroy();
         for (auto& p : pipelinesMap) {
             p.second->localCleanup();
@@ -631,6 +665,32 @@ class Renderer {
         RPoffScreen.end(commandBuffer);
     }
 
+    void populateSceneColorCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
+        RPsceneColor.begin(commandBuffer, 0);
+        PsceneColor.bind(commandBuffer);
+        sceneColor.bind(commandBuffer, PsceneColor, 0, currentImage);
+
+        for (auto& o : sceneObjects) {
+            if (o->getShaderType() != ShaderType::WATER)
+                o->populateCommandBuffer(commandBuffer, currentImage, PsceneColor);
+        }
+
+        RPsceneColor.end(commandBuffer);
+    }
+
+    void populateSceneDepthCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
+        RPsceneDepth.begin(commandBuffer, 0);
+        PsceneDepth.bind(commandBuffer);
+        sceneDepth.bind(commandBuffer, PsceneDepth, 0, currentImage);
+
+        for (auto& o : sceneObjects) {
+            if (o->getShaderType() != ShaderType::WATER)
+            o->populateCommandBuffer(commandBuffer, currentImage, PsceneDepth);
+        }
+
+        RPsceneDepth.end(commandBuffer);
+    }
+
     ///This method prepare stuff for Vulkan, must be called inside Engine.populateCommandBuffer()
     void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
 
@@ -646,7 +706,7 @@ class Renderer {
     }
 
     ///This method prepare stuff for Vulkan, must be called inside Engine.updateUniformBuffer()
-    void updateUniformBuffer(uint32_t currentImage,  glm::vec3 CamPos, glm::mat4 Projection, glm::mat4 View) {
+    void updateUniformBuffer(uint32_t currentImage,  glm::vec3 CamPos, glm::mat4 Projection, glm::mat4 View, float time) {
         GlobalUniformBufferObject gubo;
 
         gubo.ambientUpper = ambientLight->upper;
@@ -688,6 +748,7 @@ class Renderer {
 
         // now the eye position corresponds to the position of the camera
         gubo.eyePos = glm::vec4(CamPos,0.0f);
+        gubo.time = time;
 
         // transfers the data to the GPU, by mapping it to its
         // descriptor set
@@ -699,7 +760,6 @@ class Renderer {
                                     glm::rotate(glm::mat4(1), glm::radians(-45.0f), glm::vec3(1.0f, 0.0f, 0.0f));
         const glm::vec3 lightDir =  glm::vec3(lightView * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f));
 
-
         ShadowMapUniformBufferObject subo{};
         const float hw = 24.0f;
         const float vw = 24.0f;
@@ -710,6 +770,14 @@ class Renderer {
                       glm::inverse(lightView);
         subo.mvpMat = offVP;
         offScreen.map(currentImage, &subo, 0);
+
+        SceneDepthUniformBufferObject sdubo{};
+        sdubo.mvpMat = Projection*View;
+        sceneDepth.map(currentImage, &sdubo, 0);
+
+        SceneColorUniformBufferObject scubo{};
+        scubo.mvpMat = Projection*View;
+        sceneColor.map(currentImage, &scubo, 0);
 
         SkyboxUniformBufferObject skyboxUBO{};
 
@@ -735,6 +803,11 @@ class Renderer {
         }
 
         sceneObjects[i]->descriptorSetCleanup();
+        Model3D* model = sceneObjects[i];
+
+        pipelinesMap.at(model->getShaderType())->removeModel3D(model);
+
+        model->descriptorSetCleanup();
         sceneObjects.erase(sceneObjects.begin() + i);
     }
 
