@@ -16,8 +16,8 @@ layout (binding = 0, set = 1) uniform UniformBufferObject {
 	mat4 nMat;
 	vec3 diffuse;
 	vec4 specular;
-	vec3 param1;
-	vec3 param2;
+	vec4 param1;
+	vec4 param2;
 } ubo;
 
 // and also the global

@@ -66,6 +66,9 @@ class Renderer {
         ///Must be called inside Renderer.localInit()
         void localInit(BaseProject* bp, DescriptorSetLayout& globalLayout, DescriptorSetLayout& offScreenLayout, VertexDescriptor& vertexDescriptor) {
             pipeline.init(bp, &vertexDescriptor, vertShader, fragShader, {&globalLayout, localLayout, &offScreenLayout});
+
+            if (IsLateDraw(shaderType))
+                pipeline.setTransparency(true);
         }
 
         ///Must be called inside Renderer.descriptorSetsInits()
@@ -701,7 +704,14 @@ class Renderer {
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(SkyboxCube.indices.size()), 1, 0, 0, 0);
 
         for (auto& p : pipelinesMap) {
-            p.second->populateCommandBuffer(commandBuffer, currentImage, global, offScreen);
+            if (!IsLateDraw(p.first) )
+                p.second->populateCommandBuffer(commandBuffer, currentImage, global, offScreen);
+        }
+
+        //Late draw for transparency
+        for (auto& p : pipelinesMap) {
+            if (IsLateDraw(p.first) )
+                p.second->populateCommandBuffer(commandBuffer, currentImage, global, offScreen);
         }
     }
 

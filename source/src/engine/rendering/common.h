@@ -47,13 +47,15 @@ struct UniformBufferObject {
     alignas(16) glm::mat4 nMat;
     alignas(16) glm::vec3 color;
     alignas(16) glm::vec4 specular;
-    alignas(16) glm::vec3 param1;
-    alignas(16) glm::vec3 param2;
+    alignas(16) glm::vec4 param1;
+    alignas(16) glm::vec4 param2;
+    alignas(16) glm::vec4 param3;
+    alignas(16) glm::vec4 param4;
 };
 
-enum ShaderType {LAMBERT_BLINN, LAMBERT_TEX, WATER, TOON};
+enum ShaderType {LAMBERT_BLINN, LAMBERT_TEX, WATER, TOON, FIRE};
 
-constexpr std::initializer_list<ShaderType> allShadersTypes = {LAMBERT_BLINN, LAMBERT_TEX,WATER, TOON};
+constexpr std::initializer_list<ShaderType> allShadersTypes = {LAMBERT_BLINN, LAMBERT_TEX,WATER, TOON, FIRE};
 
 const std::string getShaderFragName(ShaderType s)
 {
@@ -63,6 +65,7 @@ const std::string getShaderFragName(ShaderType s)
         case LAMBERT_TEX:     return "LambertBlinnTexture";
         case WATER: return "Water";
         case TOON:   return "Toon";
+        case FIRE:   return "Fire";
         default:      return "Error";
     }
 }
@@ -75,7 +78,15 @@ const std::string getShaderVertName(ShaderType s)
         case LAMBERT_TEX:     return "PosNormUV";
         case WATER:   return "Water";
         case TOON:   return "PosNorm";
+        case FIRE:   return "Fire";
         default:      return "Error";
+    }
+}
+
+const bool IsLateDraw(ShaderType s) {
+    switch (s) {
+        case FIRE: return true;
+        default: return false;
     }
 }
 

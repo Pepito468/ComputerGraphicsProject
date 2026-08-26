@@ -88,6 +88,40 @@ class WaterMaterial : public Material {
     }
 };
 
+class FireMaterial : public Material {
+public:
+
+    glm::vec4 param1, param2, param3, param4;
+
+    FireMaterial(glm::vec3 diffuse, glm::vec4 specular, std::string textureName = "Default.png")
+    : FireMaterial(diffuse, specular, {1.0, 0.0, 0.0,1.0}, {0.9,0.9,0.0,1.0},0.05,20,{1,1},1.2,5,3,5, textureName)
+    {}
+
+    FireMaterial(glm::vec3 diffuse, glm::vec4 specular, glm::vec4 firstColor, glm::vec4 secondColor, float distortionAmount, float distortionScale, glm::vec2 distortionSpeed, float dissolveAmount, float dissolveScale, float dissolveSpeed, float intensity, std::string textureName = "Default.png") {
+        this->diffuse = diffuse;
+        this->specular = specular;
+        this->textureName = textureName;
+
+        this->param1 = firstColor;
+        this->param2 = secondColor;
+        this->param3 = glm::vec4(distortionAmount, distortionScale, distortionSpeed);
+        this->param4 = glm::vec4(dissolveAmount, dissolveScale, dissolveSpeed, intensity);
+
+
+        shaderType = ShaderType::FIRE;
+    }
+    ~FireMaterial() override = default;
+    void updateUBO(UniformBufferObject& ubo) override {
+        ubo.color = diffuse;
+        ubo.specular = specular;
+
+        ubo.param1 = param1;
+        ubo.param2 = param2;
+        ubo.param3 = param3;
+        ubo.param4 = param4;
+    }
+};
+
 class ToonMaterial : public Material {
 public:
     float tD, mD1, mD2;

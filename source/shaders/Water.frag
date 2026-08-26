@@ -124,6 +124,7 @@ void pointLight(vec3 pos, out vec3 direction, out vec3 color, int i) {
 }
 
 
+//from: https://ameye.dev/notes/stylized-water-shader/
 void main()
 {
     float t = gubo.time;
