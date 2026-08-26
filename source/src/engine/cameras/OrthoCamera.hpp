@@ -23,16 +23,16 @@ class OrthoCamera : public Camera {
 
     public:
 
-        OrthoCamera() {
+        OrthoCamera() :
+        Camera() {
             this->leftBound = -4.0f;
             this->rightBound = 4.0f;
             this->bottomBound = -5.0f;
             this->topBound = 5.0f;
         };
 
-        OrthoCamera(const float leftBound, const float rightBound, const float bottomBound, const float topBound, const float nearPlane, const float farPlane) {
-            this->nearPlane = nearPlane;
-            this->farPlane = farPlane;
+        OrthoCamera(const float leftBound, const float rightBound, const float bottomBound, const float topBound, const float nearPlane, const float farPlane, const bool isMain) :
+        Camera(nearPlane, farPlane, isMain) {
             this->bottomBound = bottomBound;
             this->topBound = topBound;
             this->rightBound = rightBound;

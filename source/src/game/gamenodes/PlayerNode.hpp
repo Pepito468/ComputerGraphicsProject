@@ -29,7 +29,7 @@ public:
     void onEnter() override
     {
         // Set cursor mode
-        Engine::setCursorMode(GLFW_CURSOR_DISABLED);
+        // Engine::setCursorMode(GLFW_CURSOR_DISABLED);
 
         if (Collider* c = dynamic_cast<Collider*>(this->parent))
         {
@@ -43,6 +43,10 @@ public:
         {
             error("Player node's parent is not a collider!");
         }
+    }
+
+    void onExit() override {
+        printf("Player deleted!\n");
     }
 
     void update() override
@@ -68,6 +72,11 @@ public:
             // Once the key is released, allow the function to be executed again
             Engine::setDebounce(false);
             Engine::setCurDebounce(0);
+        }
+
+        // Change scene
+        if (Engine::isKeyBeingPressed(GLFW_KEY_K)) {
+            Engine::requestSceneChange(Engine::getSceneFromNameMap("Scene2"));
         }
 
         //Check grounded

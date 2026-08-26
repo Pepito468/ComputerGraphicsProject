@@ -21,19 +21,17 @@ class PerspectiveCamera : public Camera {
         }
 
         /** Alternative constructor with FOV and aspect ratio */
-        PerspectiveCamera(const float nearPlane, const float farPlane, const float fov, const float aspectRatio) {
-            this->nearPlane = nearPlane;
-            this->farPlane = farPlane;
+        PerspectiveCamera(const float nearPlane, const float farPlane, const float fov, const float aspectRatio, const bool isMain = false) :
+        Camera(nearPlane, farPlane, isMain) {
             this->fov = fov;
             this->aspectRatio = aspectRatio;
         }
 
         /** Constructor with the standard boundaries */
-        PerspectiveCamera(const float nearValue, const float farValue, const float rightBound, const float leftBound, const float topBound, const float bottomBound) {
-            this->nearPlane = nearValue;
-            this->farPlane = farValue;
+        PerspectiveCamera(const float nearPlane, const float farPlane, const float rightBound, const float leftBound, const float topBound, const float bottomBound, const bool isMain = false) :
+        Camera(nearPlane, farPlane, isMain) {
             this->aspectRatio = (rightBound - leftBound) / (topBound - bottomBound);
-            this->fov = atan(topBound / nearValue) * 2;
+            this->fov = atan(topBound / nearPlane) * 2;
         }
 
         float getFOV() const {
