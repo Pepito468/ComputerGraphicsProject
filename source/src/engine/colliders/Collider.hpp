@@ -100,7 +100,8 @@ enum PhysicsLayer
     NONE = 0,
     ENVIRONMENT = 1,
     PLAYER = 2,
-    ALL = ENVIRONMENT | PLAYER
+    BULLETS = 4,
+    ALL = ENVIRONMENT | PLAYER | BULLETS
 };
 NLOHMANN_JSON_SERIALIZE_ENUM(PhysicsLayer, {
     {ENVIRONMENT, "env"},
@@ -122,8 +123,10 @@ public:
     bool isTrigger = false;
     /// Colliders that are within this trigger's bounds
     std::set<Collider*> collidersInTrigger = std::set<Collider*>();
-    /// Physics layer the collider is included in
+    /// Physics layer the collider is part of
     PhysicsLayer layer = ALL;
+    /// Physics layer(s) the collider can collide with
+    PhysicsLayer collidesWith = ALL;
 
     typedef Function<void(Collider*)> CollisionCallback;
     /// External function to call when another collider collides with this one

@@ -175,6 +175,7 @@ public:
             {
                 if (checked.contains(b.collider)) return false; //Skip checked colliders
                 if (b.collider->UUID == bounds.collider->UUID) return false; //Skip self
+                if (!(bounds.collider->collidesWith & b.collider->layer)) return false; //Skip mismatched layers
                 return hasCollision(bounds, b);
             });
 

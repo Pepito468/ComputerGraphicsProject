@@ -1,9 +1,11 @@
 ﻿#ifndef ENGINE_PLAYERNODE_HPP
 #define ENGINE_PLAYERNODE_HPP
 
+#include "BulletNode.hpp"
 #include "UpdateNode3D.hpp"
 #include "Collider.hpp"
 #include "Engine.hpp"
+#include <glm/glm.hpp>
 
 #define WALK_SPEED 4.0f
 #define JUMP_FORCE 5.0f
@@ -20,6 +22,7 @@ class PlayerNode : public UpdateNode3D
     Collider* playerColl = nullptr;
     float vertSpeed = 0.0f;
     bool isGrounded = false;
+    BulletNode* bullet = nullptr;
 
 public:
 
@@ -80,6 +83,15 @@ public:
         if (X_ROT_MIN <= getGlobalRotation().x + xRot && getGlobalRotation().x + xRot <= X_ROT_MAX)
             globalRotateX(xRot);
         globalRotateY(-Engine::getInputRotation().y * Engine::getDeltaTime());
+
+        //Shoot
+        if (Engine::isKeyBeingPressed(GLFW_KEY_F) && !bullet->isActive)
+        {
+            const glm::vec3 pos = getGlobalPosition() - getZAxis() * 2.0f;
+            bullet->shoot(pos, -getZAxis());
+        }
     }
+
+    void setBullet(BulletNode* bullet) {this->bullet = bullet;}
 };
 #endif

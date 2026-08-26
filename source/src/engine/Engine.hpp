@@ -144,7 +144,8 @@ class Engine : public BaseProject {
         /** Calls update() on the given node and its descendants */
         void updateUpdate3DNodes(Node *node) {
             if (UpdateNode3D *updateNode = dynamic_cast<UpdateNode3D*>(node))
-                updateNode->update();
+                if (updateNode->isActive)
+                    updateNode->update();
 
             for (Node *child : node->children)
                 updateUpdate3DNodes(child);
