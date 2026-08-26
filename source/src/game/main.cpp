@@ -27,6 +27,7 @@ int main() {
     CapsuleCollider* playerCollider = new CapsuleCollider();
     playerCollider->name = "PlayerCollider";
     playerCollider->layer = PLAYER;
+    playerCollider->collidesWith = ENVIRONMENT;
     root->adopt(playerCollider);
     PlayerNode* player = new PlayerNode();
     player->name = "Player";
@@ -36,6 +37,7 @@ int main() {
     player->adopt(camera);
     playerCollider->globalTranslate({-2, 5, 0});
     player->localTranslate({0, 1.25f, 0});
+
 
     //CustomCameraUpdate *cameraContainer = new CustomCameraUpdate();
     //cameraContainer->name = "CameraContainer";
@@ -60,6 +62,20 @@ int main() {
     FireMaterial flame1 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "smallFlame.png"};
     FireMaterial flame2 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "bigFlame.png"};
     FireMaterial flame3 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "fire.png"};
+
+    //bullet
+    SphereCollider* bulletColl = new SphereCollider();
+    bulletColl->name = "bullColl";
+    bulletColl->layer = BULLETS;
+    bulletColl->collidesWith = ALL;
+    BulletNode* bullet = new BulletNode();
+    bullet->name = "bullet";
+    Model3D *bulletMod = new Model3D("SuzanneUV.obj", {0, 0, 0}, {0, 0, 0}, {0.5f, 0.5f, 0.5f}, &mat2);
+    bulletMod->name = "bullMod";
+    root->adopt(bulletColl);
+    bulletColl->adopt(bullet);
+    bulletColl->adopt(bulletMod);
+    player->setBullet(bullet);
 
     Node *models = new Node();
     models->name = "ModelContainer";

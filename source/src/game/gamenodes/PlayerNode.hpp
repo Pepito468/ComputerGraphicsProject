@@ -1,9 +1,11 @@
 ﻿#ifndef ENGINE_PLAYERNODE_HPP
 #define ENGINE_PLAYERNODE_HPP
 
+#include "BulletNode.hpp"
 #include "UpdateNode3D.hpp"
 #include "Collider.hpp"
 #include "Engine.hpp"
+#include <glm/glm.hpp>
 
 #define WALK_SPEED 4.0f
 #define JUMP_FORCE 5.0f
@@ -20,6 +22,7 @@ class PlayerNode : public UpdateNode3D
     Collider* playerColl = nullptr;
     float vertSpeed = 0.0f;
     bool isGrounded = false;
+    BulletNode* bullet = nullptr;
 
 public:
 
@@ -45,16 +48,26 @@ public:
     void update() override
     {
         // Check for escape
-        if(Engine::isKeyBeingPressed(GLFW_KEY_ESCAPE)) {
+        if (Engine::isKeyBeingPressed(GLFW_KEY_ESCAPE)) {
             Engine::MainEngine->shutdown();
         }
 
         // Give cursor back if needed
         if (Engine::isKeyBeingPressed(GLFW_KEY_C)) {
-            if (Engine::getCursorMode() == GLFW_CURSOR_NORMAL)
-                Engine::setCursorMode(GLFW_CURSOR_DISABLED);
-            else
-                Engine::setCursorMode(GLFW_CURSOR_NORMAL);
+            if (!Engine::getDebounce()) {
+                // Once the key is pressed, consecutive frames where it's still pressed won't trigger the function
+                Engine::setDebounce(true);
+                Engine::setCurDebounce(GLFW_KEY_C);
+
+                if (Engine::getCursorMode() == GLFW_CURSOR_NORMAL)
+                    Engine::setCursorMode(GLFW_CURSOR_DISABLED);
+                else
+                    Engine::setCursorMode(GLFW_CURSOR_NORMAL);
+            }
+        } else if (Engine::getCurDebounce() == GLFW_KEY_C && Engine::getDebounce()) {
+            // Once the key is released, allow the function to be executed again
+            Engine::setDebounce(false);
+            Engine::setCurDebounce(0);
         }
 
         //Check grounded
@@ -80,6 +93,15 @@ public:
         if (X_ROT_MIN <= getGlobalRotation().x + xRot && getGlobalRotation().x + xRot <= X_ROT_MAX)
             globalRotateX(xRot);
         globalRotateY(-Engine::getInputRotation().y * Engine::getDeltaTime());
+
+        //Shoot
+        if (Engine::isKeyBeingPressed(GLFW_KEY_F) && !bullet->isActive)
+        {
+            const glm::vec3 pos = getGlobalPosition() - getZAxis() * 2.0f;
+            bullet->shoot(pos, -getZAxis());
+        }
     }
+
+    void setBullet(BulletNode* bullet) {this->bullet = bullet;}
 };
 #endif

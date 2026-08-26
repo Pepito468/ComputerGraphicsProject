@@ -47,6 +47,10 @@ class Engine : public BaseProject {
         glm::vec3 inputTranslation = VEC3_ZERO;
         // Rotation input
         glm::vec3 inputRotation = VEC3_ZERO;
+        // Avoid multiple triggers of functions when a button is being pressed
+        bool debounce = false;
+        // Key target of the debounce
+		int curDebounce = 0;
 
         /** Root of the current scene */
         Node *scene;
@@ -111,6 +115,22 @@ class Engine : public BaseProject {
             return glfwGetInputMode(MainEngine->window, GLFW_CURSOR);
         }
 
+        static bool getDebounce() {
+            return MainEngine->debounce;
+        }
+
+        static void setDebounce(bool _debounce) {
+            MainEngine->debounce = _debounce;
+        }
+
+        static int getCurDebounce() {
+            return MainEngine->curDebounce;
+        }
+        
+        static void setCurDebounce(int glfwKey) {
+            MainEngine->curDebounce = glfwKey;
+        }
+
     private:
 
         /** Recomputes the Node3D hierarchy */
@@ -144,7 +164,8 @@ class Engine : public BaseProject {
         /** Calls update() on the given node and its descendants */
         void updateUpdate3DNodes(Node *node) {
             if (UpdateNode3D *updateNode = dynamic_cast<UpdateNode3D*>(node))
-                updateNode->update();
+                if (updateNode->isActive)
+                    updateNode->update();
 
             for (Node *child : node->children)
                 updateUpdate3DNodes(child);
@@ -224,6 +245,7 @@ class Engine : public BaseProject {
             static int countedFrames = 0;
             static float loadingBarSize = 1.0f;
             static int direction = 1;
+            static int currentTexture = 1;
 
             countedFrames++;
             elapsedT += this->deltaTime;
@@ -243,6 +265,12 @@ class Engine : public BaseProject {
                     direction = -1 * direction;
                 }
                 ui.renderUI(-0.95f, 0.95f, 0, UIO_LEFT, UIO_BOTTOM, loadingBarSize, 1.0f);
+
+                ui.recreateUIDescriptorSet(1, currentTexture);
+                if (currentTexture == 0)
+                    currentTexture = 1;
+                else
+                    currentTexture = 0;
             }
 
         }
