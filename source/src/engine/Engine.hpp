@@ -47,6 +47,10 @@ class Engine : public BaseProject {
         glm::vec3 inputTranslation = VEC3_ZERO;
         // Rotation input
         glm::vec3 inputRotation = VEC3_ZERO;
+        // Avoid multiple triggers of functions when a button is being pressed
+        bool debounce = false;
+        // Key target of the debounce
+		int curDebounce = 0;
 
         /** Root of the current scene */
         Node *scene;
@@ -109,6 +113,22 @@ class Engine : public BaseProject {
         /** Returns the current cursor mode */
         static int getCursorMode() {
             return glfwGetInputMode(MainEngine->window, GLFW_CURSOR);
+        }
+
+        static bool getDebounce() {
+            return MainEngine->debounce;
+        }
+
+        static void setDebounce(bool _debounce) {
+            MainEngine->debounce = _debounce;
+        }
+
+        static int getCurDebounce() {
+            return MainEngine->curDebounce;
+        }
+        
+        static void setCurDebounce(int glfwKey) {
+            MainEngine->curDebounce = glfwKey;
         }
 
     private:

@@ -48,16 +48,26 @@ public:
     void update() override
     {
         // Check for escape
-        if(Engine::isKeyBeingPressed(GLFW_KEY_ESCAPE)) {
+        if (Engine::isKeyBeingPressed(GLFW_KEY_ESCAPE)) {
             Engine::MainEngine->shutdown();
         }
 
         // Give cursor back if needed
         if (Engine::isKeyBeingPressed(GLFW_KEY_C)) {
-            if (Engine::getCursorMode() == GLFW_CURSOR_NORMAL)
-                Engine::setCursorMode(GLFW_CURSOR_DISABLED);
-            else
-                Engine::setCursorMode(GLFW_CURSOR_NORMAL);
+            if (!Engine::getDebounce()) {
+                // Once the key is pressed, consecutive frames where it's still pressed won't trigger the function
+                Engine::setDebounce(true);
+                Engine::setCurDebounce(GLFW_KEY_C);
+
+                if (Engine::getCursorMode() == GLFW_CURSOR_NORMAL)
+                    Engine::setCursorMode(GLFW_CURSOR_DISABLED);
+                else
+                    Engine::setCursorMode(GLFW_CURSOR_NORMAL);
+            }
+        } else if (Engine::getCurDebounce() == GLFW_KEY_C && Engine::getDebounce()) {
+            // Once the key is released, allow the function to be executed again
+            Engine::setDebounce(false);
+            Engine::setCurDebounce(0);
         }
 
         //Check grounded
