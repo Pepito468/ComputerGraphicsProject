@@ -224,6 +224,7 @@ class Engine : public BaseProject {
             static int countedFrames = 0;
             static float loadingBarSize = 1.0f;
             static int direction = 1;
+            static int currentTexture = 1;
 
             countedFrames++;
             elapsedT += this->deltaTime;
@@ -243,6 +244,12 @@ class Engine : public BaseProject {
                     direction = -1 * direction;
                 }
                 ui.renderUI(-0.95f, 0.95f, 0, UIO_LEFT, UIO_BOTTOM, loadingBarSize, 1.0f);
+
+                ui.recreateUIDescriptorSet(1, currentTexture);
+                if (currentTexture == 0)
+                    currentTexture = 1;
+                else
+                    currentTexture = 0;
             }
 
         }
