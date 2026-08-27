@@ -2,19 +2,19 @@
 #include <cstdint>
 #include <vector>
 
+struct GeneratedTextureData {
+    int width;
+    int height;
+    std::vector<uint8_t> pixels; // RGBA8
+};
+
 class ProceduralTextures {
 public:
-    struct TextureData {
-        int width;
-        int height;
-        std::vector<uint8_t> pixels; // RGBA8
-    };
-
     /**
      * Generates a texture of the given dimensions of a uniform rectangle of the given color
      * */
-    static TextureData generateTexture(int width = 256, int height = 256, int r_in = 150, int g_in = 55, int b_in = 38, int a_in = 255) {
-        TextureData texture;
+    static GeneratedTextureData generateTexture(int width = 256, int height = 256, int r_in = 150, int g_in = 55, int b_in = 38, int a_in = 255) {
+        GeneratedTextureData texture;
         texture.width = width;
         texture.height = height;
         texture.pixels.resize(width * height * 4);
@@ -31,8 +31,8 @@ public:
     /**
      * Generates a texture of the given dimensions of a rectangle of a given color with some noise
      * */
-    static TextureData generateTextureWithNoise(int width = 256, int height = 256, int r_in = 150, int g_in = 55, int b_in = 38, int a_in = 255, float constNoise = 0.85f, float varNoise = 0.15f, float xNoise = 0.11f, float yNoise = 0.07f) {
-        TextureData texture;
+    static GeneratedTextureData generateTextureWithNoise(int width = 256, int height = 256, int r_in = 150, int g_in = 55, int b_in = 38, int a_in = 255, float constNoise = 0.85f, float varNoise = 0.15f, float xNoise = 0.11f, float yNoise = 0.07f) {
+        GeneratedTextureData texture;
         texture.width = width;
         texture.height = height;
         texture.pixels.resize(width * height * 4);
@@ -53,12 +53,12 @@ public:
         return texture;
     }
 
-    static TextureData generateMenuBackgroundTint(int width, int height) {
+    static GeneratedTextureData generateMenuBackgroundTint(int width, int height) {
         return generateTexture(width, height, 0, 0, 0, 20); //TODO fix transparency
     }
 
 private:
-    static void setPixel(TextureData &texture, int x, int y, uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) {
+    static void setPixel(GeneratedTextureData &texture, int x, int y, uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) {
         int index = 4 * (y * texture.width + x);
 
         texture.pixels[index + 0] = r;

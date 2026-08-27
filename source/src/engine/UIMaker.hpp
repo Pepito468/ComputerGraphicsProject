@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <list>
 #include <vector>
 #include <string>
@@ -11,12 +12,12 @@
 // #define  STARTER_IMPLEMENTATION
 // #include "modules/Starter.hpp"
 
-//TODO fix Invalid VkBuffer Object when rendering UIElements
-
 #define DEFAULT_SUBMIT_ORDER 9999
 
 enum UIOriginH { UIO_LEFT, UIO_CENTER, UIO_RIGHT };
 enum UIOriginV { UIO_TOP, UIO_MIDDLE, UIO_BOTTOM };
+
+enum UIElementType { UI_STATIC, UI_BUTTON, UI_SLIDER, UI_CHECKBOX };	//TODO implement these
 
 /// Stores the position of the vertex
 struct UIVertex {
@@ -30,6 +31,16 @@ struct UITextureData {
 	int height;
 	std::vector<Texture> textureVec;
 };
+
+// struct TextureFilesWithScissor {
+// 	std::list<std::string> TextureFiles;
+// 	bool setScissor = false;
+// };
+
+// struct TextureDataWithScissor {
+// 	std::list<GeneratedTextureData> TextureData;
+// 	bool setScissor = false;
+// };
 
 class UIMaker {
 	struct UIMakerAndModel {
@@ -64,6 +75,8 @@ class UIMaker {
 		UIElement() {}
 		~UIElement() = default;	//TODO implement proper deconstructor
 
+		// bool hasScissor = false;
+
 		void addTexture(Texture t) {
 			T.textureVec.push_back(t);
 		}
@@ -81,7 +94,6 @@ class UIMaker {
 			/// Old model cleanup
 			if (this->M) {
 				if (this->oldM) {
-					oldM->cleanup();
 					delete(oldM);
 				}
 				this->oldM = this->M;
@@ -171,8 +183,10 @@ class UIMaker {
 	DescriptorSetLayout UI_DSL;
 	RenderPass UI_RP;
 
-	int screenW, screenH;
+	int screenW, screenH;	//should be swapchain width and height instead of screen, but can't access it (TextMaker has the same bug)
 	int submitOrder;
+	
+	double mousePosX, mousePosY;
 	
 	std::unordered_map<int, UIElement> UIElementsMap = {};
 	
@@ -190,15 +204,16 @@ public:
 	/**
 	* Initializes the UIMaker with the given textures, creating a pipeline for each UIElement
 	* By default, TextureFiles and TextureDataList are empty lists, and so = DEFAULT_SUBMIT_ORDER
-	* NOTE: the id of the UIElement depends on the position in the lists TextureFiles and TextureDataList
+	* NOTE: the id of the UIElement depends on the position in the lists TextureFiles and TextureDataList (in order)
 	*/
-	void init(int sW, int sH, std::list<std::vector<std::string>> TextureFiles = {}, std::list<std::vector<ProceduralTextures::TextureData>> TextureDataList = {}, int so = DEFAULT_SUBMIT_ORDER)  {
+	// void init(int sW, int sH, std::list<TextureFilesWithScissor> TextureFilesList = {}, std::list<TextureDataWithScissor> TextureDataList = {}, int so = DEFAULT_SUBMIT_ORDER)  {
+	void init(int sW, int sH, std::list<std::list<std::string>> TextureFilesList = {}, std::list<std::list<GeneratedTextureData>> TextureDataList = {}, int so = DEFAULT_SUBMIT_ORDER)  {
 		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " UI init" << std::endl;
 		screenW = sW;
 		screenH = sH;
 		submitOrder = so;
 
-		int UIElementsNumber = TextureFiles.size() + TextureDataList.size();
+		int UIElementsNumber = TextureFilesList.size() + TextureDataList.size();
 
 		createUIDescriptorSetAndVertexLayout();
 		createUIPipeline(UIElementsNumber);
@@ -210,7 +225,7 @@ public:
 		UI_RP.properties[1].initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 		int i = 0, garbage;
-		for (auto textureChunk : TextureFiles) {
+		for (auto textureChunk : TextureFilesList) {
 			for (auto t : textureChunk) {
 				Texture temp;
 				temp.init(BP, t);
@@ -218,9 +233,10 @@ public:
 				UIElementsMap[i].addTexture(temp);
 			}
 			/// Assumes all texture with the same size
-			unsigned char* pixels = stbi_load(textureChunk[0].c_str(), &UIElementsMap[i].T.width, &UIElementsMap[i].T.height, &garbage, STBI_rgb_alpha);
+			unsigned char* pixels = stbi_load(textureChunk.front().c_str(), &UIElementsMap[i].T.width, &UIElementsMap[i].T.height, &garbage, STBI_rgb_alpha);
 			stbi_image_free(pixels);
 
+			// UIElementsMap[i].hasScissor = textureChunk.setScissor;
 			i++;
 		}
 
@@ -232,9 +248,10 @@ public:
 				UIElementsMap[i].addTexture(temp);
 			}
 
-			UIElementsMap[i].T.width = textureChunk[0].width;
-			UIElementsMap[i].T.height = textureChunk[0].height;
+			UIElementsMap[i].T.width = textureChunk.front().width;
+			UIElementsMap[i].T.height = textureChunk.front().height;
 
+			// UIElementsMap[i].hasScissor = textureChunk.setScissor;
 			i++;
 		}
 
@@ -247,8 +264,8 @@ public:
 	*/
 	void createUIDescriptorSetAndVertexLayout() {
 		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " Create UI descriptor sets and vertex layouts" << std::endl;
-		UI_VD.init(BP, {{0, sizeof(UIVertex), }}, {
-			{0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(UIVertex, pos), sizeof(glm::vec2), POSITION},
+		UI_VD.init(BP, {{0, sizeof(UIVertex), VK_VERTEX_INPUT_RATE_VERTEX}}, {
+			{0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(UIVertex, pos), sizeof(glm::vec2), POS2D},
 			{0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(UIVertex, uv), sizeof(glm::vec2), UV}
 		});
 
@@ -285,6 +302,18 @@ public:
 		for (auto& e : UIElementsMap) {
 			// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " creating pipeline #" << e.first << std::endl;
 			e.second.P.create(&UI_RP);
+			//TODO to create >1 viewports, need multiViewport feature; is it worth it?
+			// if (e.second.hasScissor) {
+			// 	std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " creating scissor and viewport" << std::endl;
+			// 	e.second.P.setScissor({
+			// 		{(int32_t)(screenW - e.second.T.width), (int32_t)(screenH - e.second.T.height)},
+			// 		{(int32_t)e.second.T.width, (int32_t)e.second.T.height}
+			// 	});
+			// 	e.second.P.setViewport({{
+			// 		(float)(screenW - e.second.T.width), (float)(screenH - e.second.T.height), 
+			// 		(float)(e.second.T.width), (float)(e.second.T.height), 0.0f, 1.0f
+			// 	}});
+			// }
 		}
 
 		createUIDescriptorSets();
@@ -296,7 +325,7 @@ public:
 		T->populateCommandBuffer(commandBuffer, currentImage);
 	}
 
-	inline void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
+	void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
 		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " populate command buffer" << std::endl;
 		UI_RP.begin(commandBuffer, currentImage);
 
@@ -308,6 +337,11 @@ public:
 		}
 		
 		UI_RP.end(commandBuffer);
+	}
+
+	void setMousePosition(double x, double y) {
+		this->mousePosX = x;
+		this->mousePosY = y;
 	}
 	
 	//--------------------------------------------
@@ -345,11 +379,16 @@ public:
 	}
 
 	/**
-	 * If at least a UIElement was changed (commandBufferMustUpdate = true), redraws every UIElement
+	 * If at least a UIElement was changed (commandBufferMustUpdate = true), redraws every UIElement.
+	 * Also, updates mousePos[X, Y] if the cursor isn't locked
 	 */
-	void updateCommandBuffer() {
+	void updateCommandBuffer(bool isCursorAvailable) {
 		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " UI update command buffer" << std::endl;
 		// debugPrint();
+		if (isCursorAvailable) {
+			//TODO deal with buttons, etc...
+		}
+
 		if (commandBufferMustUpdate) {
 			//could add an update field to each UIElement to avoid updating unchanged elements, but doesn't seem worth it
 			for (auto& e : UIElementsMap) {
@@ -410,30 +449,43 @@ public:
 
 	void pipelinesAndDescriptorSetsCleanup() {
 		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " UI pipelines and descript sets cleanup" << std::endl;
+		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << "\tCleaning pipelines" << std::endl;
 		for (auto& e : UIElementsMap)
 			e.second.P.cleanup();
-
+	
+		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << "\tCleaning render pass" << std::endl;
 		UI_RP.cleanup();
 		
+		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << "\tCleaning descriptor sets" << std::endl;
 		for (auto& e : UIElementsMap)
 			e.second.DS.cleanup();
 	}
 
 	void localCleanup() {
 		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " local cleanup" << std::endl;
+		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << "\tCleaning textures" << std::endl;
 		for (auto& e : UIElementsMap) 
 			for (auto& t : e.second.T.textureVec)
 				t.cleanup();
 		
-		for (auto& e : UIElementsMap) 
-			if(e.second.M)
+		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << "\tCleaning models" << std::endl;
+		for (auto& e : UIElementsMap) {
+			if (e.second.oldM)
+				delete(e.second.oldM);
+			if (e.second.M) {
 				e.second.M->cleanup();
+				delete(e.second.M);
+			}
+		}
 
+		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << "\tCleaning descriptor set layout" << std::endl;
 		UI_DSL.cleanup();
 		
+		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << "\tDestroying pipelines" << std::endl;
 		for (auto& e : UIElementsMap) 
 			e.second.P.destroy();
 
+		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << "\tDestroying render pass" << std::endl;
 		UI_RP.destroy();
 	}
 

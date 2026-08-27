@@ -528,7 +528,6 @@ class Engine : public BaseProject {
         }
 
         void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
-
             renderer.populateShadowCommandBuffer(commandBuffer, currentImage);
             renderer.populateSceneDepthCommandBuffer(commandBuffer, currentImage);
             renderer.populateSceneColorCommandBuffer(commandBuffer, currentImage);
@@ -542,6 +541,12 @@ class Engine : public BaseProject {
 
         /** Engine method to update the uniforms (called every frame) */
         void updateUniformBuffer(uint32_t currentImage) {
+            bool isCursorAvailable = MainEngine->getCursorMode() == GLFW_CURSOR_NORMAL;
+            if (isCursorAvailable) {
+                double x, y;
+                glfwGetCursorPos(MainEngine->window, &x, &y);
+                ui.setMousePosition(x, y);
+            }
 
             // Engine logic
             this->engineLoop();
@@ -556,12 +561,11 @@ class Engine : public BaseProject {
             renderer.updateLightCulling(this->mainCamera->getGlobalPosition(), LIGHT_RENDER_DISTANCE);
 
             txt.updateCommandBuffer();
-            // ui.updateCommandBuffer();
+            ui.updateCommandBuffer(isCursorAvailable);
         }
 
         /** Called when the window is created */
         void setWindowParameters() {
-
             // window size, titile and initial background
             windowWidth = 1080;
             windowHeight = 720;
@@ -571,7 +575,6 @@ class Engine : public BaseProject {
 
         /** Called when the window size changes */
         void onWindowResize(int w, int h) {
-
             log(std::format("Window resized to {} x {}", w, h));
 
             // Update Render Pass
