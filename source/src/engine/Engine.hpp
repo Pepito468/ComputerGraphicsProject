@@ -26,7 +26,7 @@
 #include "Physics.hpp"
 #include "UIMaker.hpp"
 
-#define POOL_SIZE 400
+#define POOL_SIZE 1000
 #define LIGHT_RENDER_DISTANCE 20.0f
 #define DEFAULT_CURSOR GLFW_CURSOR_NORMAL
 
@@ -60,6 +60,8 @@ class Engine : public BaseProject {
 
         /** This holds the value of a scene that has been requested to be loaded by someone. It will be loaded at the next Engine loop */
         Node *sceneToLoad = nullptr;
+
+        std::set<Node*> nodesQueuedToBeDeleted;
 
         std::map<std::string, Node*> scenes;
 
@@ -126,7 +128,12 @@ class Engine : public BaseProject {
             MainEngine->curDebounce = glfwKey;
         }
 
-        /** Changes the loaded scene to the new one (given the root)
+        /** Returns the scene's root */
+        static Node* getSceneRoot() {
+            return MainEngine->scene;
+        }
+
+        /** Changes the loaded scene to the new one (given the root).
          *  NOTE: the scene change will happen in the next Engine Loop
          * */
         static void requestSceneChange(Node *newRoot) {
@@ -141,7 +148,7 @@ class Engine : public BaseProject {
             }
 
             MainEngine->sceneToLoad = newRoot;
-            info("Scene change request accepted");
+            log(std::format("Scene change request accepted [to {}]", newRoot->name));
         }
 
         /** Maps a name to a scene (for convenience) */
@@ -174,11 +181,24 @@ class Engine : public BaseProject {
             // Disown
             node->parent->disown(node);
 
-            // Transfter children
+            // Transfer children
+            std::set<Node*> children;
             for (Node *child : node->children)
+                children.insert(child);
+            for (Node *child : children)
                 MainEngine->scene->adopt(child);
 
             MainEngine->removeNode(node);
+        }
+
+        /** Queue a node for deletion.
+         * NOTE: it will be actually deleted in the next Engine loop */
+        static void requestNodeDeletion(Node *node) {
+            if (!node)
+                error("Deleting NULL node");
+
+            MainEngine->nodesQueuedToBeDeleted.insert(node);
+            log(std::format("Node deletion request accepted [{}]", node->name));
         }
 
     private:
@@ -246,8 +266,6 @@ class Engine : public BaseProject {
 
             // Load scene nodes
             this->loadSceneRecursive(root);
-            // Submit command buffer
-            renderer.forceScreenUpdate();
 
             // TODO: physics handling of new colliders being added
             Physics::loadScene(this->scene);
@@ -271,7 +289,7 @@ class Engine : public BaseProject {
 
             // Node specific initialization
             if (Model3D *model = dynamic_cast<Model3D*>(node)) {
-                renderer.instantiate(model, false);
+                renderer.instantiate(model);
             } else if (DirectionalLight *light = dynamic_cast<DirectionalLight*>(node)) {
                 renderer.createDirectionalLight(light);
             } else if (AmbientLight *light = dynamic_cast<AmbientLight*>(node)) {
@@ -285,7 +303,7 @@ class Engine : public BaseProject {
                     this->setMainCamera(camera);
             }
 
-            log(std::format("Loaded Node [{}, ID: {}]", node->name, node->UUID));
+            log(std::format("Added Node [{}, ID: {}]", node->name, node->UUID));
         }
 
         /** Clears the current scene */
@@ -337,9 +355,12 @@ class Engine : public BaseProject {
                 renderer.removePointLight(light);
             } else if (SpotLight *light = dynamic_cast<SpotLight*>(node)) {
                 renderer.removeSpotLight(light);
+            } else if (Camera *camera = dynamic_cast<Camera*>(node)) {
+                if (camera->getIsMain()) // TODO: may add back the setMainCamera()
+                    this->setMainCamera(nullptr);
             }
 
-            log(std::format("Freed Node [{}, ID: {}]", node->name, node->UUID));
+            log(std::format("Removed Node [{}, ID: {}]", node->name, node->UUID));
 
             // Free memory ( TODO: should the Engine free the node?)
             delete node;
@@ -377,6 +398,14 @@ class Engine : public BaseProject {
             // If a new scene is queued to be set as main, do it now
             if (this->sceneToLoad != nullptr)
                 this->changeScene();
+
+            // Delete nodes requested to be deleted
+            for (Node *node : this->nodesQueuedToBeDeleted)
+                freeNode(node);
+            this->nodesQueuedToBeDeleted.clear();
+
+            // Flush screen
+            this->renderer.flushScreenUpdate();
 
             // Checks
             if (!this->scene)
@@ -437,7 +466,7 @@ class Engine : public BaseProject {
 
         }
 
-        /** Reads inputsm, computes the deltaTime and updates the Engine globals with them */
+        /** Reads inputs (translation, rotation), computes the deltaTime and updates the Engine globals with them */
         void computeGlobals() {
             // Reset values
             this->inputTranslation = VEC3_ZERO;

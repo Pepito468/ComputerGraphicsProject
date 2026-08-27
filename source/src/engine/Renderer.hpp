@@ -137,6 +137,9 @@ class Renderer {
         size_t poolSize() const { return pool.size(); }
     };
 
+    // Variable to update screen
+    bool screenDirty = false;
+
     //Vulkan variables
     DescriptorSetLayout globalLayout, localLayout, skyboxLayout;
     DescriptorSet global;
@@ -302,7 +305,7 @@ class Renderer {
      *<li>This method is meant to be called on runtime</li>
      *<li>If you want to load models on advance, use "preLoadModel" instead</li>
      */
-    void instantiate(Model3D *model, bool updateScreen = true) {
+    void instantiate(Model3D *model) {
         sceneObjects.push_back(model);
 
         Model3D* model3D = sceneObjects.back();
@@ -356,8 +359,7 @@ class Renderer {
         //Model local descriptor set init
         pipelinesMap.at(model3D->getShaderType())->modelDescriptorSetInit(bp, model3D, &RPoffScreen, &RPsceneDepth, &RPsceneColor);
 
-        if (updateScreen)
-            screenUpdate();
+        queueScreenUpdate();
     }
 
     ///add a new point light on screen
@@ -463,11 +465,20 @@ class Renderer {
     void setObjectVisibility(int i, bool visible) {
         sceneObjects[i]->setIsVisible(visible);
 
-        screenUpdate();
+        queueScreenUpdate();
     }
 
-    void forceScreenUpdate() {
-        screenUpdate();
+    /** Queues an update to the screen */
+    void queueScreenUpdate() {
+        this->screenDirty = true;
+    }
+
+    /** Flushes the screen if dirty; else does nothing */
+    void flushScreenUpdate() {
+        if (this->screenDirty) {
+            screenUpdate();
+            this->screenDirty = false;
+        }
     }
 
 
@@ -852,6 +863,8 @@ class Renderer {
 
         // model->descriptorSetCleanup();
         sceneObjects.erase(sceneObjects.begin() + i);
+
+        queueScreenUpdate();
     }
 
     /** Returns the index of the model (or -1 if the object cannot be found) */

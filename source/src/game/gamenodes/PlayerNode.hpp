@@ -2,6 +2,7 @@
 #define ENGINE_PLAYERNODE_HPP
 
 #include "BulletNode.hpp"
+#include "SphereCollider.hpp"
 #include "UpdateNode3D.hpp"
 #include "Collider.hpp"
 #include "Engine.hpp"
@@ -22,7 +23,7 @@ class PlayerNode : public UpdateNode3D
     Collider* playerColl = nullptr;
     float vertSpeed = 0.0f;
     bool isGrounded = false;
-    BulletNode* bullet = nullptr;
+    ToonMaterial mat2 = {glm::vec3(0.9f, 0.45f, 0.9f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
 
 public:
 
@@ -104,13 +105,26 @@ public:
         globalRotateY(-Engine::getInputRotation().y * Engine::getDeltaTime());
 
         //Shoot
-        if (Engine::isKeyBeingPressed(GLFW_KEY_F) && !bullet->isActive)
-        {
+        if (Engine::isKeyBeingPressed(GLFW_KEY_F)) {
+
+
+        //bullet
+            SphereCollider* bulletColl = new SphereCollider();
+            bulletColl->name = "bullColl";
+            bulletColl->layer = BULLETS;
+            bulletColl->collidesWith = ALL;
+            BulletNode* bullet = new BulletNode();
+            bullet->name = "bullet";
+            Model3D *bulletMod = new Model3D("SuzanneUV.obj", {0, 0, 0}, {0, 0, 0}, {0.5f, 0.5f, 0.5f}, &mat2);
+            bulletMod->name = "bullMod";
+            Engine::addChild(Engine::getSceneRoot(), bulletColl);
+            Engine::addChild(bulletColl, bullet);
+            Engine::addChild(bulletColl, bulletMod);
+
             const glm::vec3 pos = getGlobalPosition() - getZAxis() * 2.0f;
             bullet->shoot(pos, -getZAxis());
         }
     }
 
-    void setBullet(BulletNode* bullet) {this->bullet = bullet;}
 };
 #endif

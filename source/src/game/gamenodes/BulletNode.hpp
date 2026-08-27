@@ -27,8 +27,6 @@ public:
             bulletColl->onCollision = [this](const Collider* other)
             {
                 log("Bullet collided with " + other->name);
-                if (other->name != "PlayerCollider")
-                    hide();
             };
         }
         else
@@ -42,11 +40,16 @@ public:
         timer += Engine::getDeltaTime();
         if (timer >= LIFETIME)
         {
-            hide();
+            Engine::requestNodeDeletion(bulletColl);
+
+            for (auto child : bulletColl->children)
+                Engine::requestNodeDeletion(child);
             return;
         }
 
         bulletColl->globalTranslate(bulletColl->getZAxis() * SPEED * Engine::getDeltaTime());
+
+        // printf("%.2f %.2f %.2f\n", this->getGlobalPosition().x, this->getGlobalPosition().y, this->getGlobalPosition().z);
     }
 
     void shoot(const glm::vec3 pos, const glm::vec3 dir)
@@ -64,13 +67,5 @@ public:
         timer = 0.0f;
     }
 
-    void hide()
-    {
-        log("Hiding Node " + name);
-
-        isActive = false;
-        bulletColl->isActive = false;
-        bulletColl->setGlobalPosition({0, -10, 0});
-    }
 };
 #endif

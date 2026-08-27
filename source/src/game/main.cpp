@@ -66,20 +66,6 @@ Node* createScene1() {
 
     // Models
 
-    //bullet
-    SphereCollider* bulletColl = new SphereCollider();
-    bulletColl->name = "bullColl";
-    bulletColl->layer = BULLETS;
-    bulletColl->collidesWith = ALL;
-    BulletNode* bullet = new BulletNode();
-    bullet->name = "bullet";
-    Model3D *bulletMod = new Model3D("SuzanneUV.obj", {0, 0, 0}, {0, 0, 0}, {0.5f, 0.5f, 0.5f}, &mat2);
-    bulletMod->name = "bullMod";
-    root->adopt(bulletColl);
-    bulletColl->adopt(bullet);
-    bulletColl->adopt(bulletMod);
-    player->setBullet(bullet);
-
     Node *models = new Node();
     models->name = "ModelContainer";
     root->adopt(models);
