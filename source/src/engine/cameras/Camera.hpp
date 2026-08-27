@@ -17,7 +17,7 @@ class Camera : public Node3D
         /// The distance of the far plane
         BoundFloat farPlane = PositiveFloat(0.0f);
 
-        /// Signals if this camera wants to be main
+        /// Hints the Engine that this camera wants to be main
         bool isMain;
 
 

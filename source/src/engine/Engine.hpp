@@ -6,6 +6,7 @@
 #include <json.hpp>
 
 #include "Debug.hpp"
+
 #include "Node.hpp"
 #include "Node3D.hpp"
 #include "Node2D.hpp"
@@ -22,9 +23,11 @@
 #include "UpdateNode3D.hpp"
 
 #include "Renderer.hpp"
-#include "common.h"
 #include "Physics.hpp"
+
 #include "UIMaker.hpp"
+
+#include "common.h"
 
 #define POOL_SIZE 1000
 #define LIGHT_RENDER_DISTANCE 20.0f
@@ -85,8 +88,7 @@ class Engine : public BaseProject {
             return MainEngine->inputTranslation;
         }
 
-        static glm::vec3 getInputRotation()
-        {
+        static glm::vec3 getInputRotation() {
             return MainEngine->inputRotation;
         }
 
@@ -101,6 +103,14 @@ class Engine : public BaseProject {
 
             MainEngine->pressedKeyes.erase(key);
             return false;
+        }
+
+        static void setMainCamera(Camera *camera) {
+            if (!camera)
+                error("Trying to set a NULL camera");
+
+            MainEngine->mainCamera = camera;
+            log(std::format("Main camera changed to [{}, ID: {}]", camera->name, camera->UUID));
         }
 
         /** Shuts down the Engine and closes the window */
@@ -138,10 +148,12 @@ class Engine : public BaseProject {
             }
 
             MainEngine->sceneToLoad = newRoot;
-            log(std::format("Scene change request accepted [to {}]", newRoot->name));
+            log(std::format("Scene change request accepted [to {}, ID: {}]", newRoot->name, newRoot->UUID));
         }
 
-        /** Maps a name to a scene (for convenience) */
+        /** Maps a name to a scene (for convenience).
+         * @note deleting a scene does not delete its mapping from here.
+         * */
         static void mapScene(const std::string& sceneName, Node* sceneRoot) {
             MainEngine->scenes[sceneName] = sceneRoot;
         }
@@ -152,12 +164,11 @@ class Engine : public BaseProject {
         }
 
         /**
-         * Loads a node and its children into the scene.
+         * Loads a node and its descendants into the scene.
          * @param node The root node to add.
          * @param parent The parent of the node. Defaults to the scene root.
          */
-        static void instantiate(Node* node, Node* parent = MainEngine->scene)
-        {
+        static void instantiate(Node* node, Node* parent = MainEngine->scene) {
             if (!node || !parent)
                 error("Can't instantiate NULL node or have NULL parent");
 
@@ -165,7 +176,7 @@ class Engine : public BaseProject {
             MainEngine->addNodeRecursive(node);
         }
 
-        /** Removes a node from the scene and frees it */
+        /** Removes a node and its descendants from the scene and frees them. */
         static void eliminate(Node *node) {
             if (!node)
                 error("Attempting to free a NULL Node");
@@ -186,7 +197,7 @@ class Engine : public BaseProject {
                 error("Deleting NULL node");
 
             MainEngine->nodesQueuedToBeDeleted.insert(node);
-            log(std::format("Node deletion request accepted [{}]", node->name));
+            log(std::format("Node deletion request accepted [{}, ID: ]", node->name, node->UUID));
         }
 
     private:
@@ -227,19 +238,6 @@ class Engine : public BaseProject {
 
             for (Node *child : node->children)
                 updateUpdate3DNodes(child);
-        }
-
-        /** Sets the given camera as main camera */
-        void setMainCamera(Camera *camera) {
-            if(!camera)
-                error("Setting invalid camera!");
-
-            if (this->mainCamera) {
-                warning(std::format("Trying to set [{}] as Main Camera, but [{}] is already the Main Camera. Ignoring...", camera->UUID, this->mainCamera->UUID));
-                return;
-            }
-
-            this->mainCamera = camera;
         }
 
         /** Loads the scene given its root */
@@ -329,14 +327,11 @@ class Engine : public BaseProject {
                 renderer.removeSpotLight(light);
             } else if (Collider *coll = dynamic_cast<Collider*>(node)) {
                 Physics::removeCollider(coll);
-            } else if (Camera *camera = dynamic_cast<Camera*>(node)) {
-                if (camera->getIsMain()) // TODO: may add back the setMainCamera()
-                    this->setMainCamera(nullptr);
             }
 
             log(std::format("Removed Node [{}, ID: {}]", node->name, node->UUID));
 
-            // Free memory ( TODO: should the Engine free the node?)
+            // Free memory
             delete node;
         }
         void removeNodeRecursive(Node *node)
@@ -383,9 +378,6 @@ class Engine : public BaseProject {
             for (Node *node : this->nodesQueuedToBeDeleted)
                 eliminate(node);
             this->nodesQueuedToBeDeleted.clear();
-
-            // Flush screen
-            this->renderer.flushScreenUpdate();
 
             // Checks
             if (!this->scene)
@@ -481,19 +473,17 @@ class Engine : public BaseProject {
 
         UIMaker ui;
 
-        void localInit() override
-        {
-            // renderer.loadSceneFromJSON();
+        void localInit() override {
+
             renderer.localInit();
 
-            // initializes the render passes
             RP.init(this);
 
             // sets the blue sky
             RP.properties[0].clearValue = {{{0.0f,0.0f,0.0f,0.0f}}};
 
 
-            // sets the size of the Descriptor Set Pool (it MUST be done before loading the scene)
+            // Set the size of the Descriptor Set Pool
             DPSZs.uniformBlocksInPool = POOL_SIZE;
             DPSZs.texturesInPool = POOL_SIZE;
             DPSZs.setsInPool = POOL_SIZE;
@@ -516,7 +506,7 @@ class Engine : public BaseProject {
             ui.renderUI(-1.0f, 1.0f, 1, UIO_LEFT, UIO_BOTTOM, 5.0f, 5.0f);
         }
 
-        void pipelinesAndDescriptorSetsInit() {
+        void pipelinesAndDescriptorSetsInit() override {
             RP.create();
 
             renderer.descriptorSetsInits();
@@ -525,14 +515,14 @@ class Engine : public BaseProject {
             ui.pipelinesAndDescriptorSetsInit();
         }
 
-        void pipelinesAndDescriptorSetsCleanup() {
+        void pipelinesAndDescriptorSetsCleanup() override {
             RP.cleanup();
             renderer.descriptorSetsCleanup();
             txt.pipelinesAndDescriptorSetsCleanup();
             ui.pipelinesAndDescriptorSetsCleanup();
         }
 
-        void localCleanup() {
+        void localCleanup() override {
             RP.destroy();
 
             renderer.localCleanup();
@@ -560,7 +550,7 @@ class Engine : public BaseProject {
         }
 
         /** Engine method to update the uniforms (called every frame) */
-        void updateUniformBuffer(uint32_t currentImage) {
+        void updateUniformBuffer(uint32_t currentImage) override {
             bool isCursorAvailable = MainEngine->getCursorMode() == GLFW_CURSOR_NORMAL;
             if (isCursorAvailable) {
                 double x, y;
@@ -571,12 +561,17 @@ class Engine : public BaseProject {
             // Engine logic
             this->engineLoop();
 
+            // Flush screen to update with node updates
+            renderer.flushScreenUpdate();
+
             // Renderer updates
             // Update with camera data
-            renderer.updateUniformBuffer(currentImage,
+            renderer.updateUniformBuffer(
+                    currentImage,
                     this->mainCamera->getGlobalPosition(),
                     this->mainCamera->getProjectionMatrix(),
-                    this->mainCamera->getViewMatrix(), time);
+                    this->mainCamera->getViewMatrix(), 
+                    this->time);
 
             renderer.updateLightCulling(this->mainCamera->getGlobalPosition(), LIGHT_RENDER_DISTANCE);
 
@@ -585,7 +580,7 @@ class Engine : public BaseProject {
         }
 
         /** Called when the window is created */
-        void setWindowParameters() {
+        void setWindowParameters() override {
             // window size, title and initial background
             windowWidth = 1080;
             windowHeight = 720;
@@ -594,7 +589,7 @@ class Engine : public BaseProject {
         }
 
         /** Called when the window size changes */
-        void onWindowResize(int w, int h) {
+        void onWindowResize(int w, int h) override {
             log(std::format("Window resized to {} x {}", w, h));
 
             // Update Render Pass
