@@ -26,7 +26,7 @@
 #include "Physics.hpp"
 #include "UIMaker.hpp"
 
-#define POOL_SIZE 200
+#define POOL_SIZE 400
 #define LIGHT_RENDER_DISTANCE 20.0f
 #define DEFAULT_CURSOR GLFW_CURSOR_NORMAL
 
@@ -168,8 +168,15 @@ class Engine : public BaseProject {
             if (!node)
                 error("Attempting to free a NULL Node");
 
-            if (node->parent)
-                node->parent->disown(node);
+            if (node == MainEngine->scene)
+                error("Can't free the root, request a scene change instead");
+
+            // Disown
+            node->parent->disown(node);
+
+            // Transfter children
+            for (Node *child : node->children)
+                MainEngine->scene->adopt(child);
 
             MainEngine->removeNode(node);
         }
@@ -245,6 +252,8 @@ class Engine : public BaseProject {
             // TODO: physics handling of new colliders being added
             Physics::loadScene(this->scene);
 
+
+            log(std::format("Loaded {} rendering objects", renderer.getTotalObjectCount()));
             info("Succesfully loaded scene");
         }
 
@@ -287,6 +296,7 @@ class Engine : public BaseProject {
 
             info("Clearing Scene");
 
+            size_t poolSize = renderer.getTotalObjectCount();
             // Clear scene nodes
             this->clearSceneRecursive(this->scene);
 
@@ -297,6 +307,7 @@ class Engine : public BaseProject {
             // TODO: physics handling of colliders being removed
             // Physics::deleteScene(MainEngine->scene);
 
+            log(std::format("Cleared {} rendering objects out of {}", poolSize - renderer.getTotalObjectCount(), poolSize));
             info("Scene successfully cleared");
 
         }

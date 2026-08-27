@@ -42,7 +42,6 @@ class Renderer {
 
     ///This class handle a single pipeline. Each pipeline is associate with a unique shader
     class PipelineRenderer {
-
         //Shader infos
         ShaderType shaderType;
         std::string vertShader;
@@ -134,6 +133,8 @@ class Renderer {
 
             return pool.empty();
         }
+
+        size_t poolSize() const { return pool.size(); }
     };
 
     //Vulkan variables
@@ -844,12 +845,12 @@ class Renderer {
         // NOTE: if the game randomly freezes after deleting models this is probably the cause
         // (it works for now, but I'll keep the note as a reminder)
         // tbh this is still buggy
-        sceneObjects[i]->descriptorSetCleanup();
+        // sceneObjects[i]->descriptorSetCleanup();
         Model3D* model = sceneObjects[i];
 
         pipelinesMap.at(model->getShaderType())->removeModel3D(model);
 
-        model->descriptorSetCleanup();
+        // model->descriptorSetCleanup();
         sceneObjects.erase(sceneObjects.begin() + i);
     }
 
@@ -870,6 +871,13 @@ class Renderer {
         }
 
         this->removeObject(objID);
+    }
+
+    size_t getTotalObjectCount() {
+        size_t total = 0;
+        for (auto& p : pipelinesMap)
+            total += p.second->poolSize();
+        return total;
     }
 
 };
