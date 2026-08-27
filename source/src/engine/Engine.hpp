@@ -34,7 +34,7 @@ class Engine : public BaseProject {
 
     public:
         /** Static reference to the only Engine */
-        inline static Engine *MainEngine = NULL;
+        inline static Engine *MainEngine = nullptr;
 
 
     private:
@@ -47,10 +47,8 @@ class Engine : public BaseProject {
         glm::vec3 inputTranslation = VEC3_ZERO;
         // Rotation input
         glm::vec3 inputRotation = VEC3_ZERO;
-        // Avoid multiple triggers of functions when a button is being pressed
-        bool debounce = false;
-        // Key target of the debounce
-        int curDebounce = 0;
+        // Keys that are currently registered as pressed down
+        std::set<int> pressedKeyes = {};
 
         /** Root of the current scene */
         Node *scene = nullptr;
@@ -93,8 +91,16 @@ class Engine : public BaseProject {
         }
 
         /** Returns true if the given key is being pressed */
-        static bool isKeyBeingPressed(int key) {
-            return glfwGetKey(MainEngine->window, key);
+        static bool isKeyBeingPressed(const int key, const bool onlyOnPress = false) {
+            if (glfwGetKey(MainEngine->window, key))
+            {
+                const bool wasPressed = MainEngine->pressedKeyes.contains(key);
+                MainEngine->pressedKeyes.insert(key);
+                return !onlyOnPress || !wasPressed;
+            }
+
+            MainEngine->pressedKeyes.erase(key);
+            return false;
         }
 
         /** Shuts down the Engine and closes the window */
@@ -110,22 +116,6 @@ class Engine : public BaseProject {
         /** Returns the current cursor mode */
         static int getCursorMode() {
             return glfwGetInputMode(MainEngine->window, GLFW_CURSOR);
-        }
-
-        static bool getDebounce() {
-            return MainEngine->debounce;
-        }
-
-        static void setDebounce(bool _debounce) {
-            MainEngine->debounce = _debounce;
-        }
-
-        static int getCurDebounce() {
-            return MainEngine->curDebounce;
-        }
-
-        static void setCurDebounce(int glfwKey) {
-            MainEngine->curDebounce = glfwKey;
         }
 
         /** Returns the scene's root */
@@ -152,47 +142,45 @@ class Engine : public BaseProject {
         }
 
         /** Maps a name to a scene (for convenience) */
-        static void mapScene(std::string sceneName, Node* sceneRoot) {
+        static void mapScene(const std::string& sceneName, Node* sceneRoot) {
             MainEngine->scenes[sceneName] = sceneRoot;
         }
 
         /** Returns the scene mapped with its name (or nullptr if no scene was mapped with that name) */
-        static Node* getSceneFromNameMap(std::string sceneName) {
+        static Node* getSceneFromNameMap(const std::string& sceneName) {
             return MainEngine->scenes[sceneName];
         }
 
-        /** Adds a child to the given father */
-        static void addChild(Node *father, Node *child) {
-            if (!father || !child)
-                error("Assigning NULL Nodes in addChild");
+        /**
+         * Loads a node and its children into the scene.
+         * @param node The root node to add.
+         * @param parent The parent of the node. Defaults to the scene root.
+         */
+        static void instantiate(Node* node, Node* parent = MainEngine->scene)
+        {
+            if (!node || !parent)
+                error("Can't instantiate NULL node or have NULL parent");
 
-            father->adopt(child);
-            MainEngine->addNode(child);
+            parent->adopt(node);
+            MainEngine->addNodeRecursive(node);
         }
 
         /** Removes a node from the scene and frees it */
-        static void freeNode(Node *node) {
+        static void eliminate(Node *node) {
             if (!node)
                 error("Attempting to free a NULL Node");
 
             if (node == MainEngine->scene)
                 error("Can't free the root, request a scene change instead");
 
-            // Disown
-            node->parent->disown(node);
-
-            // Transfer children
-            std::set<Node*> children;
-            for (Node *child : node->children)
-                children.insert(child);
-            for (Node *child : children)
-                MainEngine->scene->adopt(child);
-
-            MainEngine->removeNode(node);
+            node->parent->children.erase(node);
+            MainEngine->removeNodeRecursive(node);
         }
 
-        /** Queue a node for deletion.
-         * NOTE: it will be actually deleted in the next Engine loop */
+        /**
+         * Queue a node for deletion.
+         * @note The node will actually be deleted in the next Engine loop.
+         */
         static void requestNodeDeletion(Node *node) {
             if (!node)
                 error("Deleting NULL node");
@@ -204,7 +192,7 @@ class Engine : public BaseProject {
     private:
 
         /** Recomputes the Node3D hierarchy */
-        void recompute3DNodeHierarchy(Node* node, glm::mat4 fatherTransformMatrix) {
+        void recompute3DNodeHierarchy(Node* node, const glm::mat4& fatherTransformMatrix) {
 
             // If a Node3D is found, propagate an update to it
             if (Node3D* node3d = dynamic_cast<Node3D*>(node)) {
@@ -218,7 +206,7 @@ class Engine : public BaseProject {
         }
 
         /** Recomputes the matrices after the Node3Ds are moved and the hierarchy has changed */
-        void recompute2DNodeHierarchy(Node* node, glm::mat4 fatherTransformMatrix) {
+        void recompute2DNodeHierarchy(Node* node, const glm::mat4& fatherTransformMatrix) {
 
             // If the node is Node2D, propagate the update
             if (Node2D* node2d = dynamic_cast<Node2D*>(node)) {
@@ -265,21 +253,10 @@ class Engine : public BaseProject {
             this->scene = root;
 
             // Load scene nodes
-            this->loadSceneRecursive(root);
-
-            // TODO: physics handling of new colliders being added
-            Physics::loadScene(this->scene);
-
+            this->addNodeRecursive(root);
 
             log(std::format("Loaded {} rendering objects", renderer.getTotalObjectCount()));
-            info("Succesfully loaded scene");
-        }
-
-        /** Loads every scene node */
-        void loadSceneRecursive(Node *node) {
-            addNode(node);
-            for (Node *child : node->children)
-                loadSceneRecursive(child);
+            info("Successfully loaded scene");
         }
 
         /** Adds a node */
@@ -298,12 +275,20 @@ class Engine : public BaseProject {
                 renderer.addPointLight(light);
             } else if (SpotLight *light = dynamic_cast<SpotLight*>(node)) {
                 renderer.addSpotLight(light);
+            } else if (Collider *coll = dynamic_cast<Collider*>(node)) {
+                Physics::addCollider(coll);
             } else if (Camera *camera = dynamic_cast<Camera*>(node)) {
                 if (camera->getIsMain())
                     this->setMainCamera(camera);
             }
 
             log(std::format("Added Node [{}, ID: {}]", node->name, node->UUID));
+        }
+        void addNodeRecursive(Node *node)
+        {
+            addNode(node);
+            for (Node *child : node->children)
+                addNodeRecursive(child);
         }
 
         /** Clears the current scene */
@@ -316,27 +301,14 @@ class Engine : public BaseProject {
 
             size_t poolSize = renderer.getTotalObjectCount();
             // Clear scene nodes
-            this->clearSceneRecursive(this->scene);
+            this->removeNodeRecursive(this->scene);
 
             // Reset properties
             this->scene = nullptr;
             this->mainCamera = nullptr;
 
-            // TODO: physics handling of colliders being removed
-            // Physics::deleteScene(MainEngine->scene);
-
             log(std::format("Cleared {} rendering objects out of {}", poolSize - renderer.getTotalObjectCount(), poolSize));
             info("Scene successfully cleared");
-
-        }
-
-        /** Clears every scene node */
-        void clearSceneRecursive(Node *node) {
-
-            for (Node *child : node->children)
-                clearSceneRecursive(child);
-
-            removeNode(node);
         }
 
         /** Removes a node */
@@ -355,6 +327,8 @@ class Engine : public BaseProject {
                 renderer.removePointLight(light);
             } else if (SpotLight *light = dynamic_cast<SpotLight*>(node)) {
                 renderer.removeSpotLight(light);
+            } else if (Collider *coll = dynamic_cast<Collider*>(node)) {
+                Physics::removeCollider(coll);
             } else if (Camera *camera = dynamic_cast<Camera*>(node)) {
                 if (camera->getIsMain()) // TODO: may add back the setMainCamera()
                     this->setMainCamera(nullptr);
@@ -364,7 +338,13 @@ class Engine : public BaseProject {
 
             // Free memory ( TODO: should the Engine free the node?)
             delete node;
+        }
+        void removeNodeRecursive(Node *node)
+        {
+            for (Node *child : node->children)
+                removeNodeRecursive(child);
 
+            removeNode(node);
         }
 
         /** Changes the current scene with the one in queue */
@@ -401,7 +381,7 @@ class Engine : public BaseProject {
 
             // Delete nodes requested to be deleted
             for (Node *node : this->nodesQueuedToBeDeleted)
-                freeNode(node);
+                eliminate(node);
             this->nodesQueuedToBeDeleted.clear();
 
             // Flush screen
@@ -481,10 +461,10 @@ class Engine : public BaseProject {
             static double old_xpos = 0, old_ypos = 0;
             double xpos, ypos;
             glfwGetCursorPos(window, &xpos, &ypos);
-            double m_dx = xpos - old_xpos;
-            double m_dy = ypos - old_ypos;
+            const double m_dx = xpos - old_xpos;
+            const double m_dy = ypos - old_ypos;
             old_xpos = xpos; old_ypos = ypos;
-            const float MOUSE_RES = 10.0f;
+            constexpr float MOUSE_RES = 10.0f;
             glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, GLFW_TRUE);
             this->inputRotation.y = m_dx / MOUSE_RES;
             this->inputRotation.x = m_dy / MOUSE_RES;
@@ -501,8 +481,8 @@ class Engine : public BaseProject {
 
         UIMaker ui;
 
-        void localInit() {
-
+        void localInit() override
+        {
             // renderer.loadSceneFromJSON();
             renderer.localInit();
 
@@ -606,10 +586,10 @@ class Engine : public BaseProject {
 
         /** Called when the window is created */
         void setWindowParameters() {
-            // window size, titile and initial background
+            // window size, title and initial background
             windowWidth = 1080;
             windowHeight = 720;
-            windowTitle = "VIDEOGAME";
+            windowTitle = "VIDEO GAME";
             windowResizable = GLFW_TRUE;
         }
 

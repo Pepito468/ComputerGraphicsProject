@@ -65,7 +65,6 @@ Node* createScene1() {
     //engine.setMainCamera(camera1);
 
     // Models
-
     Node *models = new Node();
     models->name = "ModelContainer";
     root->adopt(models);
@@ -75,7 +74,7 @@ Node* createScene1() {
     models->adopt(statue);
 
     Model3D *plane = new Model3D("Water.gltf", {0, 0.1, 0}, {0, 0, 0}, {10, 10, 10}, &mat4);
-    BoxCollider* planeColl = new BoxCollider(2.0f, 0.01f, 2.0f);
+    BoxCollider* planeColl = new BoxCollider(2.0f, 0.05f, 2.0f);
     planeColl->name = "PlaneHB";
     planeColl->movementStatus = STATIC;
     planeColl->layer = ENVIRONMENT;

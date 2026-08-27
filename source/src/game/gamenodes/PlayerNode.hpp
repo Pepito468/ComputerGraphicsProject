@@ -6,7 +6,6 @@
 #include "UpdateNode3D.hpp"
 #include "Collider.hpp"
 #include "Engine.hpp"
-#include <glm/glm.hpp>
 
 #define WALK_SPEED 4.0f
 #define JUMP_FORCE 5.0f
@@ -23,7 +22,32 @@ class PlayerNode : public UpdateNode3D
     Collider* playerColl = nullptr;
     float vertSpeed = 0.0f;
     bool isGrounded = false;
-    ToonMaterial mat2 = {glm::vec3(0.9f, 0.45f, 0.9f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
+
+    ToonMaterial bulletMat = {glm::vec3(0.9f, 0.45f, 0.9f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
+
+    void shoot()
+    {
+        //create bullet
+        SphereCollider* bulletColl = new SphereCollider();
+        bulletColl->name = "bullColl";
+        bulletColl->layer = BULLETS;
+        bulletColl->collidesWith = ALL;
+        BulletNode* bullet = new BulletNode();
+        bullet->name = "bullet";
+        Model3D *bulletMod = new Model3D("SuzanneUV.obj", {0, 0, 0}, {0, 0, 0}, {0.5f, 0.5f, 0.5f}, &bulletMat);
+        bulletMod->name = "bullMod";
+        bulletColl->adopt(bullet);
+        bulletColl->adopt(bulletMod);
+
+        const glm::vec3 dir = -getZAxis();
+        const glm::vec3 v = glm::cross(VEC3_Z, dir);
+        const float angle = acos(glm::dot(VEC3_Z, dir));
+        const glm::mat4 rotMat = glm::rotate(angle, v);
+        bulletColl->setGlobalMatrix(rotMat);
+        bulletColl->setGlobalPosition(getGlobalPosition());
+
+        Engine::instantiate(bulletColl);
+    }
 
 public:
 
@@ -58,25 +82,15 @@ public:
         }
 
         // Give cursor back if needed
-        if (Engine::isKeyBeingPressed(GLFW_KEY_C)) {
-            if (!Engine::getDebounce()) {
-                // Once the key is pressed, consecutive frames where it's still pressed won't trigger the function
-                Engine::setDebounce(true);
-                Engine::setCurDebounce(GLFW_KEY_C);
-
-                if (Engine::getCursorMode() == GLFW_CURSOR_NORMAL)
-                    Engine::setCursorMode(GLFW_CURSOR_DISABLED);
-                else
-                    Engine::setCursorMode(GLFW_CURSOR_NORMAL);
-            }
-        } else if (Engine::getCurDebounce() == GLFW_KEY_C && Engine::getDebounce()) {
-            // Once the key is released, allow the function to be executed again
-            Engine::setDebounce(false);
-            Engine::setCurDebounce(0);
+        if (Engine::isKeyBeingPressed(GLFW_KEY_C, true)) {
+            if (Engine::getCursorMode() == GLFW_CURSOR_NORMAL)
+                Engine::setCursorMode(GLFW_CURSOR_DISABLED);
+            else
+                Engine::setCursorMode(GLFW_CURSOR_NORMAL);
         }
 
         // Change scene
-        if (Engine::isKeyBeingPressed(GLFW_KEY_K)) {
+        if (Engine::isKeyBeingPressed(GLFW_KEY_K, true)) {
             Engine::requestSceneChange(Engine::getSceneFromNameMap("Scene2"));
         }
 
@@ -105,26 +119,8 @@ public:
         globalRotateY(-Engine::getInputRotation().y * Engine::getDeltaTime());
 
         //Shoot
-        if (Engine::isKeyBeingPressed(GLFW_KEY_F)) {
-
-
-        //bullet
-            SphereCollider* bulletColl = new SphereCollider();
-            bulletColl->name = "bullColl";
-            bulletColl->layer = BULLETS;
-            bulletColl->collidesWith = ALL;
-            BulletNode* bullet = new BulletNode();
-            bullet->name = "bullet";
-            Model3D *bulletMod = new Model3D("SuzanneUV.obj", {0, 0, 0}, {0, 0, 0}, {0.5f, 0.5f, 0.5f}, &mat2);
-            bulletMod->name = "bullMod";
-            Engine::addChild(Engine::getSceneRoot(), bulletColl);
-            Engine::addChild(bulletColl, bullet);
-            Engine::addChild(bulletColl, bulletMod);
-
-            const glm::vec3 pos = getGlobalPosition() - getZAxis() * 2.0f;
-            bullet->shoot(pos, -getZAxis());
-        }
+        if (Engine::isKeyBeingPressed(GLFW_KEY_F, true))
+            shoot();
     }
-
 };
 #endif
