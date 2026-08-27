@@ -12,7 +12,7 @@ public:
 
     /// This method will be called every frame by the Engine if the node is active
     virtual void update() {
-        warning(std::format("Update Method for UpdateNode3D [{}] has not been changed from default", this->UUID));
+        warning(std::format("Update Method for UpdateNode3D [{}] has not been changed from default", this->UUID), true);
     }
 
     static UpdateNode3D* fromJSON(const nlohmann::json& json, UpdateNode3D* node = nullptr) {
