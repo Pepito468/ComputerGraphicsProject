@@ -14,15 +14,13 @@
 
 /*
 	TODO list:
+	- Fix leaked objects
+	- Buttons
+	- Sliders and checkboxes (maybe)
 	- Main menu
 	- Pause menu
 		- Settings (maybe)
 		- Fullscreen background tint
-	- Buttons
-	- Sliders and checkboxes (maybe)
-	- Resizable ui
-		- UI that scale with a fixed aspect ratio
-	- Fix leaked objects
 */
 
 #define DEFAULT_SUBMIT_ORDER 9999
@@ -35,11 +33,12 @@ enum UIOriginH { UIO_LEFT, UIO_CENTER, UIO_RIGHT };
 enum UIOriginV { UIO_TOP, UIO_MIDDLE, UIO_BOTTOM };
 
 enum UIElementType { UI_STATIC, UI_BUTTON, UI_SLIDER, UI_CHECKBOX };
-enum ResizableType {
-	NOT_RESIZABLE,			/// When resizing the window, the UIElement will keep its dimensions constant
-	FULL_RESIZABLE,			/// When resizing the window, the UIElement will scale proportionally
-	WIDTH_ONLY_RESIZABLE,	/// When resizing the window, the UIElement will only scale horizontally
-	HEIGHT_ONLY_RESIZABLE 	/// When resizing the window, the UIElement will only scale vertically
+enum ResizableType {	/// When resizing the window, the UIElement will...
+	NOT_RESIZABLE,			/// keep its dimensions constant
+	FULL_RESIZABLE,			/// scale proportionally
+	WIDTH_ONLY_RESIZABLE,	/// only scale horizontally
+	HEIGHT_ONLY_RESIZABLE, 	/// only scale vertically
+	KEEP_ASPECT_RATIO		/// scale while keeping its aspect ratio the same
 };
 
 /// Stores the position of the vertex
@@ -79,6 +78,7 @@ class UIMaker {
 		float x, y;
 		
 		/// Scale
+		/// NOTE: negative scale produce mirroring, and might have unintuitive behavior with UIOrigin
 		float sx, sy;	/// If the UIElement is scalable, these are relative to a screen sized 1080x720
 		
 		/**
@@ -207,11 +207,22 @@ class UIMaker {
 		}
 
 		void scaleToScreen (int screenW, int screenH) {
-			if (this->resize == FULL_RESIZABLE || this->resize == WIDTH_ONLY_RESIZABLE)
-				this->sx = (float)screenW / DEFAULT_WINDOW_WIDTH;
-			
-			if (this->resize == FULL_RESIZABLE || this->resize == HEIGHT_ONLY_RESIZABLE)
-				this->sy = (float)screenH / DEFAULT_WINDOW_HEIGHT;
+			float aspectRatio = this->sx / this->sy, xRatio = (float)screenW / DEFAULT_WINDOW_WIDTH, yRatio = (float)screenH / DEFAULT_WINDOW_HEIGHT;
+			if (this->resize == KEEP_ASPECT_RATIO) {
+				if (xRatio < yRatio) {
+					this->sx = xRatio;
+					this->sy = xRatio / aspectRatio;
+				} else {
+					this->sx = yRatio * aspectRatio;
+					this->sy = yRatio;
+				}
+			} else {
+				if (this->resize == FULL_RESIZABLE || this->resize == WIDTH_ONLY_RESIZABLE)
+					this->sx = xRatio;
+				
+				if (this->resize == FULL_RESIZABLE || this->resize == HEIGHT_ONLY_RESIZABLE)
+					this->sy = yRatio;
+			}
 		}
 	};
 
@@ -467,6 +478,7 @@ public:
 		if (elem == UIElementsMap.end())
 			error("Invalid UI id: " + std::to_string(id));
 		
+		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " creating mesh of " << id << std::endl;
 		UIElementsMap[id].createMesh(&UI_VD, screenW, screenH, BP);
 	}
 
