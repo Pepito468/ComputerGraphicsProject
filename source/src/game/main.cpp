@@ -34,6 +34,9 @@ FireMaterial flame2 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "bi
 FireMaterial flame3 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "fire.png"};
 MagicCirleMaterial mat5 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "magicCircle.png"};
 
+LambertTexMaterial cubeMat = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "cube.png"};
+LambertMaterial blankMat = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}};
+
 Node* createScene1() {
 
     Node *root = new Node();
@@ -253,14 +256,76 @@ Node* createScene2() {
     return root;
 }
 
+Node* createUnitScene()
+{
+    Node *root = new Node();
+    root->name = "root";
+    CapsuleCollider* playerCollider = new CapsuleCollider();
+    playerCollider->name = "PlayerCollider";
+    playerCollider->layer = PLAYER;
+    playerCollider->collidesWith = ENVIRONMENT;
+    root->adopt(playerCollider);
+    PlayerNode* player = new PlayerNode();
+    player->name = "Player";
+    playerCollider->adopt(player);
+    PerspectiveCamera *camera = new PerspectiveCamera(0.01, 100, glm::radians(90.0f), 4.0f/3.0f, true);
+    camera->name = "PerspectiveCamera";
+    player->adopt(camera);
+    playerCollider->globalTranslate({-2, 5, 0});
+    player->localTranslate({0, 1.25f, 0});
+
+    // Models
+    Node *models = new Node();
+    models->name = "ModelContainer";
+    root->adopt(models);
+
+    Model3D *plane = new Model3D("Unit Plane.gltf", {0, 0, 0}, {0, 0, 0}, {20, 1, 20}, &mat1);
+    BoxCollider* planeColl = new BoxCollider(1.0f, 0.05f, 1.0f);
+    planeColl->name = "PlaneHB";
+    planeColl->movementStatus = STATIC;
+    planeColl->layer = ENVIRONMENT;
+    plane->name = "Plane";
+    plane->adopt(planeColl);
+    models->adopt(plane);
+
+    for (int i = 0; i < 5; i++)
+    {
+        Model3D* cube = new Model3D("Unit Cube.gltf", {i, 2, 0}, {0, 0, 0}, {1, 1, 1}, &cubeMat);
+        models->adopt(cube);
+        BoxCollider* box = new BoxCollider();
+        cube->adopt(box);
+        box->setLocalPosition(VEC3_ZERO);
+    }
+    Model3D* sphere = new Model3D("Unit Sphere.gltf", {0, 2, 1w0}, {0, 0, 0}, {1, 1, 1}, &blankMat);
+    models->adopt(sphere);
+    SphereCollider* sColl = new SphereCollider();
+    sphere->adopt(sColl);
+    sColl->setLocalPosition(VEC3_ZERO);
+    Model3D* cap = new Model3D("Unit Capsule.gltf", {0, 2, 7}, {0, 0, 0}, {1, 1, 1}, &blankMat);
+    models->adopt(cap);
+    CapsuleCollider* cColl = new CapsuleCollider();
+    cap->adopt(cColl);
+    cColl->setLocalPosition(VEC3_ZERO);
+
+    // Lights
+    AmbientLight *ambientLight = new AmbientLight({0.08f, 0.14f, 0.20f},{0.035f, 0.04f, 0.045f}, {0.0f, 1.0f, 0.0f});
+    ambientLight->name = "AmbientLight";
+    root->adopt(ambientLight);
+
+    DirectionalLight *directionalLight = new DirectionalLight(0.5,glm::vec3(1.0f, 0.95f, 0.8f),glm::normalize(glm::vec3(0.8f, 0.25f, 0.4f)));
+    directionalLight->name = "DirectionalLight";
+    root->adopt(directionalLight);
+
+    return root;
+}
+
 int main() {
 
     Engine engine;
 
-    Engine::mapScene("Scene1", createScene1());
-    Engine::mapScene("Scene2", createScene2());
+    Engine::mapScene("Unit", createUnitScene());
 
-    Engine::requestSceneChange(Engine::getSceneFromNameMap("Scene1"));
+    Engine::requestSceneChange(Engine::getSceneFromNameMap("Unit"));
 
     try {
         engine.run(false);
