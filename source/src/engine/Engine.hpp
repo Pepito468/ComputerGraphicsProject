@@ -522,6 +522,7 @@ class Engine : public BaseProject {
             DPSZs.texturesInPool = POOL_SIZE;
             DPSZs.setsInPool = POOL_SIZE;
 
+            // TODO: move to node
             // initializes the textual output
             txt.init(this, windowWidth, windowHeight);
             ui.init(windowWidth, windowHeight, {{{"assets/textures/black.png"}, true}}, {
@@ -542,6 +543,12 @@ class Engine : public BaseProject {
         }
 
         void pipelinesAndDescriptorSetsInit() override {
+            // Update window properties in case it was resized
+            RP.width = this->swapChainExtent.width;
+            RP.height = this->swapChainExtent.height;
+            txt.resizeScreen(this->swapChainExtent.width, this->swapChainExtent.height);
+            ui.resizeScreen(this->swapChainExtent.width, this->swapChainExtent.height);
+
             RP.create();
 
             renderer.descriptorSetsInits();
@@ -626,14 +633,6 @@ class Engine : public BaseProject {
         /** Called when the window size changes */
         void onWindowResize(int w, int h) override {
             log(std::format("Window resized to {} x {}", w, h));
-
-            // Update Render Pass
-            RP.width = w;
-            RP.height = h;
-
-            // updates the textual output
-            txt.resizeScreen(w, h);
-            ui.resizeScreen(w, h);
         }
 
 };

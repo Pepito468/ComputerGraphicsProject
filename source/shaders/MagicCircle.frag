@@ -9,7 +9,7 @@ layout (location = 1) in vec3 fragNorm;
 layout (location = 2) in vec2 fragUV;
 layout (location = 3) in vec4 fragTan;
 layout (location = 4) in vec3 shadowPos;
-layout (location = 5) in vec4 screenPos;
+// layout (location = 5) in vec4 screenPos;
 
 // now we need to read the values in the uniforms
 // in this shader, we need the local uniforms
