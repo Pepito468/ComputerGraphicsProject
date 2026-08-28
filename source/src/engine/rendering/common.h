@@ -53,9 +53,9 @@ struct UniformBufferObject {
     alignas(16) glm::vec4 param4;
 };
 
-enum ShaderType {LAMBERT_BLINN, LAMBERT_TEX, WATER, TOON, FIRE};
+enum ShaderType {LAMBERT_BLINN, LAMBERT_TEX, WATER, TOON, MAGIC_CIRCLE, FIRE};
 
-constexpr std::initializer_list<ShaderType> allShadersTypes = {LAMBERT_BLINN, LAMBERT_TEX,WATER, TOON, FIRE};
+constexpr std::initializer_list<ShaderType> allShadersTypes = {LAMBERT_BLINN, LAMBERT_TEX,WATER, TOON, MAGIC_CIRCLE, FIRE};
 
 const std::string getShaderFragName(ShaderType s)
 {
@@ -66,6 +66,7 @@ const std::string getShaderFragName(ShaderType s)
         case WATER: return "Water";
         case TOON:   return "Toon";
         case FIRE:   return "Fire";
+        case MAGIC_CIRCLE: return "MagicCircle";
         default:      return "Error";
     }
 }
@@ -79,6 +80,7 @@ const std::string getShaderVertName(ShaderType s)
         case WATER:   return "Water";
         case TOON:   return "PosNorm";
         case FIRE:   return "Fire";
+        case MAGIC_CIRCLE: return "PosNormUV";
         default:      return "Error";
     }
 }
@@ -86,6 +88,7 @@ const std::string getShaderVertName(ShaderType s)
 const bool IsLateDraw(ShaderType s) {
     switch (s) {
         case FIRE: return true;
+        case MAGIC_CIRCLE: return true;
         default: return false;
     }
 }

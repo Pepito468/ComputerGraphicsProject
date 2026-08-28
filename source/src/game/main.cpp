@@ -62,6 +62,7 @@ int main() {
     FireMaterial flame1 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "smallFlame.png"};
     FireMaterial flame2 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "bigFlame.png"};
     FireMaterial flame3 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "fire.png"};
+    MagicCirleMaterial mat5 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "magicCircle.png"};
 
     //bullet
     SphereCollider* bulletColl = new SphereCollider();
@@ -85,7 +86,7 @@ int main() {
     statue->name = "Statue";
     models->adopt(statue);
 
-    Model3D *plane = new Model3D("Water.gltf", {0, 0.1, 0}, {0, 0, 0}, {10, 10, 10}, &mat4);
+    Model3D *plane = new Model3D("Water.gltf", {0, 0.1, 0}, {0, 0, 0}, {10, 10, 10}, &mat1);
     BoxCollider* planeColl = new BoxCollider(2.0f, 0.01f, 2.0f);
     planeColl->name = "PlaneHB";
     planeColl->movementStatus = STATIC;
@@ -94,12 +95,14 @@ int main() {
     plane->adopt(planeColl);
     models->adopt(plane);
 
+    Model3D *magicCircle = new Model3D("Water.gltf", {0, 0.5, 0}, {0, 0, 0}, {2, 2, 2}, &mat5);
+    models->adopt(magicCircle);
+
     Model3D *bigFire = new Model3D("Water.gltf", {0, 4, 0}, {glm::radians(90.0f), 0, glm::radians(90.0f)}, glm::vec3(1.0), &flame2);
     models->adopt(bigFire);
 
     Model3D *bigFire2 = new Model3D("Water.gltf", {0, 4, -2}, {glm::radians(90.0f), 0, glm::radians(90.0f)}, glm::vec3(1.0), &flame3);
     models->adopt(bigFire2);
-    int n;
 
     Model3D *smallFire = new Model3D("Water.gltf", {0, 4, 2}, {glm::radians(90.0f), 0, glm::radians(90.0f)}, glm::vec3(0.3), &flame1);
     models->adopt(smallFire);

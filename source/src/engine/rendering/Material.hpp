@@ -89,9 +89,10 @@ class WaterMaterial : public Material {
 };
 
 class FireMaterial : public Material {
-public:
 
     glm::vec4 param1, param2, param3, param4;
+
+    public:
 
     FireMaterial(glm::vec3 diffuse, glm::vec4 specular, std::string textureName = "Default.png")
     : FireMaterial(diffuse, specular, {1.0, 0.0, 0.0,1.0}, {0.9,0.9,0.0,1.0},0.05,20,{1,1},1.2,5,3,5, textureName)
@@ -119,6 +120,25 @@ public:
         ubo.param2 = param2;
         ubo.param3 = param3;
         ubo.param4 = param4;
+    }
+};
+
+class MagicCirleMaterial : public Material {
+    glm::vec4 param1, param2, param3, param4;
+
+    public:
+
+    MagicCirleMaterial(glm::vec3 diffuse, glm::vec4 specular, std::string textureName = "Default.png") {
+        this->diffuse = diffuse;
+        this->specular = specular;
+        this->textureName = textureName;
+
+        shaderType = ShaderType::MAGIC_CIRCLE;
+    }
+    ~MagicCirleMaterial() override = default;
+    void updateUBO(UniformBufferObject& ubo) override {
+        ubo.color = diffuse;
+        ubo.specular = specular;
     }
 };
 
