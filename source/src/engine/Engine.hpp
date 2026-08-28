@@ -490,9 +490,9 @@ class Engine : public BaseProject {
 
             // initializes the textual output
             txt.init(this, windowWidth, windowHeight);
-            ui.init(windowWidth, windowHeight, {}, {
-                {ProceduralTextures::generateTexture(16, 16, 255, 0, 0)},
-                {ProceduralTextures::generateTexture(16, 16, 0, 255, 255), ProceduralTextures::generateTexture(16, 16, 0, 0, 255)},
+            ui.init(windowWidth, windowHeight, {{{"assets/textures/black.png"}, true}}, {
+                {{ProceduralTextures::generateTexture(16, 16, 0, 255, 255), ProceduralTextures::generateTexture(16, 16, 0, 0, 255)}},
+                {{ProceduralTextures::generateTexture(32, 32, 255, 0, 255)}, false, HEIGHT_ONLY_RESIZABLE},
             });
 
             // submits the main command buffer
@@ -504,6 +504,7 @@ class Engine : public BaseProject {
 
             ui.renderUI(-0.95f, 0.95f, 0, UIO_LEFT, UIO_BOTTOM, 1.0f, 1.0f);
             ui.renderUI(-1.0f, 1.0f, 1, UIO_LEFT, UIO_BOTTOM, 5.0f, 5.0f);
+            ui.renderUI(0.0f, 0.0f, 2, UIO_LEFT, UIO_BOTTOM);
         }
 
         void pipelinesAndDescriptorSetsInit() override {

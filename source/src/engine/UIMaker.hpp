@@ -12,12 +12,35 @@
 // #define  STARTER_IMPLEMENTATION
 // #include "modules/Starter.hpp"
 
+/*
+	TODO list:
+	- Main menu
+	- Pause menu
+		- Settings (maybe)
+		- Fullscreen background tint
+	- Buttons
+	- Sliders and checkboxes (maybe)
+	- Resizable ui
+		- UI that scale with a fixed aspect ratio
+	- Fix leaked objects
+*/
+
 #define DEFAULT_SUBMIT_ORDER 9999
+#define DEFAULT_WINDOW_WIDTH 1080
+#define DEFAULT_WINDOW_HEIGHT 720
+
+#define MAX_OLD_MODELS_BUFFER 3
 
 enum UIOriginH { UIO_LEFT, UIO_CENTER, UIO_RIGHT };
 enum UIOriginV { UIO_TOP, UIO_MIDDLE, UIO_BOTTOM };
 
-enum UIElementType { UI_STATIC, UI_BUTTON, UI_SLIDER, UI_CHECKBOX };	//TODO implement these
+enum UIElementType { UI_STATIC, UI_BUTTON, UI_SLIDER, UI_CHECKBOX };
+enum ResizableType {
+	NOT_RESIZABLE,			/// When resizing the window, the UIElement will keep its dimensions constant
+	FULL_RESIZABLE,			/// When resizing the window, the UIElement will scale proportionally
+	WIDTH_ONLY_RESIZABLE,	/// When resizing the window, the UIElement will only scale horizontally
+	HEIGHT_ONLY_RESIZABLE 	/// When resizing the window, the UIElement will only scale vertically
+};
 
 /// Stores the position of the vertex
 struct UIVertex {
@@ -32,15 +55,17 @@ struct UITextureData {
 	std::vector<Texture> textureVec;
 };
 
-// struct TextureFilesWithScissor {
-// 	std::list<std::string> TextureFiles;
-// 	bool setScissor = false;
-// };
+struct TextureFilesWithParams {
+	std::list<std::string> TextureFiles;
+	bool isTransparent = false;
+	ResizableType resize = NOT_RESIZABLE;
+};
 
-// struct TextureDataWithScissor {
-// 	std::list<GeneratedTextureData> TextureData;
-// 	bool setScissor = false;
-// };
+struct TextureDataWithParams {
+	std::list<GeneratedTextureData> TextureData;
+	bool isTransparent = false;
+	ResizableType resize = NOT_RESIZABLE;
+};
 
 class UIMaker {
 	struct UIMakerAndModel {
@@ -50,11 +75,11 @@ class UIMaker {
 
 	class UIElement {
 	public:
-		// Position
+		/// Position
 		float x, y;
 		
-		// Scale
-		float sx, sy;
+		/// Scale
+		float sx, sy;	/// If the UIElement is scalable, these are relative to a screen sized 1080x720
 		
 		/**
 		* Position of the origin between the following points of the rectangle:
@@ -68,14 +93,17 @@ class UIMaker {
 		UIOriginV RegV;
 
 		Pipeline P;
-		Model *M = nullptr, *oldM = nullptr; /// oldM stores M in case other processes still have the previous model
+		Model *M = nullptr;
+		// std::list<Model*> oldM = {};	 /// oldM stores M in case other processes still have the previous model
 		UITextureData T;
 		DescriptorSet DS;
 
 		UIElement() {}
-		~UIElement() = default;	//TODO implement proper deconstructor
+		~UIElement() = default;
 
-		// bool hasScissor = false;
+		bool isVisible = true;
+		bool isTransparent = false;
+		ResizableType resize = NOT_RESIZABLE;
 
 		void addTexture(Texture t) {
 			T.textureVec.push_back(t);
@@ -92,12 +120,13 @@ class UIMaker {
 
 		void createMesh(VertexDescriptor* VD, int screenW, int screenH, BaseProject* BP) {
 			/// Old model cleanup
-			if (this->M) {
-				if (this->oldM) {
-					delete(oldM);
-				}
-				this->oldM = this->M;
-			}
+			// if (this->M) {
+			// 	this->oldM.push_back(this->M);
+			// 	if (this->oldM.size() > MAX_OLD_MODELS_BUFFER) {
+			// 		delete(this->oldM.front());
+			// 		this->oldM.pop_front();
+			// 	}
+			// }
 
 			int mainStride = sizeof(UIVertex);
 			this->M = new Model();
@@ -176,6 +205,14 @@ class UIMaker {
 			temp.init(BP, DSL, {this->T.textureVec[i].getViewAndSampler()});
 			this->DS = temp;
 		}
+
+		void scaleToScreen (int screenW, int screenH) {
+			if (this->resize == FULL_RESIZABLE || this->resize == WIDTH_ONLY_RESIZABLE)
+				this->sx = (float)screenW / DEFAULT_WINDOW_WIDTH;
+			
+			if (this->resize == FULL_RESIZABLE || this->resize == HEIGHT_ONLY_RESIZABLE)
+				this->sy = (float)screenH / DEFAULT_WINDOW_HEIGHT;
+		}
 	};
 
 	VertexDescriptor UI_VD;
@@ -196,7 +233,7 @@ public:
 	UIMaker(BaseProject *_BP) {
 		BP = _BP;
 	}
-	//TODO implement deconstructor
+	
 	~UIMaker() = default;
 
 	//--------------------------------------------
@@ -206,8 +243,7 @@ public:
 	* By default, TextureFiles and TextureDataList are empty lists, and so = DEFAULT_SUBMIT_ORDER
 	* NOTE: the id of the UIElement depends on the position in the lists TextureFiles and TextureDataList (in order)
 	*/
-	// void init(int sW, int sH, std::list<TextureFilesWithScissor> TextureFilesList = {}, std::list<TextureDataWithScissor> TextureDataList = {}, int so = DEFAULT_SUBMIT_ORDER)  {
-	void init(int sW, int sH, std::list<std::list<std::string>> TextureFilesList = {}, std::list<std::list<GeneratedTextureData>> TextureDataList = {}, int so = DEFAULT_SUBMIT_ORDER)  {
+	void init(int sW, int sH, std::list<TextureFilesWithParams> TextureFilesList = {}, std::list<TextureDataWithParams> TextureDataList = {}, int so = DEFAULT_SUBMIT_ORDER)  {
 		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " UI init" << std::endl;
 		screenW = sW;
 		screenH = sH;
@@ -226,32 +262,36 @@ public:
 
 		int i = 0, garbage;
 		for (auto textureChunk : TextureFilesList) {
-			for (auto t : textureChunk) {
+			UIElementsMap[i].P.setTransparency(textureChunk.isTransparent);
+
+			for (auto t : textureChunk.TextureFiles) {
 				Texture temp;
 				temp.init(BP, t);
 
 				UIElementsMap[i].addTexture(temp);
 			}
 			/// Assumes all texture with the same size
-			unsigned char* pixels = stbi_load(textureChunk.front().c_str(), &UIElementsMap[i].T.width, &UIElementsMap[i].T.height, &garbage, STBI_rgb_alpha);
+			unsigned char* pixels = stbi_load(textureChunk.TextureFiles.front().c_str(), &UIElementsMap[i].T.width, &UIElementsMap[i].T.height, &garbage, STBI_rgb_alpha);
 			stbi_image_free(pixels);
 
-			// UIElementsMap[i].hasScissor = textureChunk.setScissor;
+			UIElementsMap[i].resize = textureChunk.resize;
 			i++;
 		}
 
 		for (auto textureChunk : TextureDataList) {
-			for (auto t : textureChunk) {
+			UIElementsMap[i].P.setTransparency(textureChunk.isTransparent);
+
+			for (auto t : textureChunk.TextureData) {
 				Texture temp;
 				temp.initPixels(BP, t.width, t.height, 4, sizeof(uint8_t), {t.pixels.data()});
 
 				UIElementsMap[i].addTexture(temp);
 			}
 
-			UIElementsMap[i].T.width = textureChunk.front().width;
-			UIElementsMap[i].T.height = textureChunk.front().height;
+			UIElementsMap[i].T.width = textureChunk.TextureData.front().width;
+			UIElementsMap[i].T.height = textureChunk.TextureData.front().height;
 
-			// UIElementsMap[i].hasScissor = textureChunk.setScissor;
+			UIElementsMap[i].resize = textureChunk.resize;
 			i++;
 		}
 
@@ -281,7 +321,6 @@ public:
 			UIElementsMap[i].P.init(BP, &UI_VD, "shaders/UIElement.vert.spv", "shaders/UIElement.frag.spv", {&UI_DSL});
 			UIElementsMap[i].P.setCompareOp(VK_COMPARE_OP_LESS_OR_EQUAL);
 			UIElementsMap[i].P.setCullMode(VK_CULL_MODE_NONE);
-			UIElementsMap[i].P.setTransparency(false);
 		}
 	}
 
@@ -302,18 +341,18 @@ public:
 		for (auto& e : UIElementsMap) {
 			// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " creating pipeline #" << e.first << std::endl;
 			e.second.P.create(&UI_RP);
-			//TODO to create >1 viewports, need multiViewport feature; is it worth it?
-			// if (e.second.hasScissor) {
-			// 	std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " creating scissor and viewport" << std::endl;
-			// 	e.second.P.setScissor({
-			// 		{(int32_t)(screenW - e.second.T.width), (int32_t)(screenH - e.second.T.height)},
-			// 		{(int32_t)e.second.T.width, (int32_t)e.second.T.height}
-			// 	});
-			// 	e.second.P.setViewport({{
-			// 		(float)(screenW - e.second.T.width), (float)(screenH - e.second.T.height), 
-			// 		(float)(e.second.T.width), (float)(e.second.T.height), 0.0f, 1.0f
-			// 	}});
-			// }
+			/* TODO to create >1 viewports, need multiViewport feature; is it worth it?
+			if (e.second.hasScissor) {
+				std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " creating scissor and viewport" << std::endl;
+				e.second.P.setScissor({
+					{(int32_t)(screenW - e.second.T.width), (int32_t)(screenH - e.second.T.height)},
+					{(int32_t)e.second.T.width, (int32_t)e.second.T.height}
+				});
+				e.second.P.setViewport({{
+					(float)(screenW - e.second.T.width), (float)(screenH - e.second.T.height), 
+					(float)(e.second.T.width), (float)(e.second.T.height), 0.0f, 1.0f
+				}});
+			} */
 		}
 
 		createUIDescriptorSets();
@@ -330,10 +369,12 @@ public:
 		UI_RP.begin(commandBuffer, currentImage);
 
 		for (auto& e : UIElementsMap) {
-			e.second.P.bind(commandBuffer);
-			e.second.M->bind(commandBuffer);
-			e.second.DS.bind(commandBuffer, e.second.P, 0, currentImage);
-			vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(e.second.M->indices.size()), 1, 0, 0, 0);
+			if (e.second.isVisible) {
+				e.second.P.bind(commandBuffer);
+				e.second.M->bind(commandBuffer);
+				e.second.DS.bind(commandBuffer, e.second.P, 0, currentImage);
+				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(e.second.M->indices.size()), 1, 0, 0, 0);
+			}
 		}
 		
 		UI_RP.end(commandBuffer);
@@ -342,6 +383,14 @@ public:
 	void setMousePosition(double x, double y) {
 		this->mousePosX = x;
 		this->mousePosY = y;
+	}
+
+	void toggleVisibility(int id) {
+		auto elem = UIElementsMap.find(id);
+		if (elem == UIElementsMap.end())
+			error("Invalid UI id: " + std::to_string(id));
+
+		elem->second.isVisible = !elem->second.isVisible;
 	}
 	
 	//--------------------------------------------
@@ -374,6 +423,11 @@ public:
 		screenH = sH;
 		UI_RP.width = sW;
 		UI_RP.height = sH;
+
+		for (auto &e : UIElementsMap) {
+			if (e.second.resize != NOT_RESIZABLE)
+				e.second.scaleToScreen(sW, sH);
+		}
 
 		commandBufferMustUpdate = true;
 	}
@@ -470,8 +524,10 @@ public:
 		
 		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << "\tCleaning models" << std::endl;
 		for (auto& e : UIElementsMap) {
-			if (e.second.oldM)
-				delete(e.second.oldM);
+			// while (e.second.oldM.size() > 0 && e.second.oldM.front()) {
+			// 	delete(e.second.oldM.front());
+			// 	e.second.oldM.pop_front();
+			// }
 			if (e.second.M) {
 				e.second.M->cleanup();
 				delete(e.second.M);
@@ -493,6 +549,7 @@ public:
 		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " free command buffer" << std::endl;
 		Model *M = ((UIMakerAndModel *)Params)->M;
 		M->cleanup();
+		delete(M);
 		
 		free(Params);
 	}
@@ -506,7 +563,53 @@ public:
 		for (auto e : UIElementsMap) {
 			std::cout << "[" << e.first << "]" << std::endl;
 
-			std::cout << "\tModel:";
+			std::cout << "\tPosition: " << e.second.x << " x " << e.second.y << std::endl;
+			std::cout << "\tScale: " << e.second.sx << " x " << e.second.sy << std::endl;
+
+			std::cout << "\tUIOrigin: ";
+			switch(e.second.RegH) {
+			case UIO_LEFT:
+				std::cout << "LEFT";
+				break;
+			case UIO_CENTER:
+				std::cout << "CENTER";
+				break;
+			case UIO_RIGHT:
+				std::cout << "RIGHT";
+				break;
+			}
+			std::cout << " x ";
+			switch(e.second.RegV) {
+			case UIO_TOP:
+				std::cout << "TOP";
+				break;
+			case UIO_MIDDLE:
+				std::cout << "MIDDLE";
+				break;
+			case UIO_BOTTOM:
+				std::cout << "BOTTOM";
+				break;
+			}
+			std::cout << std::endl;
+
+			std::cout << "Resizable type: ";
+			switch (e.second.resize) {
+			case NOT_RESIZABLE:
+				std::cout << "not resizable";
+				break;
+			case FULL_RESIZABLE:
+				std::cout << "resizable";
+				break;
+			case WIDTH_ONLY_RESIZABLE:
+				std::cout << "only width resizable";
+				break;
+			case HEIGHT_ONLY_RESIZABLE:
+				std::cout << "only height resizable";
+				break;
+			}
+			std::cout << std::endl;
+
+                        std::cout << "\tModel:";
 			if(e.second.M) {
 				for (auto i : e.second.M->indices) {
 					std::cout << " " << i;
