@@ -349,6 +349,32 @@ class Engine : public BaseProject {
             this->sceneToLoad = nullptr;
         }
 
+        /** Tries to find a camera from the scene
+         * @note Gives priority to cameras with the 'isMain' flag.
+         * Returns NULL if it can't find one 
+         * */
+        Camera* tryFindCamera() {
+            return tryFindCameraRecursive(this->scene);
+        }
+
+        /** Recursive for tryFindCamera() */
+        Camera* tryFindCameraRecursive(Node *node) {
+            Camera *camera = nullptr;
+
+            for (Node *child : node->children) {
+                Camera *childCam = tryFindCameraRecursive(child);
+                if (childCam)
+                    camera = childCam;
+            }
+
+            // Set new camera if there isnt's one yet or if a 'isMain' is found
+            if (Camera *cam = dynamic_cast<Camera*>(node))
+                if (!camera || (!camera->getIsMain() && cam->getIsMain()))
+                    camera = cam;
+
+            return camera;
+        }
+
         /** Starts the Engine (called once before the first Engine loop) */
         void engineInit() {
             info("Starting Engine...");
@@ -382,8 +408,16 @@ class Engine : public BaseProject {
             // Checks
             if (!this->scene)
                 error("Scene not set!");
-            if (!this->mainCamera)
-                error("Main camera not set");
+
+            if (!this->mainCamera) {
+                warning("Main camera was not set. Trying to find one...");
+                // Try find a camera
+                Camera *camera = tryFindCamera();
+                if (!camera)
+                    error("Could not find any camera");
+                warning(std::format("Camera found: setting [{}] as the Main Camera", camera->UUID));
+                this->setMainCamera(camera);
+            }
 
             // Read inputs and compute deltaTime
             this->computeGlobals();

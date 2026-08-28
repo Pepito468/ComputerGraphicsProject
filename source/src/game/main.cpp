@@ -57,9 +57,9 @@ Node* createScene1() {
     //cameraContainer->name = "CameraContainer";
     //PerspectiveCamera *camera1 = new PerspectiveCamera(0.01, 100, glm::radians(90.0f), 4.0f/3.0f);
     //camera1->name = "PerspectiveCamera";
-    //OrthoCamera *camera2 = new OrthoCamera(-4, 4, -2, 2, 0.01, 200);
-    //camera2->name = "OrthoCamera";
-    //root->adopt(cameraContainer);
+    OrthoCamera *camera2 = new OrthoCamera(-4, 4, -2, 2, 0.01, 200);
+    camera2->name = "OrthoCamera";
+    player->adopt(camera2);
     //cameraContainer->adopt(camera1);
     //cameraContainer->adopt(camera2);
 
