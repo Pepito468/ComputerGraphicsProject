@@ -30,10 +30,11 @@ class CustomCameraUpdate : public UpdateNode3D {
         }
 
         // Camera change
-        if (Engine::MainEngine->isKeyBeingPressed(GLFW_KEY_P))
-            Engine::MainEngine->setMainCamera(PCamera);
-        else if (Engine::MainEngine->isKeyBeingPressed(GLFW_KEY_O))
-            Engine::MainEngine->setMainCamera(OCamera);
+        // if (Engine::MainEngine->isKeyBeingPressed(GLFW_KEY_P)) {
+        //     PCamera->setMain();
+        // }
+        // else if (Engine::MainEngine->isKeyBeingPressed(GLFW_KEY_O))
+        //     OCamera->setMain();
 
         // FOV update (ortho does not have FOV)
         if (Engine::MainEngine->isKeyBeingPressed(GLFW_KEY_F))

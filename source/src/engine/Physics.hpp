@@ -3,8 +3,6 @@
 
 #include "Collider.hpp"
 #include "Relations.hpp"
-#include <glm/glm.hpp>
-#include <vector>
 #include <set>
 
 struct Bounds
@@ -32,11 +30,11 @@ class Physics
     /// Root node of the current scene
     inline static Node* sceneRoot;
     /// All collider nodes in the scene
-    inline static std::vector<Collider*> colliders = {};
+    inline static std::set<Collider*> colliders = {};
     /// Bounds of all colliders marked STATIC
-    inline static std::vector<Bounds> staticBounds;
+    inline static std::set<Bounds> staticBounds = {};
     /// All collider nodes marked MOBILE
-    inline static std::vector<Collider*> dynamicColliders;
+    inline static std::set<Collider*> dynamicColliders = {};
 
     static void findCollidersRecursive(Node* node)
     {
@@ -44,11 +42,11 @@ class Physics
         if (Collider* c = dynamic_cast<Collider*>(node))
         {
             //log(std::format("Is collider A/S {}/{}", c->isActive, (int)c->movementStatus));
-            colliders.push_back(c);
+            colliders.insert(c);
             if (c->movementStatus == STATIC)
-                staticBounds.push_back(Bounds(c));
+                staticBounds.insert(Bounds(c));
             else
-                dynamicColliders.push_back(c);
+                dynamicColliders.insert(c);
         }
 
         for (Node* child : node->children)
@@ -127,6 +125,7 @@ class Physics
 
 public:
     /// Loads a new scene into the physics system and finds all colliders within it.
+    /// @deprecated Colliders are now (un)loaded one by one
     static void loadScene(Node* root)
     {
         sceneRoot = root;
@@ -136,6 +135,56 @@ public:
         staticBounds.clear();
 
         findCollidersRecursive(root);
+    }
+
+    /// Adds a collider to the physics system.
+    static void addCollider(Collider* coll)
+    {
+        if (!coll)
+        {
+            warning("Can't load null collider");
+            return;
+        }
+        if (colliders.contains(coll))
+        {
+            warning("Collider already in physics");
+            return;
+        }
+
+        colliders.insert(coll);
+        if (coll->movementStatus == STATIC)
+            staticBounds.insert(Bounds(coll));
+        else
+            dynamicColliders.insert(coll);
+    }
+
+    /// Removes a collider from the physics system.
+    static void removeCollider(Collider* coll)
+    {
+        if (!colliders.contains(coll))
+        {
+            warning("Collider not present in physics");
+            return;
+        }
+
+        for (Collider* c : colliders)
+        {
+            c->collidersInTrigger.erase(coll);
+        }
+
+        colliders.erase(coll);
+        if (coll->movementStatus == STATIC)
+            std::erase_if(staticBounds, [coll](const Bounds& b) { return b.collider == coll; });
+        else
+            dynamicColliders.erase(coll);
+    }
+
+    /// Removes all colliders from the physics system.
+    static void clearColliders()
+    {
+        colliders.clear();
+        dynamicColliders.clear();
+        staticBounds.clear();
     }
 
     /// Checks if there have been any collisions since the last call of this method

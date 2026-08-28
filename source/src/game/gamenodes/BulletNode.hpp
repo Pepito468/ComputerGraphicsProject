@@ -6,7 +6,7 @@
 #include "Engine.hpp"
 #include "GLMDebug.hpp"
 
-#define SPEED 3.0f
+#define SPEED 4.0f
 #define LIFETIME 5.0f
 
 /**
@@ -27,8 +27,7 @@ public:
             bulletColl->onCollision = [this](const Collider* other)
             {
                 log("Bullet collided with " + other->name);
-                if (other->name != "PlayerCollider")
-                    hide();
+                Engine::requestNodeDeletion(bulletColl);
             };
         }
         else
@@ -39,38 +38,15 @@ public:
 
     void update() override
     {
+        //log(std::format("Bullet flying for {}. At {}/{}", timer, bulletColl->getGlobalPosition(), getGlobalPosition()));
         timer += Engine::getDeltaTime();
         if (timer >= LIFETIME)
         {
-            hide();
+            Engine::requestNodeDeletion(bulletColl);
             return;
         }
 
         bulletColl->globalTranslate(bulletColl->getZAxis() * SPEED * Engine::getDeltaTime());
-    }
-
-    void shoot(const glm::vec3 pos, const glm::vec3 dir)
-    {
-        log("Shooting Node " + name);
-
-        const glm::vec3 z = bulletColl->getZAxis();
-        const glm::vec3 v = glm::cross(z, dir);
-        const float angle = acos(glm::dot(z, dir) / (glm::length(z) * glm::length(dir)));
-        const glm::mat4 rotMat = glm::rotate(angle, v);
-        bulletColl->setGlobalMatrix(rotMat * bulletColl->getGlobalMatrix());
-        bulletColl->setGlobalPosition(pos);
-        bulletColl->isActive = true;
-        isActive = true;
-        timer = 0.0f;
-    }
-
-    void hide()
-    {
-        log("Hiding Node " + name);
-
-        isActive = false;
-        bulletColl->isActive = false;
-        bulletColl->setGlobalPosition({0, -10, 0});
     }
 };
 #endif

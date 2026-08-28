@@ -9,6 +9,8 @@ class MovingPlanetChildUpdate : public UpdateNode3D {
         this->localRotateY(Engine::MainEngine->getDeltaTime() * 2);
         this->localRotateZ(Engine::MainEngine->getDeltaTime() * 3);
 
+        // printf("%.2f %.2f %.2f\n", this->getGlobalPosition().x, this->getGlobalPosition().y, this->getGlobalPosition().z);
+
     }
 
 };

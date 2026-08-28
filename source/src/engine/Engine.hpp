@@ -4,7 +4,8 @@
 
 #include <sstream>
 #include <json.hpp>
-#include <vulkan/vulkan_core.h>
+
+#include "Debug.hpp"
 
 #include "Node.hpp"
 #include "Node3D.hpp"
@@ -22,11 +23,13 @@
 #include "UpdateNode3D.hpp"
 
 #include "Renderer.hpp"
-#include "common.h"
 #include "Physics.hpp"
+
 #include "UIMaker.hpp"
 
-#define POOL_SIZE 200
+#include "common.h"
+
+#define POOL_SIZE 1000
 #define LIGHT_RENDER_DISTANCE 20.0f
 #define DEFAULT_CURSOR GLFW_CURSOR_NORMAL
 
@@ -34,7 +37,7 @@ class Engine : public BaseProject {
 
     public:
         /** Static reference to the only Engine */
-        inline static Engine *MainEngine = NULL;
+        inline static Engine *MainEngine = nullptr;
 
 
     private:
@@ -42,21 +45,26 @@ class Engine : public BaseProject {
         // Time elapsed from last frame
         float deltaTime = 0.0f;
         // Time elapsed since the start
-        float time;
+        float time = 0.0f;
         // Translation input
         glm::vec3 inputTranslation = VEC3_ZERO;
         // Rotation input
         glm::vec3 inputRotation = VEC3_ZERO;
-        // Avoid multiple triggers of functions when a button is being pressed
-        bool debounce = false;
-        // Key target of the debounce
-		int curDebounce = 0;
+        // Keys that are currently registered as pressed down
+        std::set<int> pressedKeyes = {};
 
         /** Root of the current scene */
-        Node *scene;
+        Node *scene = nullptr;
 
         /** Main camera (camera that is being used to render) */
-        Camera *mainCamera;
+        Camera *mainCamera = nullptr;
+
+        /** This holds the value of a scene that has been requested to be loaded by someone. It will be loaded at the next Engine loop */
+        Node *sceneToLoad = nullptr;
+
+        std::set<Node*> nodesQueuedToBeDeleted;
+
+        std::map<std::string, Node*> scenes;
 
 
 
@@ -80,24 +88,29 @@ class Engine : public BaseProject {
             return MainEngine->inputTranslation;
         }
 
-        static glm::vec3 getInputRotation()
-        {
+        static glm::vec3 getInputRotation() {
             return MainEngine->inputRotation;
         }
 
         /** Returns true if the given key is being pressed */
-        static bool isKeyBeingPressed(int key) {
-            return glfwGetKey(MainEngine->window, key);
+        static bool isKeyBeingPressed(const int key, const bool onlyOnPress = false) {
+            if (glfwGetKey(MainEngine->window, key))
+            {
+                const bool wasPressed = MainEngine->pressedKeyes.contains(key);
+                MainEngine->pressedKeyes.insert(key);
+                return !onlyOnPress || !wasPressed;
+            }
+
+            MainEngine->pressedKeyes.erase(key);
+            return false;
         }
 
-        /** Sets the given node as the current scene */
-        static void setSceneRoot(Node *scene) {
-            MainEngine->scene = scene;
-        }
-
-        /** Sets the given camera as main camera */
         static void setMainCamera(Camera *camera) {
+            if (!camera)
+                error("Trying to set a NULL camera");
+
             MainEngine->mainCamera = camera;
+            log(std::format("Main camera changed to [{}, ID: {}]", camera->name, camera->UUID));
         }
 
         /** Shuts down the Engine and closes the window */
@@ -115,26 +128,82 @@ class Engine : public BaseProject {
             return glfwGetInputMode(MainEngine->window, GLFW_CURSOR);
         }
 
-        static bool getDebounce() {
-            return MainEngine->debounce;
+        /** Returns the scene's root */
+        static Node* getSceneRoot() {
+            return MainEngine->scene;
         }
 
-        static void setDebounce(bool _debounce) {
-            MainEngine->debounce = _debounce;
+        /** Changes the loaded scene to the new one (given the root).
+         *  NOTE: the scene change will happen in the next Engine Loop
+         * */
+        static void requestSceneChange(Node *newRoot) {
+            if (!newRoot) {
+                warning("Requesting a null scene does nothing");
+                return;
+            }
+
+            if (newRoot == MainEngine->scene) {
+                warning("Trying to load the current scene again");
+                return;
+            }
+
+            MainEngine->sceneToLoad = newRoot;
+            log(std::format("Scene change request accepted [to {}, ID: {}]", newRoot->name, newRoot->UUID));
         }
 
-        static int getCurDebounce() {
-            return MainEngine->curDebounce;
+        /** Maps a name to a scene (for convenience).
+         * @note deleting a scene does not delete its mapping from here.
+         * */
+        static void mapScene(const std::string& sceneName, Node* sceneRoot) {
+            MainEngine->scenes[sceneName] = sceneRoot;
         }
-        
-        static void setCurDebounce(int glfwKey) {
-            MainEngine->curDebounce = glfwKey;
+
+        /** Returns the scene mapped with its name (or nullptr if no scene was mapped with that name) */
+        static Node* getSceneFromNameMap(const std::string& sceneName) {
+            return MainEngine->scenes[sceneName];
+        }
+
+        /**
+         * Loads a node and its descendants into the scene.
+         * @param node The root node to add.
+         * @param parent The parent of the node. Defaults to the scene root.
+         */
+        static void instantiate(Node* node, Node* parent = MainEngine->scene) {
+            if (!node || !parent)
+                error("Can't instantiate NULL node or have NULL parent");
+
+            parent->adopt(node);
+            MainEngine->addNodeRecursive(node);
+        }
+
+        /** Removes a node and its descendants from the scene and frees them. */
+        static void eliminate(Node *node) {
+            if (!node)
+                error("Attempting to free a NULL Node");
+
+            if (node == MainEngine->scene)
+                error("Can't free the root, request a scene change instead");
+
+            node->parent->children.erase(node);
+            MainEngine->removeNodeRecursive(node);
+        }
+
+        /**
+         * Queue a node for deletion.
+         * @note The node will actually be deleted in the next Engine loop.
+         */
+        static void requestNodeDeletion(Node *node) {
+            if (!node)
+                error("Deleting NULL node");
+
+            MainEngine->nodesQueuedToBeDeleted.insert(node);
+            log(std::format("Node deletion request accepted [{}, ID: ]", node->name, node->UUID));
         }
 
     private:
 
         /** Recomputes the Node3D hierarchy */
-        void recompute3DNodeHierarchy(Node* node, glm::mat4 fatherTransformMatrix) {
+        void recompute3DNodeHierarchy(Node* node, const glm::mat4& fatherTransformMatrix) {
 
             // If a Node3D is found, propagate an update to it
             if (Node3D* node3d = dynamic_cast<Node3D*>(node)) {
@@ -148,7 +217,7 @@ class Engine : public BaseProject {
         }
 
         /** Recomputes the matrices after the Node3Ds are moved and the hierarchy has changed */
-        void recompute2DNodeHierarchy(Node* node, glm::mat4 fatherTransformMatrix) {
+        void recompute2DNodeHierarchy(Node* node, const glm::mat4& fatherTransformMatrix) {
 
             // If the node is Node2D, propagate the update
             if (Node2D* node2d = dynamic_cast<Node2D*>(node)) {
@@ -171,13 +240,31 @@ class Engine : public BaseProject {
                 updateUpdate3DNodes(child);
         }
 
-        void loadScene(Node *node) {
-            // Call onEnter()
-            node->onEnter(); // TODO: maybe node spawning can be handled in a different place or way
+        /** Loads the scene given its root */
+        void loadScene(Node *root) {
+            if (!root)
+                error("This should never happen (camToChange null here)");
+
+            info("Loading Scene");
+
+            // Set root
+            this->scene = root;
+
+            // Load scene nodes
+            this->addNodeRecursive(root);
+
+            log(std::format("Loaded {} rendering objects", renderer.getTotalObjectCount()));
+            info("Successfully loaded scene");
+        }
+
+        /** Adds a node */
+        void addNode(Node *node) {
+            // Call onEnter() for the node
+            node->onEnter();
 
             // Node specific initialization
             if (Model3D *model = dynamic_cast<Model3D*>(node)) {
-                renderer.instantiate(model, false);
+                renderer.instantiate(model);
             } else if (DirectionalLight *light = dynamic_cast<DirectionalLight*>(node)) {
                 renderer.createDirectionalLight(light);
             } else if (AmbientLight *light = dynamic_cast<AmbientLight*>(node)) {
@@ -186,45 +273,122 @@ class Engine : public BaseProject {
                 renderer.addPointLight(light);
             } else if (SpotLight *light = dynamic_cast<SpotLight*>(node)) {
                 renderer.addSpotLight(light);
+            } else if (Collider *coll = dynamic_cast<Collider*>(node)) {
+                Physics::addCollider(coll);
+            } else if (Camera *camera = dynamic_cast<Camera*>(node)) {
+                if (camera->getIsMain())
+                    this->setMainCamera(camera);
             }
 
-            log(std::format("Loaded Node [{}, ID: {}]", node->name, node->UUID));
+            log(std::format("Added Node [{}, ID: {}]", node->name, node->UUID));
+        }
+        void addNodeRecursive(Node *node)
+        {
+            addNode(node);
             for (Node *child : node->children)
-                loadScene(child);
+                addNodeRecursive(child);
         }
 
-        /** Starts the Engine */
+        /** Clears the current scene */
+        void clearScene() {
+            // If no scene was set, no need to clear (expected during first load)
+            if (!this->scene)
+                return;
+
+            info("Clearing Scene");
+
+            size_t poolSize = renderer.getTotalObjectCount();
+            // Clear scene nodes
+            this->removeNodeRecursive(this->scene);
+
+            // Reset properties
+            this->scene = nullptr;
+            this->mainCamera = nullptr;
+
+            log(std::format("Cleared {} rendering objects out of {}", poolSize - renderer.getTotalObjectCount(), poolSize));
+            info("Scene successfully cleared");
+        }
+
+        /** Removes a node */
+        void removeNode(Node *node) {
+            // Call onExit() for the node
+            node->onExit();
+
+            // Node specific action
+            if (Model3D *model = dynamic_cast<Model3D*>(node)) {
+                renderer.removeObject(model);
+            } else if (dynamic_cast<DirectionalLight*>(node)) {
+                renderer.unsetDirectionalLight();
+            } else if (dynamic_cast<AmbientLight*>(node)) {
+                renderer.unsetAmbientLight();
+            } else if (PointLight *light = dynamic_cast<PointLight*>(node)) {
+                renderer.removePointLight(light);
+            } else if (SpotLight *light = dynamic_cast<SpotLight*>(node)) {
+                renderer.removeSpotLight(light);
+            } else if (Collider *coll = dynamic_cast<Collider*>(node)) {
+                Physics::removeCollider(coll);
+            }
+
+            log(std::format("Removed Node [{}, ID: {}]", node->name, node->UUID));
+
+            // Free memory
+            delete node;
+        }
+        void removeNodeRecursive(Node *node)
+        {
+            for (Node *child : node->children)
+                removeNodeRecursive(child);
+
+            removeNode(node);
+        }
+
+        /** Changes the current scene with the one in queue */
+        void changeScene() {
+            this->clearScene();
+            this->loadScene(this->sceneToLoad);
+            this->sceneToLoad = nullptr;
+        }
+
+        /** Starts the Engine (called once before the first Engine loop) */
         void engineInit() {
-            info("Starting Engine");
+            info("Starting Engine...");
 
-            // Engine checks
-            if (!scene)
-                error("Scene not set");
-            if (!mainCamera)
-                warning("Main camera not set");
-
-            // Set cursor
+            // Set default cursor mode
             Engine::setCursorMode(DEFAULT_CURSOR);
 
-            // Load scene
-            info("Loading Scene");
-            this->loadScene(this->scene);
-            Physics::loadScene(this->scene);
-            info("Succesfully loaded scene");
+            info("Engine successfully started");
         }
 
         bool isFirstEngineLoop = true;
 
+        /** Engine loop */
         void engineLoop() {
+
+            // Initialize Engine
             if (this->isFirstEngineLoop) {
                 this->engineInit();
                 this->isFirstEngineLoop = false;
             }
 
-            // Read inputs
-            this->getSixAsixFixed(this->deltaTime, this->inputTranslation, this->inputRotation);
+            // If a new scene is queued to be set as main, do it now
+            if (this->sceneToLoad != nullptr)
+                this->changeScene();
 
-            // Update time
+            // Delete nodes requested to be deleted
+            for (Node *node : this->nodesQueuedToBeDeleted)
+                eliminate(node);
+            this->nodesQueuedToBeDeleted.clear();
+
+            // Checks
+            if (!this->scene)
+                error("Scene not set!");
+            if (!this->mainCamera)
+                error("Main camera not set");
+
+            // Read inputs and compute deltaTime
+            this->computeGlobals();
+
+            // Update total time
             this->time += this->deltaTime;
 
             // Call update() on all UpdateNodes
@@ -236,7 +400,6 @@ class Engine : public BaseProject {
 
             // Physics checks
             Physics::checkCollisions();
-
 
             // TODO: move txt to its node
 
@@ -275,65 +438,61 @@ class Engine : public BaseProject {
 
         }
 
-        /// Wrapper for input detection
-        float getSixAsixFixed(float &deltaT, glm::vec3 &m, glm::vec3 &r) {
+        /** Reads inputs (translation, rotation), computes the deltaTime and updates the Engine globals with them */
+        void computeGlobals() {
             // Reset values
-            m = VEC3_ZERO;
-            r = VEC3_ZERO;
-            deltaT = 0.0f;
+            this->inputTranslation = VEC3_ZERO;
+            this->inputRotation = VEC3_ZERO;
+            this->deltaTime = 0.0f;
             bool fire; // Won't be used
 
             // Read values from Starter
-            getSixAxis(deltaT, m, r, fire);
+            getSixAxis(this->deltaTime, this->inputTranslation, this->inputRotation, fire);
 
             // Capturing the rotation with no 'click' constraint from 'getSixAsix()' in Starter
             static double old_xpos = 0, old_ypos = 0;
             double xpos, ypos;
             glfwGetCursorPos(window, &xpos, &ypos);
-            double m_dx = xpos - old_xpos;
-            double m_dy = ypos - old_ypos;
+            const double m_dx = xpos - old_xpos;
+            const double m_dy = ypos - old_ypos;
             old_xpos = xpos; old_ypos = ypos;
-            const float MOUSE_RES = 10.0f;
+            constexpr float MOUSE_RES = 10.0f;
             glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, GLFW_TRUE);
-            r.y = m_dx / MOUSE_RES;
-            r.x = m_dy / MOUSE_RES;
+            this->inputRotation.y = m_dx / MOUSE_RES;
+            this->inputRotation.x = m_dy / MOUSE_RES;
 
-            return deltaT;
         }
 
 
     protected:
-        // Here you list all the Vulkan objects you need:
+
         Renderer renderer;
         RenderPass RP;
 
-        // to provide textual feedback
-        TextMaker txt;
+        TextMaker txt; // TODO: move to node
 
         UIMaker ui;
 
-        void localInit() {
+        void localInit() override {
 
-            // renderer.loadSceneFromJSON();
             renderer.localInit();
 
-            // initializes the render passes
             RP.init(this);
 
             // sets the blue sky
-            RP.properties[0].clearValue = {0.0f,0.0f,0.0f,0.0f};
+            RP.properties[0].clearValue = {{{0.0f,0.0f,0.0f,0.0f}}};
 
 
-            // sets the size of the Descriptor Set Pool (it MUST be done before loading the scene)
+            // Set the size of the Descriptor Set Pool
             DPSZs.uniformBlocksInPool = POOL_SIZE;
             DPSZs.texturesInPool = POOL_SIZE;
             DPSZs.setsInPool = POOL_SIZE;
 
             // initializes the textual output
             txt.init(this, windowWidth, windowHeight);
-            ui.init(windowWidth, windowHeight, {}, {
-                {ProceduralTextures::generateTexture(16, 16, 255, 0, 0)},
-                {ProceduralTextures::generateTexture(16, 16, 0, 255, 255), ProceduralTextures::generateTexture(16, 16, 0, 0, 255)},
+            ui.init(windowWidth, windowHeight, {{{"assets/textures/black.png"}, true}}, {
+                {{ProceduralTextures::generateTexture(16, 16, 0, 255, 255), ProceduralTextures::generateTexture(16, 16, 0, 0, 255)}},
+                {{ProceduralTextures::generateTexture(32, 32, 255, 0, 255)}, false, HEIGHT_ONLY_RESIZABLE},
             });
 
             // submits the main command buffer
@@ -345,11 +504,10 @@ class Engine : public BaseProject {
 
             ui.renderUI(-0.95f, 0.95f, 0, UIO_LEFT, UIO_BOTTOM, 1.0f, 1.0f);
             ui.renderUI(-1.0f, 1.0f, 1, UIO_LEFT, UIO_BOTTOM, 5.0f, 5.0f);
+            ui.renderUI(0.0f, 0.0f, 2, UIO_LEFT, UIO_BOTTOM);
         }
 
-        // Here you create your pipelines and Descriptor Sets!
-        void pipelinesAndDescriptorSetsInit() {
-            // creates the render passes
+        void pipelinesAndDescriptorSetsInit() override {
             RP.create();
 
             renderer.descriptorSetsInits();
@@ -358,17 +516,14 @@ class Engine : public BaseProject {
             ui.pipelinesAndDescriptorSetsInit();
         }
 
-        // Here you destroy your pipelines and Descriptor Sets!
-        void pipelinesAndDescriptorSetsCleanup() {
+        void pipelinesAndDescriptorSetsCleanup() override {
             RP.cleanup();
             renderer.descriptorSetsCleanup();
             txt.pipelinesAndDescriptorSetsCleanup();
             ui.pipelinesAndDescriptorSetsCleanup();
         }
 
-        // Here you destroy all the Models, Texture and Desc. Set Layouts you created!
-        // You also have to destroy the pipelines
-        void localCleanup() {
+        void localCleanup() override {
             RP.destroy();
 
             renderer.localCleanup();
@@ -377,18 +532,13 @@ class Engine : public BaseProject {
             ui.localCleanup();
         }
 
-        // Here it is the creation of the command buffer:
-        // You send to the GPU all the objects you want to draw,
-        // with their buffers and textures
+        /** Populates the command buffer */
         static void populateCommandBufferAccess(VkCommandBuffer commandBuffer, int currentImage, void *Params) {
-            // Simple trick to avoid having always 'T->'
-            // in che code that populates the command buffer!
             Engine *T = (Engine *)Params;
             T->populateCommandBuffer(commandBuffer, currentImage);
         }
 
         void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
-
             renderer.populateShadowCommandBuffer(commandBuffer, currentImage);
             renderer.populateSceneDepthCommandBuffer(commandBuffer, currentImage);
             renderer.populateSceneColorCommandBuffer(commandBuffer, currentImage);
@@ -400,39 +550,47 @@ class Engine : public BaseProject {
             RP.end(commandBuffer);
         }
 
-        // Here is where you update the uniforms.
-        // Very likely this will be where you will be writing the logic of your application.
-        void updateUniformBuffer(uint32_t currentImage) {
+        /** Engine method to update the uniforms (called every frame) */
+        void updateUniformBuffer(uint32_t currentImage) override {
+            bool isCursorAvailable = MainEngine->getCursorMode() == GLFW_CURSOR_NORMAL;
+            if (isCursorAvailable) {
+                double x, y;
+                glfwGetCursorPos(MainEngine->window, &x, &y);
+                ui.setMousePosition(x, y);
+            }
 
             // Engine logic
             this->engineLoop();
 
+            // Flush screen to update with node updates
+            renderer.flushScreenUpdate();
+
             // Renderer updates
             // Update with camera data
-            renderer.updateUniformBuffer(currentImage,
+            renderer.updateUniformBuffer(
+                    currentImage,
                     this->mainCamera->getGlobalPosition(),
                     this->mainCamera->getProjectionMatrix(),
-                    this->mainCamera->getViewMatrix(), time);
+                    this->mainCamera->getViewMatrix(), 
+                    this->time);
 
             renderer.updateLightCulling(this->mainCamera->getGlobalPosition(), LIGHT_RENDER_DISTANCE);
 
             txt.updateCommandBuffer();
-            ui.updateCommandBuffer();
+            ui.updateCommandBuffer(isCursorAvailable);
         }
 
-        // Here you set the main application parameters
-        void setWindowParameters() {
-
-            // window size, titile and initial background
+        /** Called when the window is created */
+        void setWindowParameters() override {
+            // window size, title and initial background
             windowWidth = 1080;
             windowHeight = 720;
-            windowTitle = "VIDEOGAME";
+            windowTitle = "VIDEO GAME";
             windowResizable = GLFW_TRUE;
         }
 
-        // What to do when the window changes size
-        void onWindowResize(int w, int h) {
-
+        /** Called when the window size changes */
+        void onWindowResize(int w, int h) override {
             log(std::format("Window resized to {} x {}", w, h));
 
             // Update Render Pass

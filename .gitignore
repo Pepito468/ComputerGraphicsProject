@@ -7,3 +7,5 @@ build/*
 # Temp files
 *.txt
 !*CMakeLists.txt
+*~
+*.kra

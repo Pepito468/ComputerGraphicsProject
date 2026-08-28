@@ -2,6 +2,8 @@
 #define ENGINE_RENDERER_HPP
 #include <stdexcept>
 #include <unordered_map>
+#include <vector>
+#include <algorithm>
 
 #include "common.h"
 #include "AmbientLight.hpp"
@@ -40,7 +42,6 @@ class Renderer {
 
     ///This class handle a single pipeline. Each pipeline is associate with a unique shader
     class PipelineRenderer {
-
         //Shader infos
         ShaderType shaderType;
         std::string vertShader;
@@ -132,7 +133,12 @@ class Renderer {
 
             return pool.empty();
         }
+
+        size_t poolSize() const { return pool.size(); }
     };
+
+    // Variable to update screen
+    bool screenDirty = false;
 
     //Vulkan variables
     DescriptorSetLayout globalLayout, localLayout, skyboxLayout;
@@ -152,10 +158,10 @@ class Renderer {
     std::unordered_map <std::string, std::unique_ptr<Material>> materialAssets;
     std::vector<Model3D*> sceneObjects; //stores all the models assigned to Renderer
 
-    DirectionalLight *directionalLight;
+    DirectionalLight *directionalLight = nullptr;
     std::vector<PointLight*> pointlights;
     std::vector<SpotLight*> spotlights;
-    AmbientLight *ambientLight;
+    AmbientLight *ambientLight = nullptr;
 
     //Shadow map
     DescriptorSetLayout offScreenLayout;
@@ -299,7 +305,7 @@ class Renderer {
      *<li>This method is meant to be called on runtime</li>
      *<li>If you want to load models on advance, use "preLoadModel" instead</li>
      */
-    void instantiate(Model3D *model, bool updateScreen = true) {
+    void instantiate(Model3D *model) {
         sceneObjects.push_back(model);
 
         Model3D* model3D = sceneObjects.back();
@@ -353,8 +359,7 @@ class Renderer {
         //Model local descriptor set init
         pipelinesMap.at(model3D->getShaderType())->modelDescriptorSetInit(bp, model3D, &RPoffScreen, &RPsceneDepth, &RPsceneColor);
 
-        if (updateScreen)
-            screenUpdate();
+        queueScreenUpdate();
     }
 
     ///add a new point light on screen
@@ -362,14 +367,30 @@ class Renderer {
         pointlights.push_back(light);
     }
 
+    void removePointLight(PointLight *light) {
+        pointlights.erase(std::remove(pointlights.begin(), pointlights.end(), light), pointlights.end());
+    }
+
     ///add a new spotlight on screen
     void addSpotLight(SpotLight *light) {
         spotlights.push_back(light);
     }
 
+    void removeSpotLight(SpotLight *light) {
+        spotlights.erase(std::remove(spotlights.begin(), spotlights.end(), light), spotlights.end());
+    }
+
     ///Create the directional light (Only one directional light can exists)
     void createDirectionalLight(DirectionalLight *light) {
+        if (directionalLight) {
+            warning(std::format("Trying to set [{}] as Directional Light, but [{}] is already the Directional Light. Ignoring...", directionalLight->UUID, light->UUID));
+            return;
+        }
         directionalLight = light;
+    }
+
+    void unsetDirectionalLight() {
+        directionalLight = nullptr;
     }
 
     /**Set ambient light parameters
@@ -378,7 +399,15 @@ class Renderer {
      *<li>dir: world direction</li>
      */
     void setAmbientLight(AmbientLight *light) {
+        if (ambientLight) {
+            warning(std::format("Trying to set [{}] as Ambient Light, but [{}] is already the Ambient Light. Ignoring...", ambientLight->UUID, light->UUID));
+            return;
+        }
         ambientLight = light;
+    }
+
+    void unsetAmbientLight() {
+        ambientLight = nullptr;
     }
 
     ///Turn off light that are too far away
@@ -436,9 +465,21 @@ class Renderer {
     void setObjectVisibility(int i, bool visible) {
         sceneObjects[i]->setIsVisible(visible);
 
-        screenUpdate();
+        queueScreenUpdate();
     }
 
+    /** Queues an update to the screen */
+    void queueScreenUpdate() {
+        this->screenDirty = true;
+    }
+
+    /** Flushes the screen if dirty; else does nothing */
+    void flushScreenUpdate() {
+        if (this->screenDirty) {
+            screenUpdate();
+            this->screenDirty = false;
+        }
+    }
 
 
     ///This method prepare stuff for Vulkan, must be called inside Engine.localInit()
@@ -494,7 +535,7 @@ class Renderer {
                     });
 
         sceneColorLayout.init(bp, {
-                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(UniformBufferObject), 1}
+                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(SceneColorUniformBufferObject), 1}
                     });
 
         skyboxLayout.init(bp, {
@@ -812,15 +853,45 @@ class Renderer {
             return;
         }
 
-        sceneObjects[i]->descriptorSetCleanup();
+        // NOTE: if the game randomly freezes after deleting models this is probably the cause
+        // (it works for now, but I'll keep the note as a reminder)
+        // tbh this is still buggy
+        // sceneObjects[i]->descriptorSetCleanup();
         Model3D* model = sceneObjects[i];
 
         pipelinesMap.at(model->getShaderType())->removeModel3D(model);
 
-        model->descriptorSetCleanup();
+        // model->descriptorSetCleanup();
         sceneObjects.erase(sceneObjects.begin() + i);
+
+        queueScreenUpdate();
     }
 
+    /** Returns the index of the model (or -1 if the object cannot be found) */
+    int findObject(Model3D *model) {
+        for (size_t i = 0; i < sceneObjects.size(); i++)
+            if (model == sceneObjects[i]) 
+                return i;
+
+        return -1;
+    }
+
+    /** Removes an object, given the the Model3D */
+    void removeObject(Model3D *model) {
+        size_t objID = findObject(model);
+        if (objID == (size_t) -1) {
+            error("Object not found!");
+        }
+
+        this->removeObject(objID);
+    }
+
+    size_t getTotalObjectCount() {
+        size_t total = 0;
+        for (auto& p : pipelinesMap)
+            total += p.second->poolSize();
+        return total;
+    }
 
 };
 #endif

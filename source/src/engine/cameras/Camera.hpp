@@ -17,6 +17,9 @@ class Camera : public Node3D
         /// The distance of the far plane
         BoundFloat farPlane = PositiveFloat(0.0f);
 
+        /// Hints the Engine that this camera wants to be main
+        bool isMain;
+
 
     public:
 
@@ -24,11 +27,13 @@ class Camera : public Node3D
         Camera() {
             this->nearPlane = 0.1f;
             this->farPlane = 100.0f;
+            this->isMain = false;
         }
 
-        Camera(float nearPlane, float farPlane) {
+        Camera(const float nearPlane, const float farPlane, const bool isMain = false) {
             this->nearPlane = nearPlane;
             this->farPlane = farPlane;
+            this->isMain = isMain;
         }
 
         /** Returns the projection matrix of this camera */
@@ -42,12 +47,24 @@ class Camera : public Node3D
             return this->farPlane;
         }
 
+        bool getIsMain() const {
+            return this->isMain;
+        }
+
         void setNearPlane(float nearPlane) {
             this->nearPlane = nearPlane;
         }
 
         void setFarPlane(float farPlane) {
             this->farPlane = farPlane;
+        }
+
+        void setMain() {
+            this->isMain = true;
+        }
+
+        void setNotMain() {
+            this->isMain = false;
         }
 
         /** Returns the view matrix */
