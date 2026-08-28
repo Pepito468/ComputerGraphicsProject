@@ -27,6 +27,8 @@
 
 #include "UIMaker.hpp"
 
+#include "AudioNode.hpp"
+
 #include "common.h"
 
 #define POOL_SIZE 1000
@@ -65,6 +67,8 @@ class Engine : public BaseProject {
         std::set<Node*> nodesQueuedToBeDeleted;
 
         std::map<std::string, Node*> scenes;
+
+        ma_engine audioEngine;
 
 
 
@@ -115,6 +119,10 @@ class Engine : public BaseProject {
 
         /** Shuts down the Engine and closes the window */
         static void shutdown() {
+            // Shutdown audio Engine
+            ma_engine_uninit(&MainEngine->audioEngine);
+
+            // Shutdown the window
             glfwSetWindowShouldClose(MainEngine->window, GL_TRUE);
         }
 
@@ -278,6 +286,8 @@ class Engine : public BaseProject {
             } else if (Camera *camera = dynamic_cast<Camera*>(node)) {
                 if (camera->getIsMain())
                     this->setMainCamera(camera);
+            } else if (AudioNode *audio = dynamic_cast<AudioNode*>(node)) {
+                audio->setAudioEngine(&this->audioEngine);
             }
 
             log(std::format("Added Node [{}, ID: {}]", node->name, node->UUID));
@@ -380,7 +390,13 @@ class Engine : public BaseProject {
             info("Starting Engine...");
 
             // Set default cursor mode
+            log("Setting default cursor mode...");
             Engine::setCursorMode(DEFAULT_CURSOR);
+            log("DONE");
+
+            log("Starting audio engine...");
+            ma_engine_init(NULL, &this->audioEngine);
+            log("DONE");
 
             info("Engine successfully started");
         }

@@ -12,4 +12,7 @@
 | Shaders          |         0          |        16       |       0        |         0         |
 | UI               |         33         |        0        |       0        |         0         |
 | Game Nodes       |         0          |        0        |      5.30      |         0         |
-| Engine           |         0          |        0        |       0        |        16         |
+| Engine           |         0          |        0        |       0        |        18         |
+
+## External Libraries
+- [miniaudio.h](https://github.com/mackron/miniaudio)

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <ostream>
 
+#include "AudioNode.hpp"
 #include "Engine.hpp"
 
 #include "PerspectiveCamera.hpp"
@@ -51,6 +52,11 @@ Node* createScene1() {
     player->adopt(camera);
     playerCollider->globalTranslate({-2, 5, 0});
     player->localTranslate({0, 1.25f, 0});
+
+    // Audio
+    AudioNode *quack = new AudioNode("quack.mp3", 0.1f);
+    quack->name = "quack";
+    player->adopt(quack);
 
 
     //CustomCameraUpdate *cameraContainer = new CustomCameraUpdate();

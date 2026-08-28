@@ -23,6 +23,8 @@ class PlayerNode : public UpdateNode3D
     float vertSpeed = 0.0f;
     bool isGrounded = false;
 
+    AudioNode *quack = nullptr;
+
     ToonMaterial bulletMat = {glm::vec3(0.9f, 0.45f, 0.9f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
 
     void shoot()
@@ -47,6 +49,8 @@ class PlayerNode : public UpdateNode3D
         bulletColl->setGlobalPosition(getGlobalPosition());
 
         Engine::instantiate(bulletColl);
+
+        quack->playSound();
     }
 
 public:
@@ -68,6 +72,10 @@ public:
         {
             error("Player node's parent is not a collider!");
         }
+
+        for (auto child : this->children)
+            if (child->name == "quack")
+                this->quack = dynamic_cast<AudioNode*>(child);
     }
 
     void onExit() override {

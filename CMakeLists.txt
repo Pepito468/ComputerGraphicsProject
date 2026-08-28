@@ -18,12 +18,15 @@ set(MAIN_DIR source)
 set(SRC_DIR ${MAIN_DIR}/src/game)
 set(INCLUDE_DIR ${MAIN_DIR}/include)
 set(ENGINE_DIR ${MAIN_DIR}/src/engine)
+
 set(UTIL_DIR ${ENGINE_DIR}/utils)
 set(CAM_DIR ${ENGINE_DIR}/cameras)
 set(COL_DIR ${ENGINE_DIR}/colliders)
 set(UI_DIR ${ENGINE_DIR}/ui)
 set(LIGHT_DIR ${ENGINE_DIR}/lights)
 set(REND_DIR ${ENGINE_DIR}/rendering)
+set(AUDIO_DIR ${ENGINE_DIR}/audio)
+
 file(GLOB SRC_FILES CONFIGURE_DEPENDS "${SRC_DIR}/*.cpp")
 
 
@@ -37,6 +40,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     "${UI_DIR}"
     "${LIGHT_DIR}"
     "${REND_DIR}"
+    "${AUDIO_DIR}"
 )
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
@@ -138,4 +142,16 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     "${ASSET_SRC_DIR}"
     "${ASSET_DST_DIR}"
   COMMENT "Copying asset in: ${ASSET_DST_DIR}"
+)
+
+# --------------------
+# AUDIO
+# --------------------
+set(AUDIO_SRC_DIR "${CMAKE_SOURCE_DIR}/source/assets/audio")
+set(AUDIO_DST_DIR "$<TARGET_FILE_DIR:${PROJECT_NAME}>/assets")
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${AUDIO_SRC_DIR}"
+    "${AUDIO_DST_DIR}"
+    COMMENT "Copying audio from in: ${AUDIO_DST_DIR}"
 )
