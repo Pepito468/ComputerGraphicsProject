@@ -9,7 +9,7 @@
 | Physics          |         0          |        0        |       25       |         0         |
 | Model Rendering  |         0          |        40       |       0        |         0         |
 | Testing          |         3          |        0        |       16       |         6         |
-| Shaders          |         0          |        10       |       0        |         0         |
+| Shaders          |         0          |        16       |       0        |         0         |
 | UI               |         33         |        0        |       0        |         0         |
 | Game Nodes       |         0          |        0        |      5.30      |         0         |
 | Engine           |         0          |        0        |       0        |        14         |
