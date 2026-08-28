@@ -214,5 +214,13 @@ int main() {
         assert(false);
     } catch (std::runtime_error) {}
 
+    // Test 8: lookat
+    Node3D *theOneWhoLooks = new Node3D({1, 1, 1}, {0, 0, 0}, {1, 1, 1});
+    glm::vec3 pointToLook = {5, 6, 7};
+    theOneWhoLooks->lookAt(pointToLook);
+    printf("ROT: %.4f %.4f %.4f\n", theOneWhoLooks->getGlobalRotation().x, theOneWhoLooks->getGlobalRotation().y, theOneWhoLooks->getGlobalRotation().z);
+    assert(glm::all(glm::epsilonEqual(theOneWhoLooks->getGlobalRotation(), {0.60, -2.55, 0}, epsilon)));
+
+
     info("END OF NODE3D TEST");
 }

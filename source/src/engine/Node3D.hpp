@@ -476,6 +476,30 @@ class Node3D : public Node {
             return glm::determinant(this->localMatrix) < 0.0f;
         }
 
+        /** Returns the direction that this node is looking at */
+        glm::vec3 getLookingDirection() {
+            return -1.0f * this->getZAxis();
+        }
+
+        /** Modifies the global rotation of the node to look at the given point */
+        void lookAt(glm::vec3 point) {
+            // lookAt computes the camera matrix (inverse), so invert it to get the World Matrix
+            glm::mat4 rotationMatrix = glm::inverse(glm::lookAt(this->globalPosition, point, VEC3_Y));
+
+            this->globalMatrix =
+                glm::translate(MAT4_I, this->globalPosition) *
+                rotationMatrix *
+                glm::rotate(MAT4_I, -this->globalRotation.z, VEC3_Z) *
+                glm::rotate(MAT4_I, -this->globalRotation.x, VEC3_X) *
+                glm::rotate(MAT4_I, -this->globalRotation.y, VEC3_Y) *
+                glm::translate(MAT4_I, -this->globalPosition) *
+                this->globalMatrix;
+
+            this->updateGlobalTransformPropertiesFromGlobalMatrix();
+
+            this->commitGlobalUpdate();
+        }
+
         static Node3D* fromJSON(const nlohmann::json& json, Node3D* node = nullptr) {
             Node3D *newNode = node ? node : new Node3D();
 

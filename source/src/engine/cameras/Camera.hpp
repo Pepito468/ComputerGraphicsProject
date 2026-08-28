@@ -72,9 +72,5 @@ class Camera : public Node3D
             return glm::inverse(this->getGlobalMatrix());
         }
 
-        /** Returns the direction that the camera is looking at */
-        const glm::vec3 getLookingDirection() const {
-            return -1.0f * this->getZAxis();
-        }
 };
 #endif
