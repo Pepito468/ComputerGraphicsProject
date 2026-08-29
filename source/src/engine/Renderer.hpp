@@ -878,8 +878,8 @@ class Renderer {
 
     /** Removes an object, given the the Model3D */
     void removeObject(Model3D *model) {
-        size_t objID = findObject(model);
-        if (objID == (size_t) -1) {
+        int objID = findObject(model);
+        if (objID == -1) {
             error("Object not found!");
         }
 

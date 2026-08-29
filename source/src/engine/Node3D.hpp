@@ -531,7 +531,7 @@ class Node3D : public virtual Node {
             this->updateGlobalMatrixFromLocal();
             this->updateGlobalTransformPropertiesFromGlobalMatrix();
 
-            // Commit update to self and to the node's children
+            // Propagate
             propagateUpdateToChildren(this, this->globalMatrix);
         }
 
@@ -543,7 +543,7 @@ class Node3D : public virtual Node {
             this->updateLocalMatrixFromGlobal();
             this->updateLocalTransformPropertiesFromLocalMatrix();
 
-            // Propagate to children (updates local since their global doesn't change, father does)
+            // Propagate to children
             propagateUpdateToChildren(this, this->globalMatrix);
         }
 
@@ -588,7 +588,8 @@ class Node3D : public virtual Node {
 
         }
 
-        /** Recursively updates the node's descendants */
+        /** Recursively updates the node's descendants.
+         * NOTE: changes the global *from* the local */
         static void propagateUpdateToChildren(Node *node, glm::mat4 fatherTransformMatrix) {
 
             for (Node *child : node->children) {

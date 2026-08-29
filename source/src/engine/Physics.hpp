@@ -173,10 +173,8 @@ public:
         }
 
         colliders.erase(coll);
-        if (coll->movementStatus == STATIC)
-            std::erase_if(staticBounds, [coll](const Bounds& b) { return b.collider == coll; });
-        else
-            dynamicColliders.erase(coll);
+        std::erase_if(staticBounds, [coll](const Bounds& b) { return b.collider == coll; });
+        dynamicColliders.erase(coll);
     }
 
     /// Removes all colliders from the physics system.

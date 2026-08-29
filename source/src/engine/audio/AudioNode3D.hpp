@@ -81,14 +81,12 @@ class AudioNode3D : public Node3D, public AudioNode {
 
     protected:
 
-        /** Commits a local update from the node */
         virtual void commitLocalUpdate() override {
 
             Node3D::commitLocalUpdate();
             this->updateAudioTransform();
         }
 
-        /** Commits a global update from the node */
         virtual void commitGlobalUpdate() override {
 
             Node3D::commitGlobalUpdate();
