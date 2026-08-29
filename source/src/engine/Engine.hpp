@@ -54,7 +54,7 @@ class Engine : public BaseProject {
         // Rotation input
         glm::vec3 inputRotation = VEC3_ZERO;
         // Keys that are currently registered as pressed down
-        std::set<int> pressedKeyes = {};
+        std::set<int> currentlyPressedKeys = {};
 
         /** Root of the current scene */
         Node *scene = nullptr;
@@ -102,12 +102,12 @@ class Engine : public BaseProject {
         static bool isKeyBeingPressed(const int key, const bool onlyOnPress = false) {
             // glfwGetKey doesn't work with mouse buttons
             if (glfwGetKey(MainEngine->window, key) || glfwGetMouseButton(MainEngine->window, key) == GLFW_PRESS) {
-                const bool wasPressed = MainEngine->pressedKeyes.contains(key);
-                MainEngine->pressedKeyes.insert(key);
+                const bool wasPressed = MainEngine->currentlyPressedKeys.contains(key);
+                MainEngine->currentlyPressedKeys.insert(key);
                 return !onlyOnPress || !wasPressed;
             }
 
-            MainEngine->pressedKeyes.erase(key);
+            MainEngine->currentlyPressedKeys.erase(key);
             return false;
         }
 

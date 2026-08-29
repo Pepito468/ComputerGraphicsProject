@@ -652,6 +652,7 @@ class Renderer {
 
         PoffScreen.cleanup();
         PsceneDepth.cleanup();
+        PsceneColor.cleanup();
         Pskybox.cleanup();
     }
 

@@ -523,21 +523,13 @@ class Node3D : public virtual Node {
 
     protected:
 
-        /** Commits a local update from the node.
-         * NOTE: Called when the node's local transform changes */
-        virtual void commitLocalUpdate() {
+        /** Function called whenever this node's transform is updated in any way. */
+        virtual void onTransformUpdate() {}
 
-            // Commit update to self
-            this->updateGlobalMatrixFromLocal();
-            this->updateGlobalTransformPropertiesFromGlobalMatrix();
+    private:
 
-            // Propagate
-            propagateUpdateToChildren(this, this->globalMatrix);
-        }
-
-        /** Commits a global update from the node.
-         * NOTE: Called when the node's global transform changes */
-        virtual void commitGlobalUpdate() {
+        /** Commits a global update from the node */
+        void commitGlobalUpdate() {
 
             // Commit update to self
             this->updateLocalMatrixFromGlobal();
@@ -545,9 +537,9 @@ class Node3D : public virtual Node {
 
             // Propagate to children
             propagateUpdateToChildren(this, this->globalMatrix);
-        }
 
-    private:
+            this->onTransformUpdate();
+        }
 
         /**
          *  Updates the local matrix from the global
@@ -588,18 +580,17 @@ class Node3D : public virtual Node {
 
         }
 
-        /** Recursively updates the node's descendants.
-         * NOTE: changes the global *from* the local */
-        static void propagateUpdateToChildren(Node *node, glm::mat4 fatherTransformMatrix) {
+        /** Commits a local update from the node */
+        void commitLocalUpdate() {
 
-            for (Node *child : node->children) {
-                // If node id Node3D, update it, else skip to its children
-                if (Node3D* node3d = dynamic_cast<Node3D*>(child))
-                    node3d->updateFatherMatrix(fatherTransformMatrix);
-                else
-                    propagateUpdateToChildren(child, fatherTransformMatrix);
-            }
+            // Commit update to self
+            this->updateGlobalMatrixFromLocal();
+            this->updateGlobalTransformPropertiesFromGlobalMatrix();
 
+            // Propagate
+            propagateUpdateToChildren(this, this->globalMatrix);
+
+            this->onTransformUpdate();
         }
 
         /**
@@ -638,6 +629,20 @@ class Node3D : public virtual Node {
                     glm::length(glm::vec3(this->globalMatrix[Y_ROTATION_INDEX])),
                     glm::length(glm::vec3(this->globalMatrix[Z_ROTATION_INDEX]))
                     );
+
+        }
+
+        /** Recursively updates the node's descendants.
+         * NOTE: changes the global *from* the local */
+        static void propagateUpdateToChildren(Node *node, glm::mat4 fatherTransformMatrix) {
+
+            for (Node *child : node->children) {
+                // If node id Node3D, update it, else skip to its children
+                if (Node3D* node3d = dynamic_cast<Node3D*>(child))
+                    node3d->updateFatherMatrix(fatherTransformMatrix);
+                else
+                    propagateUpdateToChildren(child, fatherTransformMatrix);
+            }
 
         }
 

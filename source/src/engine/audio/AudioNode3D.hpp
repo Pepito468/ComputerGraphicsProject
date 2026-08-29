@@ -79,30 +79,15 @@ class AudioNode3D : public Node3D, public AudioNode {
             log(std::format("Playing [{}] from [{}]", this->soundFileName, this->UUID));
         }
 
-    protected:
-
-        virtual void commitLocalUpdate() override {
-
-            Node3D::commitLocalUpdate();
-            this->updateAudioTransform();
-        }
-
-        virtual void commitGlobalUpdate() override {
-
-            Node3D::commitGlobalUpdate();
-            this->updateAudioTransform();
-        }
-
     private:
 
-        void updateAudioTransform() {
+        void onTransformUpdate() override {
             if (!this->isInitialized)
                 return;
 
             glm::vec3 position = this->getGlobalPosition();
             ma_sound_set_position(&this->sound, position.x, position.y, position.z);
         }
-
 
 };
 

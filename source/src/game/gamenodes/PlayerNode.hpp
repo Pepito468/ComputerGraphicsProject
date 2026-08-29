@@ -7,8 +7,8 @@
 #include "Collider.hpp"
 #include "Engine.hpp"
 #include "AudioNode3D.hpp"
+#include "glm/geometric.hpp"
 
-#define WALK_SPEED 4.0f
 #define JUMP_FORCE 5.0f
 #define GRAVITY 9.81f
 #define X_ROT_MIN glm::radians(-70.0f)
@@ -23,6 +23,7 @@ class PlayerNode : public UpdateNode3D
     Collider* playerColl = nullptr;
     float vertSpeed = 0.0f;
     bool isGrounded = false;
+    float walk_speed = 4.0f;
 
     AudioNode *quack = nullptr;
 
@@ -126,10 +127,17 @@ public:
         else
             vertSpeed -= GRAVITY * Engine::getDeltaTime();
 
+        float speed = walk_speed;
+        if (Engine::isKeyBeingPressed(GLFW_KEY_LEFT_SHIFT))
+            speed *= 1.5;
+
+
         // update the camera position and direction with the inputs
         glm::vec3 delta = VEC3_ZERO;
-        delta += getXAxis() * WALK_SPEED * Engine::getDeltaTime() * Engine::getInputTranslation().x;
-        delta += getZAxis() * WALK_SPEED * Engine::getDeltaTime() * Engine::getInputTranslation().z;
+        glm::vec3 normalizedXAxis = glm::normalize(glm::vec3(getXAxis().x, 0, getXAxis().z));
+        glm::vec3 normalizedZAxis = glm::normalize(glm::vec3(getZAxis().x, 0, getZAxis().z));
+        delta += normalizedXAxis * speed * Engine::getDeltaTime() * Engine::getInputTranslation().x;
+        delta += normalizedZAxis * speed * Engine::getDeltaTime() * Engine::getInputTranslation().z;
         delta.y = vertSpeed * Engine::getDeltaTime();
 
         playerColl->globalTranslate(delta);
