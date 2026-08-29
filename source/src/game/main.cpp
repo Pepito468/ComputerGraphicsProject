@@ -36,6 +36,7 @@ MagicCirleMaterial mat5 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f},
 
 LambertTexMaterial cubeMat = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "cubeD.png"};
 LambertMaterial blankMat = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}};
+LambertTexMaterial mageMat = {VEC3_ONE, {1, 1, 1, 100}, "mage.png"};
 
 Node* createScene1() {
 
@@ -296,16 +297,19 @@ Node* createUnitScene()
         cube->adopt(box);
         box->setLocalPosition(VEC3_ZERO);
     }
-    Model3D* sphere = new Model3D("Unit Sphere.gltf", {0, 2, 10}, {0, 0, 0}, {1, 1, 1}, &blankMat);
+    Model3D* sphere = new Model3D("Unit Sphere.gltf", {0, 2, 3}, {0, 0, 0}, {1, 1, 1}, &blankMat);
     models->adopt(sphere);
     SphereCollider* sColl = new SphereCollider();
     sphere->adopt(sColl);
     sColl->setLocalPosition(VEC3_ZERO);
-    Model3D* cap = new Model3D("Unit Capsule.gltf", {0, 2, 7}, {0, 0, 0}, {1, 1, 1}, &blankMat);
+    Model3D* cap = new Model3D("Unit Capsule.gltf", {0, 2, 5}, {0, 0, 0}, {1, 1, 1}, &blankMat);
     models->adopt(cap);
     CapsuleCollider* cColl = new CapsuleCollider();
     cap->adopt(cColl);
     cColl->setLocalPosition(VEC3_ZERO);
+
+    Model3D* mage = new Model3D("Mage.gltf", {0, 0, 7}, {0, 0, 0}, {1, 1, 1}, &mageMat);
+    models->adopt(mage);
 
     // Lights
     AmbientLight *ambientLight = new AmbientLight({0.08f, 0.14f, 0.20f},{0.035f, 0.04f, 0.045f}, {0.0f, 1.0f, 0.0f});

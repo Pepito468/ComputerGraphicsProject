@@ -13,5 +13,5 @@
 | UI                |         33         |        0        |       0        |         0         |
 | Game Nodes        |         0          |        0        |       9        |         0         |
 | Engine            |         0          |        0        |       0        |        14         |
-| Asset Procurement |         0          |        0        |       2        |         0         |
+| Asset Procurement |         0          |        0        |       6        |         0         |
 | Scene Layout      |         0          |        0        |       0        |         0         |
