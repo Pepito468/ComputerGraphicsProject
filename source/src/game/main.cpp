@@ -34,7 +34,7 @@ FireMaterial flame2 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "bi
 FireMaterial flame3 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "fire.png"};
 MagicCirleMaterial mat5 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "magicCircle.png"};
 
-LambertTexMaterial cubeMat = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "cube.png"};
+LambertTexMaterial cubeMat = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "cubeD.png"};
 LambertMaterial blankMat = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}};
 
 Node* createScene1() {
@@ -296,7 +296,7 @@ Node* createUnitScene()
         cube->adopt(box);
         box->setLocalPosition(VEC3_ZERO);
     }
-    Model3D* sphere = new Model3D("Unit Sphere.gltf", {0, 2, 1w0}, {0, 0, 0}, {1, 1, 1}, &blankMat);
+    Model3D* sphere = new Model3D("Unit Sphere.gltf", {0, 2, 10}, {0, 0, 0}, {1, 1, 1}, &blankMat);
     models->adopt(sphere);
     SphereCollider* sColl = new SphereCollider();
     sphere->adopt(sColl);
