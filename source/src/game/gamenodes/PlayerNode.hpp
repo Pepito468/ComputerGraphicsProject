@@ -6,6 +6,7 @@
 #include "UpdateNode3D.hpp"
 #include "Collider.hpp"
 #include "Engine.hpp"
+#include "AudioNode3D.hpp"
 
 #define WALK_SPEED 4.0f
 #define JUMP_FORCE 5.0f
@@ -54,6 +55,9 @@ class PlayerNode : public UpdateNode3D
     }
 
 public:
+
+    AudioNode3D *music = nullptr;
+    bool isMusicPlaying = false;
 
     void onEnter() override
     {
@@ -129,6 +133,19 @@ public:
         //Shoot
         if (Engine::isKeyBeingPressed(GLFW_KEY_F, true))
             shoot();
+
+        // Start music
+        if (Engine::isKeyBeingPressed(GLFW_KEY_M, true)) {
+            if (!isMusicPlaying) {
+                music->playSound();
+                music->enableLooping();
+                isMusicPlaying = true;
+            } else {
+                music->stopSound();
+                music->disableLooping();
+                isMusicPlaying = false;
+            }
+        }
     }
 };
 #endif

@@ -1,7 +1,6 @@
 #include <iostream>
 #include <ostream>
 
-#include "AudioNode.hpp"
 #include "Engine.hpp"
 
 #include "PerspectiveCamera.hpp"
@@ -13,6 +12,9 @@
 #include "DirectionalLight.hpp"
 #include "AmbientLight.hpp"
 #include "ColliderLib.hpp"
+
+#include "AudioNode.hpp"
+#include "AudioNode3D.hpp"
 
 #include "gamenodes/CustomCameraUpdate.hpp"
 #include "gamenodes/MovingPlanetUpdate.hpp"
@@ -152,6 +154,10 @@ Node* createScene1() {
     Model3D *orbitingStatue = new Model3D("Statue.gltf", {0, 0, 0}, {0, 0, 0}, {1, 1, 1}, &mat1);
     orbitingStatue->localTranslate({1, 0, 0});
     movingChild->adopt(orbitingStatue);
+    AudioNode3D *movingAudio = new AudioNode3D("rocketJumpWaltz.mp3", 1.0f, 50.0f, 1.0f, INVERSE, 0.1f);
+    movingAudio->name = "RocketJumWaltz";
+    planet->adopt(movingAudio);
+    player->music = movingAudio;
 
     return root;
 }

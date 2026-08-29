@@ -8,20 +8,21 @@
 
 #define AUDIO_DIR "assets/"
 
-class AudioNode : public Node {
+class AudioNode : public virtual Node {
 
-    private:
+    protected:
         /** Audio engine */
         ma_engine *audioEngine = nullptr;
 
         /** Miniaudio  */
         ma_sound sound;
 
-        /** Audio file name */
-        std::string soundFileName = "";
-
         /** Flags if the audio is initialized */
         bool isInitialized = false;
+
+
+        /** Audio file name */
+        std::string soundFileName = "";
 
         /** Volume (from 0.0 to 1.0) */
         float volume = 1.0f;
@@ -49,7 +50,7 @@ class AudioNode : public Node {
         }
 
         /** Plays a the sound set in this AudioNode */
-        void playSound() {
+        virtual void playSound() {
             // Checks
             if (!audioEngine)
                 error("No audio Engine set up");
@@ -81,6 +82,7 @@ class AudioNode : public Node {
 
             ma_sound_uninit(&this->sound);
             this->isInitialized = false;
+            log(std::format("Stopped [{}] from [{}]", this->soundFileName, this->UUID));
         }
 
         /** Enables sound looping */

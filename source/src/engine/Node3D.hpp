@@ -38,7 +38,7 @@
  *      the rotation angles are in radians
  *
  */
-class Node3D : public Node {
+class Node3D : public virtual Node {
 
     private:
 
@@ -453,7 +453,8 @@ class Node3D : public Node {
 
         /** Updates the father matrix and all that depends on it (updates global from local) */
         void updateFatherMatrix(glm::mat4 newFatherMatrix) {
-            this->updateGlobalTransformFromLocal(this, newFatherMatrix);
+            this->fatherMatrix = newFatherMatrix;
+            this->commitLocalUpdate();
         }
 
         /// Computes the local coordinates of the given point from the node's transform
@@ -522,14 +523,20 @@ class Node3D : public Node {
 
     protected:
 
-        /** Commits a local update from the node */
+        /** Commits a local update from the node.
+         * NOTE: Called when the node's local transform changes */
         virtual void commitLocalUpdate() {
 
+            // Commit update to self
+            this->updateGlobalMatrixFromLocal();
+            this->updateGlobalTransformPropertiesFromGlobalMatrix();
+
             // Commit update to self and to the node's children
-            this->updateGlobalTransformFromLocal(this, this->fatherMatrix);
+            propagateUpdateToChildren(this, this->globalMatrix);
         }
 
-        /** Commits a global update from the node */
+        /** Commits a global update from the node.
+         * NOTE: Called when the node's global transform changes */
         virtual void commitGlobalUpdate() {
 
             // Commit update to self
@@ -537,8 +544,7 @@ class Node3D : public Node {
             this->updateLocalTransformPropertiesFromLocalMatrix();
 
             // Propagate to children (updates local since their global doesn't change, father does)
-            for (Node *child : this->children)
-                this->updateGlobalTransformFromLocal(child, this->globalMatrix);
+            propagateUpdateToChildren(this, this->globalMatrix);
         }
 
     private:
@@ -582,21 +588,15 @@ class Node3D : public Node {
 
         }
 
-        /** Recursively updates the node and its children and so on */
-        static void updateGlobalTransformFromLocal(Node *node, glm::mat4 fatherTransformMatrix) {
+        /** Recursively updates the node's descendants */
+        static void propagateUpdateToChildren(Node *node, glm::mat4 fatherTransformMatrix) {
 
-            // Update self
-            // If node id Node3D, update it, else skip to its children
-            if (Node3D* node3d = dynamic_cast<Node3D*>(node)) {
-                node3d->fatherMatrix = fatherTransformMatrix;
-                node3d->updateGlobalMatrixFromLocal();
-                node3d->updateGlobalTransformPropertiesFromGlobalMatrix();
-                fatherTransformMatrix = node3d->globalMatrix;
-            }
-
-            // Propagate to children
             for (Node *child : node->children) {
-                updateGlobalTransformFromLocal(child, fatherTransformMatrix);
+                // If node id Node3D, update it, else skip to its children
+                if (Node3D* node3d = dynamic_cast<Node3D*>(child))
+                    node3d->updateFatherMatrix(fatherTransformMatrix);
+                else
+                    propagateUpdateToChildren(child, fatherTransformMatrix);
             }
 
         }

@@ -34,6 +34,7 @@
 #define POOL_SIZE 1000
 #define LIGHT_RENDER_DISTANCE 20.0f
 #define DEFAULT_CURSOR GLFW_CURSOR_NORMAL
+#define AUDIO_LISTENER 0
 
 class Engine : public BaseProject {
 
@@ -450,6 +451,11 @@ class Engine : public BaseProject {
 
             // Physics checks
             Physics::checkCollisions();
+
+            // Update Audio following the Main Camera
+            ma_engine_listener_set_position(&this->audioEngine, AUDIO_LISTENER, this->mainCamera->getGlobalPosition().x, this->mainCamera->getGlobalPosition().y, this->mainCamera->getGlobalPosition().z);
+            ma_engine_listener_set_direction(&this->audioEngine, AUDIO_LISTENER, this->mainCamera->getLookingDirection().x, this->mainCamera->getLookingDirection().y, this->mainCamera->getLookingDirection().z);
+            ma_engine_listener_set_world_up(&this->audioEngine, AUDIO_LISTENER, 0.0f, 1.0f, 0.0f);
 
             // TODO: move txt to its node
 
