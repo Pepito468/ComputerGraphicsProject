@@ -15,12 +15,13 @@
 /*
 	TODO list:
 	- Fix leaked objects
-	- Buttons
-	- Sliders and checkboxes (maybe)
+	- Clickable buttons
+	- Sliders (maybe)
+	- Checkboxes (maybe)
 	- Main menu
 	- Pause menu
 		- Settings (maybe)
-		- Fullscreen background tint
+	- Allow manual insertion of id instead of being forced to follow the order of the lists
 */
 
 #define DEFAULT_SUBMIT_ORDER 9999
@@ -32,7 +33,7 @@
 enum UIOriginH { UIO_LEFT, UIO_CENTER, UIO_RIGHT };
 enum UIOriginV { UIO_TOP, UIO_MIDDLE, UIO_BOTTOM };
 
-enum UIElementType { UI_STATIC, UI_BUTTON, UI_SLIDER, UI_CHECKBOX };
+enum UIElementType { UI_NORMAL, UI_BUTTON, UI_SLIDER, UI_CHECKBOX };
 enum ResizableType {	/// When resizing the window, the UIElement will...
 	NOT_RESIZABLE,			/// keep its dimensions constant
 	FULL_RESIZABLE,			/// scale proportionally
@@ -58,12 +59,14 @@ struct TextureFilesWithParams {
 	std::list<std::string> TextureFiles;
 	bool isTransparent = false;
 	ResizableType resize = NOT_RESIZABLE;
+	UIElementType type = UI_NORMAL;
 };
 
 struct TextureDataWithParams {
 	std::list<GeneratedTextureData> TextureData;
 	bool isTransparent = false;
 	ResizableType resize = NOT_RESIZABLE;
+	UIElementType type = UI_NORMAL;
 };
 
 class UIMaker {
@@ -103,6 +106,7 @@ class UIMaker {
 
 		bool isVisible = true;
 		bool isTransparent = false;
+		UIElementType type = UI_NORMAL;
 		ResizableType resize = NOT_RESIZABLE;
 
 		void addTexture(Texture t) {
@@ -118,27 +122,14 @@ class UIMaker {
 			this->RegV = RegV;
 		}
 
-		void createMesh(VertexDescriptor* VD, int screenW, int screenH, BaseProject* BP) {
-			/// Old model cleanup
-			// if (this->M) {
-			// 	this->oldM.push_back(this->M);
-			// 	if (this->oldM.size() > MAX_OLD_MODELS_BUFFER) {
-			// 		delete(this->oldM.front());
-			// 		this->oldM.pop_front();
-			// 	}
-			// }
-
-			int mainStride = sizeof(UIVertex);
-			this->M = new Model();
-			
-			this->M->indices.resize(6);
-			this->M->vertices.resize(4 * mainStride);
-			// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " mainStride: " << mainStride << std::endl;
-
-			float tpx = 0.0f;
-			float tpy = 0.0f;
-			
-			UIVertex *V_vertex = (UIVertex *)(&this->M->vertices[0]);
+		/**
+		 * Returns the pixel coordinates of this UIElement:
+		 * - coordinates[0] is the upper left corner;
+		 * - coordinates[1] is the bottom right corner.
+		 */
+		std::array<glm::vec2, 2> getPixelCoordinates(int screenW, int screenH) {
+			float tpx = 0.0f, tpy = 0.0f;
+			std::array<glm::vec2, 2> coordinates = {};
 
 			tpx = (this->x + 1.0f)/2.0f * screenW - this->sx * (
 				(this->RegH == UIO_RIGHT  ? (float)this->T.width	   : 0.0f) +
@@ -148,17 +139,39 @@ class UIMaker {
 				(this->RegV == UIO_BOTTOM ? (float)this->T.height	   : 0.0f) +
 				(this->RegV == UIO_MIDDLE ? (float)this->T.height/2.0f : 0.0f)
 			);
+
+			coordinates[0].x = tpx;
+			coordinates[0].y = tpy;
+
+			coordinates[1].x = tpx + (float)(this->T.width) * this->sx;
+			coordinates[1].y = tpy + (float)(this->T.height) * this->sy;
+
+			return coordinates;
+		}
+
+		/**
+		 * Recreates the mesh of this UIElement
+		 */
+		void createMesh(VertexDescriptor* VD, int screenW, int screenH, BaseProject* BP) {
+			int mainStride = sizeof(UIVertex);
+			// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " mainStride: " << mainStride << std::endl;
+			this->M = new Model();
+			this->M->indices.resize(6);
+			this->M->vertices.resize(4 * mainStride);
 			
-			makeUIVertex(V_vertex, tpx, tpy, 0, 0, screenW, screenH);
+			UIVertex *V_vertex = (UIVertex *)(&this->M->vertices[0]);
+			std::array<glm::vec2, 2> coordinates = getPixelCoordinates(screenW, screenH);
+			
+			makeUIVertex(V_vertex, coordinates[0].x, coordinates[0].y, 0, 0, screenW, screenH);
 			V_vertex++;
 
-			makeUIVertex(V_vertex, tpx + (float)(this->T.width) * this->sx, tpy, 1, 0, screenW, screenH);
+			makeUIVertex(V_vertex, coordinates[1].x, coordinates[0].y, 1, 0, screenW, screenH);
 			V_vertex++;
 			
-			makeUIVertex(V_vertex, tpx, tpy + (float)(this->T.height) * this->sy, 0, 1, screenW, screenH);
+			makeUIVertex(V_vertex, coordinates[0].x, coordinates[1].y, 0, 1, screenW, screenH);
 			V_vertex++;
 
-			makeUIVertex(V_vertex, tpx + (float)(this->T.width) * this->sx, tpy + (float)(this->T.height) * this->sy, 1, 1, screenW, screenH);
+			makeUIVertex(V_vertex, coordinates[1].x, coordinates[1].y, 1, 1, screenW, screenH);
 			V_vertex++;
 			
 			this->M->indices[0] = 0;
@@ -206,8 +219,13 @@ class UIMaker {
 			this->DS = temp;
 		}
 
+		/**
+		 * Manages the scale of this UIElement based on its resize type and the screen dimensions
+		 * NOTE: scalable elements use DEFAULT_WINDOW_WIDTH and DEFAULT_WINDOW_HEIGHT as the "default" scaling
+		 */
 		void scaleToScreen (int screenW, int screenH) {
 			float aspectRatio = this->sx / this->sy, xRatio = (float)screenW / DEFAULT_WINDOW_WIDTH, yRatio = (float)screenH / DEFAULT_WINDOW_HEIGHT;
+
 			if (this->resize == KEEP_ASPECT_RATIO) {
 				if (xRatio < yRatio) {
 					this->sx = xRatio;
@@ -224,6 +242,32 @@ class UIMaker {
 					this->sy = yRatio;
 			}
 		}
+
+		/**
+		 * Returns true if the point (_x, _y) is within the hitbox of this UIElement
+		 */
+		bool isPointInsideHitbox(float _x, float _y, int screenW, int screenH) {
+			std::array<glm::vec2, 2> coordinates = getPixelCoordinates(screenW, screenH);
+			float x1 = coordinates[0].x, x2 = coordinates[1].x;
+			float y1 = coordinates[0].y, y2 = coordinates[1].y;
+			bool inside = true;
+			
+			// std::cout << "Hitbox: " << x1 << " x " << y1 << " | " << x2 << " x " << y2 << std::endl << "Point: " << _x << " x " << _y << std::endl;
+			inside &= ((x1 <= _x) && (_x <= x2));
+			inside &= ((y1 <= _y) && (_y <= y2));
+			// std::cout << "Inside: " << inside << std::endl;
+
+			return inside;
+		}
+	};
+
+	/**
+	 * Stores data about a button, including a pointer to the UIElement
+	 */
+	struct ButtonData {
+		UIElement* button;
+		bool hovered;
+		bool clicked;
 	};
 
 	VertexDescriptor UI_VD;
@@ -237,9 +281,30 @@ class UIMaker {
 	double mousePosX, mousePosY;
 	
 	std::unordered_map<int, UIElement> UIElementsMap = {};
+	std::list<ButtonData> ButtonsList = {};
 	
 	bool commandBufferMustUpdate = false;
 	
+	/**
+	 * After the cursor moves, checks every button to see if their status changed
+	 */
+	void updateButtonStatus() {
+		for (auto &b : ButtonsList) {
+			bool inside = b.button->isPointInsideHitbox((float)mousePosX, (float)mousePosY, screenW, screenH);
+			// std::cout << "Hovered: " << b.hovered << "; inside: " << inside << std::endl;
+
+			if (b.hovered && !inside) {
+				b.button->recreateDescriptorSet(&UI_DSL, BP, 0);
+				b.hovered = false;
+				commandBufferMustUpdate = true;
+			} else if (!b.hovered && inside) {
+				b.button->recreateDescriptorSet(&UI_DSL, BP, 1);
+				b.hovered = true;
+				commandBufferMustUpdate = true;
+			}
+		}
+	}
+
 public:
 	UIMaker(BaseProject *_BP) {
 		BP = _BP;
@@ -286,6 +351,12 @@ public:
 			stbi_image_free(pixels);
 
 			UIElementsMap[i].resize = textureChunk.resize;
+			UIElementsMap[i].type = textureChunk.type;
+			if (textureChunk.type != UI_NORMAL) {
+				if (textureChunk.type == UI_BUTTON) {
+					ButtonsList.push_back({&UIElementsMap[i], false, false});
+				}
+			}
 			i++;
 		}
 
@@ -303,6 +374,12 @@ public:
 			UIElementsMap[i].T.height = textureChunk.TextureData.front().height;
 
 			UIElementsMap[i].resize = textureChunk.resize;
+			UIElementsMap[i].type = textureChunk.type;
+			if (textureChunk.type != UI_NORMAL) {
+				if (textureChunk.type == UI_BUTTON) {
+					ButtonsList.push_back({&UIElementsMap[i], false, false});
+				}
+			}
 			i++;
 		}
 
@@ -352,18 +429,7 @@ public:
 		for (auto& e : UIElementsMap) {
 			// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " creating pipeline #" << e.first << std::endl;
 			e.second.P.create(&UI_RP);
-			/* TODO to create >1 viewports, need multiViewport feature; is it worth it?
-			if (e.second.hasScissor) {
-				std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " creating scissor and viewport" << std::endl;
-				e.second.P.setScissor({
-					{(int32_t)(screenW - e.second.T.width), (int32_t)(screenH - e.second.T.height)},
-					{(int32_t)e.second.T.width, (int32_t)e.second.T.height}
-				});
-				e.second.P.setViewport({{
-					(float)(screenW - e.second.T.width), (float)(screenH - e.second.T.height), 
-					(float)(e.second.T.width), (float)(e.second.T.height), 0.0f, 1.0f
-				}});
-			} */
+			//TODO to create >1 viewports, need multiViewport feature; is it worth it?
 		}
 
 		createUIDescriptorSets();
@@ -394,6 +460,8 @@ public:
 	void setMousePosition(double x, double y) {
 		this->mousePosX = x;
 		this->mousePosY = y;
+
+		updateButtonStatus();
 	}
 
 	void toggleVisibility(int id) {
@@ -402,6 +470,7 @@ public:
 			error("Invalid UI id: " + std::to_string(id));
 
 		elem->second.isVisible = !elem->second.isVisible;
+		commandBufferMustUpdate = true;
 	}
 	
 	//--------------------------------------------
@@ -447,12 +516,9 @@ public:
 	 * If at least a UIElement was changed (commandBufferMustUpdate = true), redraws every UIElement.
 	 * Also, updates mousePos[X, Y] if the cursor isn't locked
 	 */
-	void updateCommandBuffer(bool isCursorAvailable) {
+	void updateCommandBuffer() {
 		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " UI update command buffer" << std::endl;
 		// debugPrint();
-		if (isCursorAvailable) {
-			//TODO deal with buttons, etc...
-		}
 
 		if (commandBufferMustUpdate) {
 			//could add an update field to each UIElement to avoid updating unchanged elements, but doesn't seem worth it
@@ -617,6 +683,26 @@ public:
 				break;
 			case HEIGHT_ONLY_RESIZABLE:
 				std::cout << "only height resizable";
+				break;
+			case KEEP_ASPECT_RATIO:
+				std::cout << "keep aspect ratio";
+				break;
+			}
+			std::cout << std::endl;
+
+			std::cout << "UI element type: ";
+			switch (e.second.type) {
+			case UI_NORMAL:
+				std::cout << "normal";
+				break;
+			case UI_BUTTON:
+				std::cout << "button";
+				break;
+			case UI_SLIDER:
+				std::cout << "slider";
+				break;
+			case UI_CHECKBOX:
+				std::cout << "checkbox";
 				break;
 			}
 			std::cout << std::endl;

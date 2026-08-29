@@ -95,10 +95,13 @@ public:
 
         // Give cursor back if needed
         if (Engine::isKeyBeingPressed(GLFW_KEY_C, true)) {
-            if (Engine::getCursorMode() == GLFW_CURSOR_NORMAL)
+            if (Engine::isPauseMenuOpen()) {
                 Engine::setCursorMode(GLFW_CURSOR_DISABLED);
-            else
+            } else {
                 Engine::setCursorMode(GLFW_CURSOR_NORMAL);
+            }
+
+            Engine::togglePauseMenu();
         }
 
         // Change scene
@@ -125,10 +128,14 @@ public:
 
         playerColl->globalTranslate(delta);
 
-        const float xRot = -Engine::getInputRotation().x * Engine::getDeltaTime();
-        if (X_ROT_MIN <= getGlobalRotation().x + xRot && getGlobalRotation().x + xRot <= X_ROT_MAX)
-            globalRotateX(xRot);
-        globalRotateY(-Engine::getInputRotation().y * Engine::getDeltaTime());
+        /// When the pause menu is open, moving the mouse doesn't move the camera
+        //TODO when the pause menu is open, "freeze" the game (or we can keep it running, like Dark Souls)
+        if (!Engine::isPauseMenuOpen()) {
+            const float xRot = -Engine::getInputRotation().x * Engine::getDeltaTime();
+            if (X_ROT_MIN <= getGlobalRotation().x + xRot && getGlobalRotation().x + xRot <= X_ROT_MAX)
+                globalRotateX(xRot);
+            globalRotateY(-Engine::getInputRotation().y * Engine::getDeltaTime());
+        }
 
         //Shoot
         if (Engine::isKeyBeingPressed(GLFW_KEY_F, true))

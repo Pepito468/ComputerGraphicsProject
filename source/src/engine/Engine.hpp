@@ -71,7 +71,8 @@ class Engine : public BaseProject {
 
         ma_engine audioEngine;
 
-
+        /// Stores the cursor position
+        double cursorPosX = 0, cursorPosY = 0, oldCursorPosX = 0, oldCursorPosY = 0;
 
     public:
 
@@ -137,6 +138,11 @@ class Engine : public BaseProject {
             return glfwGetInputMode(MainEngine->window, GLFW_CURSOR);
         }
 
+        /** Returns true if the pause menu is open (ie. the cursor is in normal mode) */
+        static bool isPauseMenuOpen() {
+            return (getCursorMode() == GLFW_CURSOR_NORMAL);
+        }
+
         /** Returns the scene's root */
         static Node* getSceneRoot() {
             return MainEngine->scene;
@@ -158,6 +164,13 @@ class Engine : public BaseProject {
 
             MainEngine->sceneToLoad = newRoot;
             log(std::format("Scene change request accepted [to {}, ID: {}]", newRoot->name, newRoot->UUID));
+        }
+
+        /** Toggles visibility of the pause menu */
+        static void togglePauseMenu() {
+            //TODO use #define for ids
+            MainEngine->ui.toggleVisibility(1);
+            MainEngine->ui.toggleVisibility(2);
         }
 
         /** Maps a name to a scene (for convenience).
@@ -479,13 +492,15 @@ class Engine : public BaseProject {
                 elapsedT = 0.0f;
                 countedFrames = 0;
 
+                // example of ui element changing size
                 loadingBarSize += 1.0f * direction;
                 if (loadingBarSize >= 10.0f || loadingBarSize <= 1.0f) {
                     direction = -1 * direction;
                 }
                 ui.renderUI(-0.95f, 0.95f, 0, UIO_LEFT, UIO_BOTTOM, loadingBarSize, 1.0f);
 
-                ui.recreateUIDescriptorSet(1, currentTexture);
+                // example of ui element changing texture
+                ui.recreateUIDescriptorSet(3, currentTexture);
                 if (currentTexture == 0)
                     currentTexture = 1;
                 else
@@ -547,21 +562,25 @@ class Engine : public BaseProject {
             // TODO: move to node
             // initializes the textual output
             txt.init(this, windowWidth, windowHeight);
-            ui.init(windowWidth, windowHeight, {{{"assets/textures/black.png"}, true}}, {
-                {{ProceduralTextures::generateTexture(16, 16, 0, 255, 255), ProceduralTextures::generateTexture(16, 16, 0, 0, 255)}},
-                {{ProceduralTextures::generateTexture(32, 32, 255, 0, 255)}, false, HEIGHT_ONLY_RESIZABLE},
+            ui.init(windowWidth, windowHeight, {
+                {{"assets/textures/black.png"}, true},
+                {{"assets/textures/button.png", "assets/textures/button_hover.png", "assets/textures/button_press.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON},
+            }, {
+                {{ProceduralTextures::generateMenuBackgroundTint(windowWidth, windowHeight)}, true, FULL_RESIZABLE},
+                {{ProceduralTextures::generateTexture(32, 32), ProceduralTextures::generateTextureWithNoise(32, 32)}},
             });
 
             // submits the main command buffer
             submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
 
             // Prepares for showing the FPS count
-            txt.print(1.0f, 1.0f, "FPS:",1,"CO",false,false,true,TAL_RIGHT,TRH_RIGHT,TRV_BOTTOM,{1.0f,0.0f,0.0f,1.0f},{0.8f,0.8f,0.0f,1.0f});
+            txt.print(1.0f, 1.0f, "FPS:",1,"CO",false,false,true,TAL_RIGHT, TRH_RIGHT, TRV_BOTTOM, {1.0f,0.0f,0.0f,1.0f}, {0.8f,0.8f,0.0f,1.0f});
             txt.print(-1.0f, -1.0f ,  "Testo di prova", 2, "CO", false, false, false, TAL_LEFT, TRH_LEFT, TRV_TOP, {0.5f, 0.5f, 0.0f, 0.5f}, {0.5f,0.5f,0.0f,0.5f});
 
             ui.renderUI(-0.95f, 0.95f, 0, UIO_LEFT, UIO_BOTTOM, 1.0f, 1.0f);
-            ui.renderUI(-1.0f, 1.0f, 1, UIO_LEFT, UIO_BOTTOM, 5.0f, 5.0f);
-            ui.renderUI(0.0f, 0.0f, 2, UIO_LEFT, UIO_BOTTOM);
+            ui.renderUI(0.0f, 0.0f, 1, UIO_CENTER, UIO_MIDDLE);
+            ui.renderUI(0.0f, 0.0f, 2, UIO_CENTER, UIO_MIDDLE);
+            ui.renderUI(-1.0f, 1.0f, 3, UIO_LEFT, UIO_BOTTOM);
         }
 
         void pipelinesAndDescriptorSetsInit() override {
@@ -615,11 +634,13 @@ class Engine : public BaseProject {
 
         /** Engine method to update the uniforms (called every frame) */
         void updateUniformBuffer(uint32_t currentImage) override {
-            bool isCursorAvailable = MainEngine->getCursorMode() == GLFW_CURSOR_NORMAL;
-            if (isCursorAvailable) {
-                double x, y;
-                glfwGetCursorPos(MainEngine->window, &x, &y);
-                ui.setMousePosition(x, y);
+            if (isPauseMenuOpen()) {
+                glfwGetCursorPos(MainEngine->window, &cursorPosX, &cursorPosY);
+                if (cursorPosX != oldCursorPosX || cursorPosY != oldCursorPosY) {
+                    oldCursorPosX = cursorPosX;
+                    oldCursorPosY = cursorPosY;
+                    ui.setMousePosition(cursorPosX, cursorPosY);
+                }
             }
 
             // Engine logic
@@ -640,7 +661,7 @@ class Engine : public BaseProject {
             renderer.updateLightCulling(this->mainCamera->getGlobalPosition(), LIGHT_RENDER_DISTANCE);
 
             txt.updateCommandBuffer();
-            ui.updateCommandBuffer(isCursorAvailable);
+            ui.updateCommandBuffer();
         }
 
         /** Called when the window is created */
