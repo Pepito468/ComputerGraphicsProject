@@ -69,6 +69,7 @@ class AudioNode : public virtual Node {
             this->isInitialized = true;
 
             // Play
+            ma_sound_set_spatialization_enabled(&this->sound, MA_FALSE);
             ma_sound_set_volume(&this->sound, this->volume);
             ma_sound_start(&this->sound);
 
