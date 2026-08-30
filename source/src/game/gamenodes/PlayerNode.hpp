@@ -104,6 +104,12 @@ public:
             Engine::togglePauseMenu();
         }
 
+        if (Engine::isKeyBeingPressed(GLFW_MOUSE_BUTTON_LEFT, true)) {
+            if (Engine::isPauseMenuOpen()) {
+                Engine::handleMenuClick();
+            } // else {} if the left mouse button does something outside of menus
+        }
+
         // Change scene
         if (Engine::isKeyBeingPressed(GLFW_KEY_K, true)) {
             Engine::requestSceneChange(Engine::getSceneFromNameMap("Scene2"));

@@ -100,8 +100,8 @@ class Engine : public BaseProject {
 
         /** Returns true if the given key is being pressed */
         static bool isKeyBeingPressed(const int key, const bool onlyOnPress = false) {
-            if (glfwGetKey(MainEngine->window, key))
-            {
+            // glfwGetKey doesn't work with mouse buttons
+            if (glfwGetKey(MainEngine->window, key) || glfwGetMouseButton(MainEngine->window, key) == GLFW_PRESS) {
                 const bool wasPressed = MainEngine->pressedKeyes.contains(key);
                 MainEngine->pressedKeyes.insert(key);
                 return !onlyOnPress || !wasPressed;
@@ -141,6 +141,13 @@ class Engine : public BaseProject {
         /** Returns true if the pause menu is open (ie. the cursor is in normal mode) */
         static bool isPauseMenuOpen() {
             return (getCursorMode() == GLFW_CURSOR_NORMAL);
+        }
+
+        /** Communicates to the ui that something was clicked in the menu */
+        static void handleMenuClick() {
+            double mouseX, mouseY; //TODO I didn't bother changing the global cursorPos[X/Y] since updateMouseStatus is gonna get called anyway. If other functions use the global variable, this probably should update them
+            glfwGetCursorPos(MainEngine->window, &mouseX, &mouseY);
+            MainEngine->ui.updateMouseStatus(mouseX, mouseY, true);
         }
 
         /** Returns the scene's root */
@@ -636,10 +643,11 @@ class Engine : public BaseProject {
         void updateUniformBuffer(uint32_t currentImage) override {
             if (isPauseMenuOpen()) {
                 glfwGetCursorPos(MainEngine->window, &cursorPosX, &cursorPosY);
+                // updates the cursor in ui only if its position changed
                 if (cursorPosX != oldCursorPosX || cursorPosY != oldCursorPosY) {
                     oldCursorPosX = cursorPosX;
                     oldCursorPosY = cursorPosY;
-                    ui.setMousePosition(cursorPosX, cursorPosY);
+                    ui.updateMouseStatus(cursorPosX, cursorPosY);
                 }
             }
 
