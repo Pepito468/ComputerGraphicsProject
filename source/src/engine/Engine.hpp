@@ -193,7 +193,7 @@ class Engine : public BaseProject {
         }
 
         /**
-         * Loads a node and its descendants into the scene.
+         * Loads a node and its descendants into the scene instantly.
          * @param node The root node to add.
          * @param parent The parent of the node. Defaults to the scene root.
          */
@@ -205,28 +205,28 @@ class Engine : public BaseProject {
             MainEngine->addNodeRecursive(node);
         }
 
-        /** Removes a node and its descendants from the scene and frees them. */
-        static void eliminate(Node *node) {
-            if (!node)
-                error("Attempting to free a NULL Node");
-
-            if (node == MainEngine->scene)
-                error("Can't free the root, request a scene change instead");
-
-            node->parent->children.erase(node);
-            MainEngine->removeNodeRecursive(node);
-        }
-
         /**
          * Queue a node for deletion.
+         * @param deleteDescendants flag to specify if the node's descendants have to be deleted (default = false).
          * @note The node will actually be deleted in the next Engine loop.
          */
-        static void requestNodeDeletion(Node *node) {
+        static void requestNodeDeletion(Node *node, const bool deleteDescendants = false) {
             if (!node)
                 error("Deleting NULL node");
 
+            if (node == MainEngine->scene)
+                error("Can't free the scene root, request a scene change instead");
+
+            if (MainEngine->nodesQueuedToBeDeleted.contains(node))
+                warning(std::format("Requesting deletion for the same node again: [{}, ID: {}]", node->name, node->UUID));
+
+
             MainEngine->nodesQueuedToBeDeleted.insert(node);
-            log(std::format("Node deletion request accepted [{}, ID: ]", node->name, node->UUID));
+            if (deleteDescendants)
+                for (Node *child : node->children)
+                    requestNodeDeletion(child, true);
+
+            log(std::format("Node deletion request accepted [{}, ID: {}], delete children? [{}]", node->name, node->UUID, deleteDescendants ? "Y" : "N"));
         }
 
     private:
@@ -286,7 +286,7 @@ class Engine : public BaseProject {
             info("Successfully loaded scene");
         }
 
-        /** Adds a node */
+        /** Adds a node to the scene */
         void addNode(Node *node) {
             // Call onEnter() for the node
             node->onEnter();
@@ -313,6 +313,8 @@ class Engine : public BaseProject {
 
             log(std::format("Added Node [{}, ID: {}]", node->name, node->UUID));
         }
+
+        /** Adds a node to the scene and also adds its descendants */
         void addNodeRecursive(Node *node)
         {
             addNode(node);
@@ -320,28 +322,8 @@ class Engine : public BaseProject {
                 addNodeRecursive(child);
         }
 
-        /** Clears the current scene */
-        void clearScene() {
-            // If no scene was set, no need to clear (expected during first load)
-            if (!this->scene)
-                return;
-
-            info("Clearing Scene");
-
-            size_t poolSize = renderer.getTotalObjectCount();
-            // Clear scene nodes
-            this->removeNodeRecursive(this->scene);
-
-            // Reset properties
-            this->scene = nullptr;
-            this->mainCamera = nullptr;
-
-            log(std::format("Cleared {} rendering objects out of {}", poolSize - renderer.getTotalObjectCount(), poolSize));
-            info("Scene successfully cleared");
-        }
-
-        /** Removes a node */
-        void removeNode(Node *node) {
+        /** Deletes a node from the scene */
+        void deleteNode(Node *node) {
             // Call onExit() for the node
             node->onExit();
 
@@ -358,6 +340,9 @@ class Engine : public BaseProject {
                 renderer.removeSpotLight(light);
             } else if (Collider *coll = dynamic_cast<Collider*>(node)) {
                 Physics::removeCollider(coll);
+            } else if (Camera *camera = dynamic_cast<Camera*>(node)) {
+                if (camera == this->mainCamera) 
+                    this->mainCamera = nullptr;
             }
 
             log(std::format("Removed Node [{}, ID: {}]", node->name, node->UUID));
@@ -365,13 +350,36 @@ class Engine : public BaseProject {
             // Free memory
             delete node;
         }
-        void removeNodeRecursive(Node *node)
+
+        /** Deletes a node from the scene and also deletes its descentants */
+        void deleteNodeRecursive(Node *node)
         {
             for (Node *child : node->children)
-                removeNodeRecursive(child);
+                deleteNodeRecursive(child);
 
-            removeNode(node);
+            deleteNode(node);
         }
+
+        /** Clears the current scene */
+        void clearScene() {
+            // If no scene was set, no need to clear (expected during first load)
+            if (!this->scene)
+                return;
+
+            info("Clearing Scene");
+
+            size_t poolSize = renderer.getTotalObjectCount();
+
+            // Clear scene nodes
+            this->deleteNodeRecursive(this->scene);
+
+            // Reset properties
+            this->scene = nullptr;
+
+            log(std::format("Cleared {} rendering objects out of {}", poolSize - renderer.getTotalObjectCount(), poolSize));
+            info("Scene successfully cleared");
+        }
+
 
         /** Changes the current scene with the one in queue */
         void changeScene() {
@@ -380,12 +388,38 @@ class Engine : public BaseProject {
             this->sceneToLoad = nullptr;
         }
 
-        /** Tries to find a camera from the scene
+        /** Deletes every node in the queue of nodes to be deleted */
+        void deleteNodesQueuedToBeDeleted() {
+
+            for (Node *node : this->nodesQueuedToBeDeleted) {
+
+                // If parent isn't going to be deleted, remove the node from it
+                if (!this->nodesQueuedToBeDeleted.contains(node->parent))
+                    node->parent->disown(node);
+
+                // Reparent children not queued to be deleted
+                std::set<Node*> children(node->children.begin(), node->children.end());
+                for (Node *child : children)
+                    if (!this->nodesQueuedToBeDeleted.contains(child))
+                        this->scene->adopt(child);
+
+                this->deleteNode(node);
+            }
+
+            // Clear queue
+            this->nodesQueuedToBeDeleted.clear();
+        }
+
+        /** Tries to find a camera from the scene and sets it as main. Raises an error if it can't find one.
          * @note Gives priority to cameras with the 'isMain' flag.
-         * Returns NULL if it can't find one 
          * */
-        Camera* tryFindCamera() {
-            return tryFindCameraRecursive(this->scene);
+        void tryFindCamera() {
+            warning("Main camera was not set. Trying to find one...");
+            Camera *camera = tryFindCameraRecursive(this->scene);
+            if (!camera)
+                error("Could not find any camera");
+            warning(std::format("Camera found: setting [{}] as the Main Camera", camera->UUID));
+            this->setMainCamera(camera);
         }
 
         /** Recursive for tryFindCamera() */
@@ -406,6 +440,31 @@ class Engine : public BaseProject {
             return camera;
         }
 
+        /** Reads inputs (translation, rotation), computes the deltaTime and updates the Engine globals with them */
+        void updateGlobals() {
+            // Reset values
+            this->inputTranslation = VEC3_ZERO;
+            this->inputRotation = VEC3_ZERO;
+            this->deltaTime = 0.0f;
+            bool fire; // Won't be used
+
+            // Read values from Starter
+            getSixAxis(this->deltaTime, this->inputTranslation, this->inputRotation, fire);
+
+            // Capturing the rotation with no 'click' constraint from 'getSixAsix()' in Starter
+            static double old_xpos = 0, old_ypos = 0;
+            double xpos, ypos;
+            glfwGetCursorPos(window, &xpos, &ypos);
+            const double m_dx = xpos - old_xpos;
+            const double m_dy = ypos - old_ypos;
+            old_xpos = xpos; old_ypos = ypos;
+            constexpr float MOUSE_RES = 10.0f;
+            glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, GLFW_TRUE);
+            this->inputRotation.y = m_dx / MOUSE_RES;
+            this->inputRotation.x = m_dy / MOUSE_RES;
+
+        }
+
         /** Starts the Engine (called once before the first Engine loop) */
         void engineInit() {
             info("Starting Engine...");
@@ -420,6 +479,7 @@ class Engine : public BaseProject {
             log("DONE");
 
             info("Engine successfully started");
+            this->isFirstEngineLoop = false;
         }
 
         bool isFirstEngineLoop = true;
@@ -428,36 +488,24 @@ class Engine : public BaseProject {
         void engineLoop() {
 
             // Initialize Engine
-            if (this->isFirstEngineLoop) {
+            if (this->isFirstEngineLoop)
                 this->engineInit();
-                this->isFirstEngineLoop = false;
-            }
 
             // If a new scene is queued to be set as main, do it now
             if (this->sceneToLoad != nullptr)
                 this->changeScene();
 
             // Delete nodes requested to be deleted
-            for (Node *node : this->nodesQueuedToBeDeleted)
-                eliminate(node);
-            this->nodesQueuedToBeDeleted.clear();
+            this->deleteNodesQueuedToBeDeleted();
 
             // Checks
             if (!this->scene)
                 error("Scene not set!");
-
-            if (!this->mainCamera) {
-                warning("Main camera was not set. Trying to find one...");
-                // Try find a camera
-                Camera *camera = tryFindCamera();
-                if (!camera)
-                    error("Could not find any camera");
-                warning(std::format("Camera found: setting [{}] as the Main Camera", camera->UUID));
-                this->setMainCamera(camera);
-            }
+            if (!this->mainCamera)
+                this->tryFindCamera();
 
             // Read inputs and compute deltaTime
-            this->computeGlobals();
+            this->updateGlobals();
 
             // Update total time
             this->time += this->deltaTime;
@@ -513,31 +561,6 @@ class Engine : public BaseProject {
                 else
                     currentTexture = 0;
             }
-
-        }
-
-        /** Reads inputs (translation, rotation), computes the deltaTime and updates the Engine globals with them */
-        void computeGlobals() {
-            // Reset values
-            this->inputTranslation = VEC3_ZERO;
-            this->inputRotation = VEC3_ZERO;
-            this->deltaTime = 0.0f;
-            bool fire; // Won't be used
-
-            // Read values from Starter
-            getSixAxis(this->deltaTime, this->inputTranslation, this->inputRotation, fire);
-
-            // Capturing the rotation with no 'click' constraint from 'getSixAsix()' in Starter
-            static double old_xpos = 0, old_ypos = 0;
-            double xpos, ypos;
-            glfwGetCursorPos(window, &xpos, &ypos);
-            const double m_dx = xpos - old_xpos;
-            const double m_dy = ypos - old_ypos;
-            old_xpos = xpos; old_ypos = ypos;
-            constexpr float MOUSE_RES = 10.0f;
-            glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, GLFW_TRUE);
-            this->inputRotation.y = m_dx / MOUSE_RES;
-            this->inputRotation.x = m_dy / MOUSE_RES;
 
         }
 

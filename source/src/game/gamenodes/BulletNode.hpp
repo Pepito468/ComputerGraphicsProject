@@ -27,7 +27,7 @@ public:
             bulletColl->onCollision = [this](const Collider* other)
             {
                 log("Bullet collided with " + other->name);
-                Engine::requestNodeDeletion(bulletColl);
+                Engine::requestNodeDeletion(bulletColl, true);
             };
         }
         else
@@ -42,7 +42,7 @@ public:
         timer += Engine::getDeltaTime();
         if (timer >= LIFETIME)
         {
-            Engine::requestNodeDeletion(bulletColl);
+            Engine::requestNodeDeletion(bulletColl, true);
             return;
         }
 
