@@ -176,8 +176,8 @@ class Engine : public BaseProject {
         /** Toggles visibility of the pause menu */
         static void togglePauseMenu() {
             //TODO use #define for ids
-            MainEngine->ui.toggleVisibility(1);
-            MainEngine->ui.toggleVisibility(2);
+            MainEngine->ui.toggleVisibility(UI_ID_PAUSE_MENU_BACKGROUND);
+            MainEngine->ui.toggleVisibility(UI_ID_BUTTON);
         }
 
         /** Maps a name to a scene (for convenience).
@@ -507,7 +507,7 @@ class Engine : public BaseProject {
                 ui.renderUI(-0.95f, 0.95f, 0, UIO_LEFT, UIO_BOTTOM, loadingBarSize, 1.0f);
 
                 // example of ui element changing texture
-                ui.recreateUIDescriptorSet(3, currentTexture);
+                ui.recreateUIDescriptorSet(1, currentTexture);
                 if (currentTexture == 0)
                     currentTexture = 1;
                 else
@@ -569,11 +569,13 @@ class Engine : public BaseProject {
             // TODO: move to node
             // initializes the textual output
             txt.init(this, windowWidth, windowHeight);
+
+            ui.initElement(UI_ID_PAUSE_MENU_BACKGROUND, {{ProceduralTextures::generateMenuBackgroundTint(windowWidth, windowHeight)}, true, FULL_RESIZABLE});
+            ui.initElement(UI_ID_BUTTON, {{"assets/textures/button.png", "assets/textures/button_hover.png", "assets/textures/button_press.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
+
             ui.init(windowWidth, windowHeight, {
                 {{"assets/textures/black.png"}, true},
-                {{"assets/textures/button.png", "assets/textures/button_hover.png", "assets/textures/button_press.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON},
             }, {
-                {{ProceduralTextures::generateMenuBackgroundTint(windowWidth, windowHeight)}, true, FULL_RESIZABLE},
                 {{ProceduralTextures::generateTexture(32, 32), ProceduralTextures::generateTextureWithNoise(32, 32)}},
             });
 
@@ -585,9 +587,9 @@ class Engine : public BaseProject {
             txt.print(-1.0f, -1.0f ,  "Testo di prova", 2, "CO", false, false, false, TAL_LEFT, TRH_LEFT, TRV_TOP, {0.5f, 0.5f, 0.0f, 0.5f}, {0.5f,0.5f,0.0f,0.5f});
 
             ui.renderUI(-0.95f, 0.95f, 0, UIO_LEFT, UIO_BOTTOM, 1.0f, 1.0f);
-            ui.renderUI(0.0f, 0.0f, 1, UIO_CENTER, UIO_MIDDLE);
-            ui.renderUI(0.0f, 0.0f, 2, UIO_CENTER, UIO_MIDDLE);
-            ui.renderUI(-1.0f, 1.0f, 3, UIO_LEFT, UIO_BOTTOM);
+            ui.renderUI(0.0f, 0.0f, UI_ID_BUTTON, UIO_CENTER, UIO_MIDDLE);
+            ui.renderUI(0.0f, 0.0f, UI_ID_PAUSE_MENU_BACKGROUND, UIO_CENTER, UIO_MIDDLE);
+            ui.renderUI(-1.0f, 1.0f, 1, UIO_LEFT, UIO_BOTTOM);
         }
 
         void pipelinesAndDescriptorSetsInit() override {

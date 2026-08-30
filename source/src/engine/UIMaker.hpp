@@ -15,18 +15,21 @@
 /*
 	TODO list:
 	- Fix leaked objects
-	- Clickable buttons
+	- Button functions
 	- Sliders (maybe)
 	- Checkboxes (maybe)
+	- N-stage buttons (A -> click -> B -> click -> C -> click -> A -> ...) (maybe)
 	- Main menu
 	- Pause menu
 		- Settings (maybe)
-	- Allow manual insertion of id instead of being forced to follow the order of the lists
 */
 
 #define DEFAULT_SUBMIT_ORDER 9999
 #define DEFAULT_WINDOW_WIDTH 1080
 #define DEFAULT_WINDOW_HEIGHT 720
+
+#define UI_ID_BUTTON				100
+#define UI_ID_PAUSE_MENU_BACKGROUND 101
 
 #define UI_DEBUG_STRING COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT
 
@@ -325,6 +328,25 @@ class UIMaker {
 		}
 	}
 
+	/**
+	 * Takes care of the common parts of initElement(<TextureFilesWithParams>) and initElement(<TextureDataWithParams>)
+	 * Assumes the given id is not used by another UIElement
+	 */
+	void initElement(int id, bool isTransparent, ResizableType resize, UIElementType type) {
+		UIElementsMap[id].P.init(BP, &UI_VD, "shaders/UIElement.vert.spv", "shaders/UIElement.frag.spv", {&UI_DSL});
+		UIElementsMap[id].P.setCompareOp(VK_COMPARE_OP_LESS_OR_EQUAL);
+		UIElementsMap[id].P.setCullMode(VK_CULL_MODE_NONE);
+		UIElementsMap[id].P.setTransparency(isTransparent);
+
+		UIElementsMap[id].resize = resize;
+		UIElementsMap[id].type = type;
+		if (type != UI_NORMAL) {
+			if (type == UI_BUTTON) {
+				ButtonsList.push_back({&UIElementsMap[id], false, false});
+			} //else if {} for the other types 
+		}
+	}
+
 public:
 	UIMaker(BaseProject *_BP) {
 		BP = _BP;
@@ -335,8 +357,58 @@ public:
 	//--------------------------------------------
 
 	/**
-	* Initializes the UIMaker with the given textures, creating a pipeline for each UIElement
-	* By default, TextureFiles and TextureDataList are empty lists, and so = DEFAULT_SUBMIT_ORDER
+	 * Initialises a UIElement with the given id and parameters
+	 * Prints a warning if the id is already in use and skips execution
+	 */
+	void initElement(int id, TextureFilesWithParams textureFile) {
+		if (UIElementsMap.find(id) != UIElementsMap.end()) {
+			warning("Another element with the same id ()" + std::to_string(id) + ") is already present in UIElementsMap, skipping insertion");
+			return;
+		}
+
+		int garbage;
+
+		for (auto t : textureFile.TextureFiles) {
+			Texture temp;
+			temp.init(BP, t);
+
+			UIElementsMap[id].addTexture(temp);
+		}
+
+		/// Assumes all texture with the same size
+		unsigned char* pixels = stbi_load(textureFile.TextureFiles.front().c_str(), &UIElementsMap[id].T.width, &UIElementsMap[id].T.height, &garbage, STBI_rgb_alpha);
+		stbi_image_free(pixels);
+
+		initElement(id, textureFile.isTransparent, textureFile.resize, textureFile.type);
+	}
+
+	/**
+	 * Initialises a UIElement with the given id and parameters
+	 * Prints a warning if the id is already in use and skips execution
+	 */
+	void initElement(int id, TextureDataWithParams textureData) {
+		if (UIElementsMap.find(id) != UIElementsMap.end()) {
+			warning("Another element with the same id ()" + std::to_string(id) + ") is already present in UIElementsMap, skipping insertion");
+			return;
+		}
+
+		for (auto t : textureData.TextureData) {
+			Texture temp;
+			temp.initPixels(BP, t.width, t.height, 4, sizeof(uint8_t), {t.pixels.data()});
+
+			UIElementsMap[id].addTexture(temp);
+		}
+
+		/// Assumes all texture with the same size
+		UIElementsMap[id].T.width = textureData.TextureData.front().width;
+		UIElementsMap[id].T.height = textureData.TextureData.front().height;
+
+		initElement(id, textureData.isTransparent, textureData.resize, textureData.type);
+	}
+
+	/**
+	* Finalizes the UIMaker initialization, setting global parameters and (eventually) adding a UIElement for all given textures
+	* To be called after all other initElements
 	* NOTE: the id of the UIElement depends on the position in the lists TextureFiles and TextureDataList (in order)
 	*/
 	void init(int sW, int sH, std::list<TextureFilesWithParams> TextureFilesList = {}, std::list<TextureDataWithParams> TextureDataList = {}, int so = DEFAULT_SUBMIT_ORDER)  {
@@ -345,66 +417,36 @@ public:
 		screenH = sH;
 		submitOrder = so;
 
-		int UIElementsNumber = TextureFilesList.size() + TextureDataList.size();
-
-		createUIDescriptorSetAndVertexLayout();
-		createUIPipeline(UIElementsNumber);
-
 		UI_RP.init(BP, sW, sH, -1, RenderPass::getStandardAttchmentsProperties(AT_SURFACE_NOAA_DEPTH, BP));
 		UI_RP.properties[0].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 		UI_RP.properties[0].initialLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 		UI_RP.properties[1].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 		UI_RP.properties[1].initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-		int i = 0, garbage;
+		int i = 0;
 		for (auto textureChunk : TextureFilesList) {
-			UIElementsMap[i].P.setTransparency(textureChunk.isTransparent);
-
-			for (auto t : textureChunk.TextureFiles) {
-				Texture temp;
-				temp.init(BP, t);
-
-				UIElementsMap[i].addTexture(temp);
+			// if there's already a UIElement with that id, try the next one
+			while (UIElementsMap.find(i) != UIElementsMap.end()) {
+				i++;
 			}
-			/// Assumes all texture with the same size
-			unsigned char* pixels = stbi_load(textureChunk.TextureFiles.front().c_str(), &UIElementsMap[i].T.width, &UIElementsMap[i].T.height, &garbage, STBI_rgb_alpha);
-			stbi_image_free(pixels);
 
-			UIElementsMap[i].resize = textureChunk.resize;
-			UIElementsMap[i].type = textureChunk.type;
-			if (textureChunk.type != UI_NORMAL) {
-				if (textureChunk.type == UI_BUTTON) {
-					ButtonsList.push_back({&UIElementsMap[i], false, false});
-				}
-			}
+			initElement(i, textureChunk);
 			i++;
 		}
 
 		for (auto textureChunk : TextureDataList) {
-			UIElementsMap[i].P.setTransparency(textureChunk.isTransparent);
-
-			for (auto t : textureChunk.TextureData) {
-				Texture temp;
-				temp.initPixels(BP, t.width, t.height, 4, sizeof(uint8_t), {t.pixels.data()});
-
-				UIElementsMap[i].addTexture(temp);
+			while (UIElementsMap.find(i) != UIElementsMap.end()) {
+				i++;
 			}
 
-			UIElementsMap[i].T.width = textureChunk.TextureData.front().width;
-			UIElementsMap[i].T.height = textureChunk.TextureData.front().height;
-
-			UIElementsMap[i].resize = textureChunk.resize;
-			UIElementsMap[i].type = textureChunk.type;
-			if (textureChunk.type != UI_NORMAL) {
-				if (textureChunk.type == UI_BUTTON) {
-					ButtonsList.push_back({&UIElementsMap[i], false, false});
-				}
-			}
+			initElement(i, textureChunk);
 			i++;
 		}
 
-		BP->DPSZs.texturesInPool += UIElementsNumber;
-		BP->DPSZs.setsInPool += UIElementsNumber;
+		createUIDescriptorSetAndVertexLayout();
+
+		BP->DPSZs.texturesInPool += UIElementsMap.size();
+		BP->DPSZs.setsInPool += UIElementsMap.size();
 	}
 
 	/**
