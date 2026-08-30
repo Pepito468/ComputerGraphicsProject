@@ -15,6 +15,7 @@
 /*
 	TODO list:
 	- Fix leaked objects
+		- Add a forceModelUpdate flag to UIMaker and a needsUpdating flag to UIElements
 	- Button functions
 	- Sliders (maybe)
 	- Checkboxes (maybe)
@@ -209,17 +210,15 @@ class UIMaker {
 		}
 
 		/**
-		 * Recreates the local descript set using textureVec[i] as the texture
-		 * Throws an error if i is an invalid index of the vector
+		 * Recreates the local descript set using textureVec[textureId] as the texture
+		 * Throws an error if textureId is an invalid index of the vector
 		 */
-		void recreateDescriptorSet(DescriptorSetLayout *DSL, BaseProject *BP, int i) {
-			if (i >= this->T.textureVec.size() || i < 0) {
-				error("Tried to access texture out of bounds: " + std::to_string(i) + " | texture vector size " + std::to_string(this->T.textureVec.size()));
+		void recreateDescriptorSet(DescriptorSetLayout *DSL, BaseProject *BP, int textureId) {
+			if (textureId >= this->T.textureVec.size() || textureId < 0) {
+				error("Tried to access texture out of bounds: " + std::to_string(textureId) + " | texture vector size " + std::to_string(this->T.textureVec.size()));
 			}
 
-			DescriptorSet temp;
-			temp.init(BP, DSL, {this->T.textureVec[i].getViewAndSampler()});
-			this->DS = temp;
+			this->DS.init(BP, DSL, {this->T.textureVec[textureId].getViewAndSampler()});
 		}
 
 		/**
