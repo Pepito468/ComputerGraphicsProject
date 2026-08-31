@@ -17,27 +17,38 @@
 	- Fix leaked objects
 		- Add a forceModelUpdate flag to UIMaker and a needsUpdating flag to UIElements
 	- Button functions
-	- Sliders (maybe)
+	- Sliders
 	- Checkboxes (maybe)
 	- N-stage buttons (A -> click -> B -> click -> C -> click -> A -> ...) (maybe)
 	- Main menu
 	- Pause menu
-		- Settings (maybe)
+		- Commands (maybe)
+	- Settings
+		- Volume
+		- Mouse sensitivity
+		- Buttons to change scene
 */
 
 #define DEFAULT_SUBMIT_ORDER 9999
 #define DEFAULT_WINDOW_WIDTH 1080
 #define DEFAULT_WINDOW_HEIGHT 720
 
-#define UI_ID_BUTTON				100
-#define UI_ID_PAUSE_MENU_BACKGROUND 101
+#define UI_ID_NULL					-1
+#define UI_ID_PAUSE_MENU_BACKGROUND	20
+#define UI_ID_COMMANDS				99
+#define UI_ID_BUTTON_RESUME			100
+#define UI_ID_BUTTON_QUIT			101
+#define UI_ID_SLIDER_VOLUME			150
+#define UI_ID_SLIDER_SENSITIVITY	151
+#define UI_ID_BUTTON_SCENE1			200
+#define UI_ID_BUTTON_SCENE2			201
 
 #define UI_DEBUG_STRING COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT
 
 enum UIOriginH { UIO_LEFT, UIO_CENTER, UIO_RIGHT };
 enum UIOriginV { UIO_TOP, UIO_MIDDLE, UIO_BOTTOM };
 
-enum UIElementType { UI_NORMAL, UI_BUTTON, UI_SLIDER, UI_CHECKBOX };
+enum UIElementType { UI_NORMAL, UI_BUTTON, UI_SLIDER };
 enum ResizableType {	/// When resizing the window, the UIElement will...
 	NOT_RESIZABLE,			/// keep its dimensions constant
 	FULL_RESIZABLE,			/// scale proportionally
@@ -71,6 +82,11 @@ struct TextureDataWithParams {
 	bool isTransparent = false;
 	ResizableType resize = NOT_RESIZABLE;
 	UIElementType type = UI_NORMAL;
+};
+
+struct InteractedUIElementData {
+	int id;
+	//other data...
 };
 
 class UIMaker {
@@ -112,6 +128,8 @@ class UIMaker {
 		bool isTransparent = false;
 		UIElementType type = UI_NORMAL;
 		ResizableType resize = NOT_RESIZABLE;
+
+		int submitOrder;
 
 		void addTexture(Texture t) {
 			T.textureVec.push_back(t);
@@ -267,7 +285,7 @@ class UIMaker {
 	 * Stores data about a button, including a pointer to the UIElement
 	 */
 	struct ButtonData {
-		UIElement* button;
+		int id;
 		bool hovered;
 		bool clicked;
 	};
@@ -278,7 +296,6 @@ class UIMaker {
 	RenderPass UI_RP;
 
 	int screenW, screenH;	//should be swapchain width and height instead of screen, but can't access it (TextMaker has the same bug)
-	int submitOrder;
 	
 	double mousePosX, mousePosY;
 	
@@ -290,15 +307,15 @@ class UIMaker {
 	/**
 	 * After the cursor moves, checks every button to see if their status changed
 	 */
-	void updateButtonStatus(bool mouseClick) {
+	InteractedUIElementData updateButtonStatus(bool mouseClick) {
 		for (auto &b : ButtonsList) {
-			bool inside = b.button->isPointInsideHitbox((float)mousePosX, (float)mousePosY, screenW, screenH);
+			bool inside = UIElementsMap[b.id].isPointInsideHitbox((float)mousePosX, (float)mousePosY, screenW, screenH);
 			// std::cout << UI_DEBUG_STRING << " hovered: " << b.hovered << "; inside: " << inside << std::endl;
 
 			if (b.hovered) {
 				if (!inside) {
 					// if the button was previously hovered and now the cursor is outside the hitbox
-					b.button->recreateDescriptorSet(&UI_DSL, BP, 0);
+					UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 0);
 					b.hovered = false;
 					commandBufferMustUpdate = true;
 				} else {
@@ -306,25 +323,27 @@ class UIMaker {
 						// if the button was previously hovered and now the cursor clicks it
 						// std::cout << UI_DEBUG_STRING << " clicked a button" << std::endl;
 						b.clicked = true;
-						b.button->recreateDescriptorSet(&UI_DSL, BP, 2);
-						//TODO call function depending on button ID
+						UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 2);
 						commandBufferMustUpdate = true;
+						return {b.id};
 					} else if (b.clicked && !mouseClick) {
 						// if the button was previously clicked, restore its texture to hovered
 						// TODO for now it only updates if the mouse moves, maybe find a way to change it after x time
 						// also multiple clicks without moving the mouse are ignored, maybe should change it
 						b.clicked = false;
-						b.button->recreateDescriptorSet(&UI_DSL, BP, 1);
+						UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 1);
 						commandBufferMustUpdate = true;
 					}
 				}
 			} else if (!b.hovered && inside) {
 				// if the button was not previously hovered and now the button is inside the hitbox
-				b.button->recreateDescriptorSet(&UI_DSL, BP, 1);
+				UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 1);
 				b.hovered = true;
 				commandBufferMustUpdate = true;
 			}
 		}
+
+		return {UI_ID_NULL};
 	}
 
 	/**
@@ -337,11 +356,12 @@ class UIMaker {
 		UIElementsMap[id].P.setCullMode(VK_CULL_MODE_NONE);
 		UIElementsMap[id].P.setTransparency(isTransparent);
 
+		UIElementsMap[id].submitOrder = DEFAULT_SUBMIT_ORDER + id;
 		UIElementsMap[id].resize = resize;
 		UIElementsMap[id].type = type;
 		if (type != UI_NORMAL) {
 			if (type == UI_BUTTON) {
-				ButtonsList.push_back({&UIElementsMap[id], false, false});
+				ButtonsList.push_back({id, false, false});
 			} //else if {} for the other types 
 		}
 	}
@@ -414,7 +434,6 @@ public:
 		// std::cout << UI_DEBUG_STRING << " UI init" << std::endl;
 		screenW = sW;
 		screenH = sH;
-		submitOrder = so;
 
 		UI_RP.init(BP, sW, sH, -1, RenderPass::getStandardAttchmentsProperties(AT_SURFACE_NOAA_DEPTH, BP));
 		UI_RP.properties[0].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
@@ -442,16 +461,7 @@ public:
 			i++;
 		}
 
-		createUIDescriptorSetAndVertexLayout();
-
-		BP->DPSZs.texturesInPool += UIElementsMap.size();
-		BP->DPSZs.setsInPool += UIElementsMap.size();
-	}
-
-	/**
-	* Sets up the Vertex Descriptor and Descriptor Set Layout
-	*/
-	void createUIDescriptorSetAndVertexLayout() {
+		/// Sets up the Vertex Descriptor and Descriptor Set Layout
 		// std::cout << UI_DEBUG_STRING << " Create UI descriptor sets and vertex layouts" << std::endl;
 		UI_VD.init(BP, {{0, sizeof(UIVertex), VK_VERTEX_INPUT_RATE_VERTEX}}, {
 			{0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(UIVertex, pos), sizeof(glm::vec2), POS2D},
@@ -459,28 +469,9 @@ public:
 		});
 
 		UI_DSL.init(BP, {{0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1}});
-	}
 
- 	/**
-	* Sets up the main Pipeline with a default shader
-	*/
-	void createUIPipeline(int pipelinesNumber) {
-		// std::cout << UI_DEBUG_STRING << " Creating " << pipelinesNumber << " UI pipelines with UI_VD = " << &UI_VD << std::endl;
-		for (int i = 0; i < pipelinesNumber; i++) {
-			UIElementsMap[i].P.init(BP, &UI_VD, "shaders/UIElement.vert.spv", "shaders/UIElement.frag.spv", {&UI_DSL});
-			UIElementsMap[i].P.setCompareOp(VK_COMPARE_OP_LESS_OR_EQUAL);
-			UIElementsMap[i].P.setCullMode(VK_CULL_MODE_NONE);
-		}
-	}
-
-	/**
-	 * Creates a descriptor set for each UIElement
-	 */
-	void createUIDescriptorSets() {
-		// std::cout << UI_DEBUG_STRING << " UI descritor sets init";
-		for (auto& e : UIElementsMap) {
-			e.second.createDescriptorSet(&UI_DSL, BP);
-		}
+		BP->DPSZs.texturesInPool += UIElementsMap.size();
+		BP->DPSZs.setsInPool += UIElementsMap.size();
 	}
 
 	void pipelinesAndDescriptorSetsInit() {
@@ -493,7 +484,11 @@ public:
 			//TODO to create >1 viewports, need multiViewport feature; is it worth it?
 		}
 
-		createUIDescriptorSets();
+		/// Creates a descriptor set for each UIElement
+		// std::cout << UI_DEBUG_STRING << " UI descritor sets init";
+		for (auto& e : UIElementsMap) {
+			e.second.createDescriptorSet(&UI_DSL, BP);
+		}
 	}
 
 	static void populateCommandBufferAccess(VkCommandBuffer commandBuffer, int currentImage, void *Params) {
@@ -518,11 +513,11 @@ public:
 		UI_RP.end(commandBuffer);
 	}
 
-	void updateMouseStatus(double x, double y, bool clicked = false) {
+	InteractedUIElementData updateMouseStatus(double x, double y, bool clicked = false) {
 		this->mousePosX = x;
 		this->mousePosY = y;
 
-		updateButtonStatus(clicked);
+		return updateButtonStatus(clicked);
 	}
 
 	void toggleVisibility(int id) {
@@ -579,7 +574,7 @@ public:
 	 */
 	void updateCommandBuffer() {
 		// std::cout << UI_DEBUG_STRING << " UI update command buffer" << std::endl;
-		// debugPrint();
+		debugPrint();
 
 		if (commandBufferMustUpdate) {
 			//could add an update field to each UIElement to avoid updating unchanged elements, but doesn't seem worth it
@@ -589,7 +584,7 @@ public:
 				UIMakerAndModel *uim = (UIMakerAndModel *)malloc(sizeof(UIMakerAndModel));
 				uim->ui = this;
 				uim->M = e.second.M;
-				BP->submitCommandBuffer("ui" + std::to_string(e.first), submitOrder,UIMaker::populateCommandBufferAccess, uim, UIMaker::freeCommandBuffer);
+				BP->submitCommandBuffer("ui" + std::to_string(e.first), e.second.submitOrder, UIMaker::populateCommandBufferAccess, uim, UIMaker::freeCommandBuffer);
 			}
 
 			commandBufferMustUpdate = false;
@@ -731,7 +726,7 @@ public:
 			}
 			std::cout << std::endl;
 
-			std::cout << "Resizable type: ";
+			std::cout << "\tResizable type: ";
 			switch (e.second.resize) {
 			case NOT_RESIZABLE:
 				std::cout << "not resizable";
@@ -751,7 +746,7 @@ public:
 			}
 			std::cout << std::endl;
 
-			std::cout << "UI element type: ";
+			std::cout << "\tUI element type: ";
 			switch (e.second.type) {
 			case UI_NORMAL:
 				std::cout << "normal";
@@ -762,13 +757,10 @@ public:
 			case UI_SLIDER:
 				std::cout << "slider";
 				break;
-			case UI_CHECKBOX:
-				std::cout << "checkbox";
-				break;
 			}
 			std::cout << std::endl;
 
-                        std::cout << "\tModel:";
+			std::cout << "\tModel:";
 			if(e.second.M) {
 				for (auto i : e.second.M->indices) {
 					std::cout << " " << i;
@@ -779,6 +771,8 @@ public:
 			std::cout << std::endl;
 
 			std::cout << "\tTextures: #" << e.second.T.textureVec.size() << " " << e.second.T.width << " x " << e.second.T.height << std::endl;
+
+			std::cout << "\tIsVisible: " << e.second.isVisible << std::endl;
 		}
 
 		std::cout << UI_DEBUG_STRING << " END DEBUG PRINTING ---------------------------" << std::endl;

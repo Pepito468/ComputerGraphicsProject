@@ -92,12 +92,12 @@ public:
     void update() override
     {
         // Check for escape
-        if (Engine::isKeyBeingPressed(GLFW_KEY_ESCAPE)) {
+        if (Engine::isKeyBeingPressed(GLFW_KEY_C)) {
             Engine::MainEngine->requestEngineShutdown();
         }
 
         // Give cursor back if needed
-        if (Engine::isKeyBeingPressed(GLFW_KEY_C, true)) {
+        if (Engine::isKeyBeingPressed(GLFW_KEY_ESCAPE, true)) {
             if (Engine::isPauseMenuOpen()) {
                 Engine::setCursorMode(GLFW_CURSOR_DISABLED);
             } else {

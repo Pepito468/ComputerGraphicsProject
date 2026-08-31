@@ -2,7 +2,6 @@
 #ifndef ENGINE_ENGINE_H
 #define ENGINE_ENGINE_H
 
-#include <sstream>
 #include <json.hpp>
 
 #include "Debug.hpp"
@@ -147,11 +146,29 @@ class Engine : public BaseProject {
             return (getCursorMode() == GLFW_CURSOR_NORMAL);
         }
 
-        /** Communicates to the ui that something was clicked in the menu */
+        /** Communicates to the ui that something was clicked in the menu, and handles calling of engine functions */
         static void handleMenuClick() {
             double mouseX, mouseY; //TODO I didn't bother changing the global cursorPos[X/Y] since updateMouseStatus is gonna get called anyway. If other functions use the global variable, this probably should update them
             glfwGetCursorPos(MainEngine->window, &mouseX, &mouseY);
-            MainEngine->ui.updateMouseStatus(mouseX, mouseY, true);
+            InteractedUIElementData data = MainEngine->ui.updateMouseStatus(mouseX, mouseY, true);
+
+            switch (data.id) {	//TODO
+                case UI_ID_BUTTON_RESUME:
+                    Engine::setCursorMode(GLFW_CURSOR_DISABLED);
+                    Engine::togglePauseMenu();
+                    break;
+                case UI_ID_BUTTON_QUIT:
+                    Engine::MainEngine->requestEngineShutdown();
+                    break;
+                case UI_ID_BUTTON_SCENE1:
+                    Engine::requestSceneChange(Engine::getSceneFromNameMap("Scene1"));
+                    break;
+                case UI_ID_BUTTON_SCENE2:
+                    Engine::requestSceneChange(Engine::getSceneFromNameMap("Scene2"));
+                    break;
+                default:
+                    break;
+            }
         }
 
         /** Returns the scene's root */
@@ -179,9 +196,11 @@ class Engine : public BaseProject {
 
         /** Toggles visibility of the pause menu */
         static void togglePauseMenu() {
-            //TODO use #define for ids
             MainEngine->ui.toggleVisibility(UI_ID_PAUSE_MENU_BACKGROUND);
-            MainEngine->ui.toggleVisibility(UI_ID_BUTTON);
+            MainEngine->ui.toggleVisibility(UI_ID_BUTTON_RESUME);
+            MainEngine->ui.toggleVisibility(UI_ID_BUTTON_QUIT);
+            MainEngine->ui.toggleVisibility(UI_ID_BUTTON_SCENE1);
+            MainEngine->ui.toggleVisibility(UI_ID_BUTTON_SCENE2);
         }
 
         /** Maps a name to a scene (for convenience).
@@ -608,21 +627,21 @@ class Engine : public BaseProject {
             textEngine.init(this, windowWidth, windowHeight);
 
             ui.initElement(UI_ID_PAUSE_MENU_BACKGROUND, {{ProceduralTextures::generateMenuBackgroundTint(windowWidth, windowHeight)}, true, FULL_RESIZABLE});
-            ui.initElement(UI_ID_BUTTON, {{"assets/textures/button.png", "assets/textures/button_hover.png", "assets/textures/button_press.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
-
-            ui.init(windowWidth, windowHeight, {
-                {{"assets/textures/black.png"}, true},
-            }, {
-                {{ProceduralTextures::generateTexture(32, 32), ProceduralTextures::generateTextureWithNoise(32, 32)}},
-            });
+            ui.initElement(UI_ID_BUTTON_RESUME, {{"assets/textures/ui/resume_button.png", "assets/textures/ui/resume_button_hover.png", "assets/textures/ui/resume_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
+            ui.initElement(UI_ID_BUTTON_QUIT, {{"assets/textures/ui/quit_button.png", "assets/textures/ui/quit_button_hover.png", "assets/textures/ui/quit_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
+            ui.initElement(UI_ID_BUTTON_SCENE1, {{"assets/textures/ui/scene1_button.png", "assets/textures/ui/scene1_button_hover.png", "assets/textures/ui/scene1_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
+            ui.initElement(UI_ID_BUTTON_SCENE2, {{"assets/textures/ui/scene2_button.png", "assets/textures/ui/scene2_button_hover.png", "assets/textures/ui/scene2_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
+            
+            ui.init(windowWidth, windowHeight);
 
             // submits the main command buffer
             submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
 
-            ui.renderUI(-0.95f, 0.95f, 0, UIO_LEFT, UIO_BOTTOM, 1.0f, 1.0f);
-            ui.renderUI(0.0f, 0.0f, UI_ID_BUTTON, UIO_CENTER, UIO_MIDDLE);
             ui.renderUI(0.0f, 0.0f, UI_ID_PAUSE_MENU_BACKGROUND, UIO_CENTER, UIO_MIDDLE);
-            ui.renderUI(-1.0f, 1.0f, 1, UIO_LEFT, UIO_BOTTOM);
+            ui.renderUI(0.0f, -0.1f, UI_ID_BUTTON_RESUME, UIO_CENTER, UIO_MIDDLE);
+            ui.renderUI(0.0f, 0.1f, UI_ID_BUTTON_QUIT, UIO_CENTER, UIO_MIDDLE);
+            ui.renderUI(-1.0f, 1.0f, UI_ID_BUTTON_SCENE1, UIO_LEFT, UIO_BOTTOM);
+            ui.renderUI(-0.85f, 1.0f, UI_ID_BUTTON_SCENE2, UIO_LEFT, UIO_BOTTOM);
         }
 
         void pipelinesAndDescriptorSetsInit() override {
@@ -683,7 +702,7 @@ class Engine : public BaseProject {
                 if (cursorPosX != oldCursorPosX || cursorPosY != oldCursorPosY) {
                     oldCursorPosX = cursorPosX;
                     oldCursorPosY = cursorPosY;
-                    ui.updateMouseStatus(cursorPosX, cursorPosY);
+                    ui.updateMouseStatus(cursorPosX, cursorPosY);   //if the mouse hovers something, no info needs to be sent (only on clicks)
                 }
             }
 
@@ -693,26 +712,10 @@ class Engine : public BaseProject {
             // TODO: move to node
             static float elapsedT = 0.0f;
             static float loadingBarSize = 1.0f;
-            static int direction = 1;
-            static int currentTexture = 1;
             elapsedT += this->deltaTime;
-            if(elapsedT > 1.0f) {
+            if (elapsedT > 1.0f) {
                 elapsedT = 0.0f;
-                // example of ui element changing size
-                loadingBarSize += 1.0f * direction;
-                if (loadingBarSize >= 10.0f || loadingBarSize <= 1.0f) {
-                    direction = -1 * direction;
-                }
-                ui.renderUI(-0.95f, 0.95f, 0, UIO_LEFT, UIO_BOTTOM, loadingBarSize, 1.0f);
-
-                // example of ui element changing texture
-                ui.recreateUIDescriptorSet(1, currentTexture);
-                if (currentTexture == 0)
-                    currentTexture = 1;
-                else
-                    currentTexture = 0;
             }
-            //TODO: end move to node
 
             // Flush screen to update with node updates
             renderer.flushScreenUpdate();

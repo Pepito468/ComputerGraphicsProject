@@ -57,7 +57,7 @@ public:
      * Generates the pause/menu transparent black background
      */
     static GeneratedTextureData generateMenuBackgroundTint(int width, int height) {
-        return generateTexture(width, height, 0, 0, 0, 200);
+        return generateTexture(width, height, 0, 0, 0, 100);
     }
 
 private:
