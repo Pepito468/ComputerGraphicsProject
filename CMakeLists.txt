@@ -26,6 +26,7 @@ set(UI_DIR ${ENGINE_DIR}/ui)
 set(LIGHT_DIR ${ENGINE_DIR}/lights)
 set(REND_DIR ${ENGINE_DIR}/rendering)
 set(AUDIO_DIR ${ENGINE_DIR}/audio)
+set(MODULES_DIR ${INCLUDE_DIR}/modules)
 
 file(GLOB SRC_FILES CONFIGURE_DEPENDS "${SRC_DIR}/*.cpp")
 
@@ -33,6 +34,7 @@ file(GLOB SRC_FILES CONFIGURE_DEPENDS "${SRC_DIR}/*.cpp")
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 target_include_directories(${PROJECT_NAME} PRIVATE 
     "${INCLUDE_DIR}"
+    "${MODULES_DIR}"
     "${ENGINE_DIR}"
     "${UTIL_DIR}"
     "${CAM_DIR}"

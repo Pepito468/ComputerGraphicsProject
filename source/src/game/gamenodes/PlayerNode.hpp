@@ -3,6 +3,7 @@
 
 #include "BulletNode.hpp"
 #include "SphereCollider.hpp"
+#include "Text2D.hpp"
 #include "UpdateNode3D.hpp"
 #include "Collider.hpp"
 #include "Engine.hpp"
@@ -58,6 +59,7 @@ class PlayerNode : public UpdateNode3D
 public:
 
     AudioNode3D *music = nullptr;
+    Text2D *inputtxt = nullptr;
     bool isMusicPlaying = false;
 
     void onEnter() override
@@ -167,6 +169,8 @@ public:
                 isMusicPlaying = false;
             }
         }
+
+        inputtxt->text = std::format("POS: {}", this->getGlobalPosition());
     }
 };
 #endif

@@ -16,6 +16,7 @@
 #include "AudioNode.hpp"
 #include "AudioNode3D.hpp"
 
+#include "common.h"
 #include "gamenodes/CustomCameraUpdate.hpp"
 #include "gamenodes/MovingPlanetUpdate.hpp"
 #include "gamenodes/MovingPlanetChildUpdate.hpp"
@@ -72,6 +73,11 @@ Node* createScene1() {
     //cameraContainer->adopt(camera2);
 
     //engine.setMainCamera(camera1);
+    //
+    // Text
+    Text2D *text = new Text2D("", {-1, -1}, "SS", false, true, true, TAL_LEFT, TRH_LEFT, TRV_TOP);
+    root->adopt(text);
+    player->inputtxt = text;
 
     // Models
     Node *models = new Node();

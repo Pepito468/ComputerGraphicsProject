@@ -25,6 +25,7 @@
 #include "Renderer.hpp"
 #include "Physics.hpp"
 
+#include "Text2D.hpp"
 #include "UIMaker.hpp"
 
 #include "AudioNode.hpp"
@@ -35,6 +36,7 @@
 #define LIGHT_RENDER_DISTANCE 20.0f
 #define DEFAULT_CURSOR GLFW_CURSOR_NORMAL
 #define AUDIO_LISTENER 0
+#define TEXT2D_SAFE_INDEX -2
 
 class Engine : public BaseProject {
 
@@ -75,6 +77,9 @@ class Engine : public BaseProject {
         double cursorPosX = 0, cursorPosY = 0, oldCursorPosX = 0, oldCursorPosY = 0;
 
         bool shutdownRequested = false;
+
+        // Text
+        TextMaker textEngine;
 
     public:
 
@@ -265,6 +270,29 @@ class Engine : public BaseProject {
 
             for (Node *child : node->children)
                 updateUpdate3DNodes(child);
+        }
+
+        /** Renders all Text2Ds in the tree */
+        void renderText2D(Node *node) {
+            if (Text2D *txt = dynamic_cast<Text2D*>(node))
+                this->textEngine.print(txt->getGlobalPosition().x,
+                        txt->getGlobalPosition().y, txt->text,
+                        txt->textID,
+                        txt->fontFace,
+                        txt->isItalic,
+                        txt->isBold,
+                        txt->isSmall,
+                        txt->alignment,
+                        txt->regH,
+                        txt->regV,
+                        txt->color,
+                        txt->stroke,
+                        txt->shadow,
+                        txt->getGlobalScale().x,
+                        txt->getGlobalScale().y);
+
+            for (Node *child : node->children)
+                renderText2D(child);
         }
 
         /** Loads the scene given its root */
@@ -465,7 +493,11 @@ class Engine : public BaseProject {
 
             info("Shutting down Engine...");
 
+            // Clear scene
             this->clearScene();
+
+            // Shutdown textEngine
+            this->textEngine.removeAllText();
 
             // Shutdown audio Engine
             ma_engine_uninit(&this->audioEngine);
@@ -529,6 +561,12 @@ class Engine : public BaseProject {
             this->recompute3DNodeHierarchy(this->scene, MAT4_I);
             this->recompute2DNodeHierarchy(this->scene, MAT4_I);
 
+            // Update Text2Ds
+            textEngine.removeAllText();
+            // If nothing is printed, TextMaker crashes, so print something regardless
+            textEngine.print(0.0f, 0.0f, " ", TEXT2D_SAFE_INDEX, "SS");
+            this->renderText2D(this->scene);
+
             // Physics checks
             Physics::checkCollisions();
 
@@ -536,44 +574,6 @@ class Engine : public BaseProject {
             ma_engine_listener_set_position(&this->audioEngine, AUDIO_LISTENER, this->mainCamera->getGlobalPosition().x, this->mainCamera->getGlobalPosition().y, this->mainCamera->getGlobalPosition().z);
             ma_engine_listener_set_direction(&this->audioEngine, AUDIO_LISTENER, this->mainCamera->getLookingDirection().x, this->mainCamera->getLookingDirection().y, this->mainCamera->getLookingDirection().z);
             ma_engine_listener_set_world_up(&this->audioEngine, AUDIO_LISTENER, 0.0f, 1.0f, 0.0f);
-
-            // TODO: move txt to its node
-
-            // updates the FPS
-            static float elapsedT = 0.0f;
-            static int countedFrames = 0;
-            static float loadingBarSize = 1.0f;
-            static int direction = 1;
-            static int currentTexture = 1;
-
-            countedFrames++;
-            elapsedT += this->deltaTime;
-            if(elapsedT > 1.0f) {
-                float Fps = (float)countedFrames / elapsedT;
-
-                std::ostringstream oss;
-                oss << "FPS: " << Fps << "\n";
-
-                txt.print(1.0f, 1.0f, oss.str(), 1, "CO", false, false, true,TAL_RIGHT,TRH_RIGHT,TRV_BOTTOM,{1.0f,0.0f,0.0f,1.0f},{0.8f,0.8f,0.0f,1.0f});
-
-                elapsedT = 0.0f;
-                countedFrames = 0;
-
-                // example of ui element changing size
-                loadingBarSize += 1.0f * direction;
-                if (loadingBarSize >= 10.0f || loadingBarSize <= 1.0f) {
-                    direction = -1 * direction;
-                }
-                ui.renderUI(-0.95f, 0.95f, 0, UIO_LEFT, UIO_BOTTOM, loadingBarSize, 1.0f);
-
-                // example of ui element changing texture
-                ui.recreateUIDescriptorSet(1, currentTexture);
-                if (currentTexture == 0)
-                    currentTexture = 1;
-                else
-                    currentTexture = 0;
-            }
-
         }
 
 
@@ -581,8 +581,6 @@ class Engine : public BaseProject {
 
         Renderer renderer;
         RenderPass RP;
-
-        TextMaker txt; // TODO: move to node
 
         UIMaker ui;
 
@@ -601,9 +599,7 @@ class Engine : public BaseProject {
             DPSZs.texturesInPool = POOL_SIZE;
             DPSZs.setsInPool = POOL_SIZE;
 
-            // TODO: move to node
-            // initializes the textual output
-            txt.init(this, windowWidth, windowHeight);
+            textEngine.init(this, windowWidth, windowHeight);
 
             ui.initElement(UI_ID_PAUSE_MENU_BACKGROUND, {{ProceduralTextures::generateMenuBackgroundTint(windowWidth, windowHeight)}, true, FULL_RESIZABLE});
             ui.initElement(UI_ID_BUTTON, {{"assets/textures/button.png", "assets/textures/button_hover.png", "assets/textures/button_press.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
@@ -617,10 +613,6 @@ class Engine : public BaseProject {
             // submits the main command buffer
             submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
 
-            // Prepares for showing the FPS count
-            txt.print(1.0f, 1.0f, "FPS:",1,"CO",false,false,true,TAL_RIGHT, TRH_RIGHT, TRV_BOTTOM, {1.0f,0.0f,0.0f,1.0f}, {0.8f,0.8f,0.0f,1.0f});
-            txt.print(-1.0f, -1.0f ,  "Testo di prova", 2, "CO", false, false, false, TAL_LEFT, TRH_LEFT, TRV_TOP, {0.5f, 0.5f, 0.0f, 0.5f}, {0.5f,0.5f,0.0f,0.5f});
-
             ui.renderUI(-0.95f, 0.95f, 0, UIO_LEFT, UIO_BOTTOM, 1.0f, 1.0f);
             ui.renderUI(0.0f, 0.0f, UI_ID_BUTTON, UIO_CENTER, UIO_MIDDLE);
             ui.renderUI(0.0f, 0.0f, UI_ID_PAUSE_MENU_BACKGROUND, UIO_CENTER, UIO_MIDDLE);
@@ -632,21 +624,21 @@ class Engine : public BaseProject {
             RP.width = this->swapChainExtent.width;
             RP.height = this->swapChainExtent.height;
 
-            txt.resizeScreen(this->swapChainExtent.width, this->swapChainExtent.height);
+            textEngine.resizeScreen(this->swapChainExtent.width, this->swapChainExtent.height);
             ui.resizeScreen(this->swapChainExtent.width, this->swapChainExtent.height);
 
             RP.create();
 
             renderer.descriptorSetsInits();
 
-            txt.pipelinesAndDescriptorSetsInit();
+            textEngine.pipelinesAndDescriptorSetsInit();
             ui.pipelinesAndDescriptorSetsInit();
         }
 
         void pipelinesAndDescriptorSetsCleanup() override {
             RP.cleanup();
             renderer.descriptorSetsCleanup();
-            txt.pipelinesAndDescriptorSetsCleanup();
+            textEngine.pipelinesAndDescriptorSetsCleanup();
             ui.pipelinesAndDescriptorSetsCleanup();
         }
 
@@ -655,7 +647,7 @@ class Engine : public BaseProject {
 
             renderer.localCleanup();
 
-            txt.localCleanup();
+            textEngine.localCleanup();
             ui.localCleanup();
         }
 
@@ -692,13 +684,33 @@ class Engine : public BaseProject {
             // Engine logic
             this->engineLoop();
 
+            // TODO: move to node
+            static float elapsedT = 0.0f;
+            static float loadingBarSize = 1.0f;
+            static int direction = 1;
+            static int currentTexture = 1;
+            elapsedT += this->deltaTime;
+            if(elapsedT > 1.0f) {
+                elapsedT = 0.0f;
+                // example of ui element changing size
+                loadingBarSize += 1.0f * direction;
+                if (loadingBarSize >= 10.0f || loadingBarSize <= 1.0f) {
+                    direction = -1 * direction;
+                }
+                ui.renderUI(-0.95f, 0.95f, 0, UIO_LEFT, UIO_BOTTOM, loadingBarSize, 1.0f);
+
+                // example of ui element changing texture
+                ui.recreateUIDescriptorSet(1, currentTexture);
+                if (currentTexture == 0)
+                    currentTexture = 1;
+                else
+                    currentTexture = 0;
+            }
+            //TODO: end move to node
+
             // Flush screen to update with node updates
             renderer.flushScreenUpdate();
 
-            // Cleanup memory from old models
-
-
-            // Renderer updates
             // Update with camera data
             renderer.updateUniformBuffer(
                     currentImage,
@@ -709,7 +721,7 @@ class Engine : public BaseProject {
 
             renderer.updateLightCulling(this->mainCamera->getGlobalPosition(), LIGHT_RENDER_DISTANCE);
 
-            txt.updateCommandBuffer();
+            textEngine.updateCommandBuffer();
             ui.updateCommandBuffer();
 
             // Shutdown the Engine if request sfed
