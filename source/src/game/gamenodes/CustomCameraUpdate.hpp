@@ -26,7 +26,7 @@ class CustomCameraUpdate : public UpdateNode3D {
 
         // Check for escape
         if(Engine::MainEngine->isKeyBeingPressed(GLFW_KEY_ESCAPE)) {
-            Engine::MainEngine->shutdown();
+            Engine::MainEngine->requestEngineShutdown();
         }
 
         // Camera change

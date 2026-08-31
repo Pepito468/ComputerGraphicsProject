@@ -91,7 +91,7 @@ public:
     {
         // Check for escape
         if (Engine::isKeyBeingPressed(GLFW_KEY_ESCAPE)) {
-            Engine::MainEngine->shutdown();
+            Engine::MainEngine->requestEngineShutdown();
         }
 
         // Give cursor back if needed

@@ -74,6 +74,8 @@ class Engine : public BaseProject {
         /// Stores the cursor position
         double cursorPosX = 0, cursorPosY = 0, oldCursorPosX = 0, oldCursorPosY = 0;
 
+        bool shutdownRequested = false;
+
     public:
 
         Engine() : renderer(this,
@@ -119,13 +121,9 @@ class Engine : public BaseProject {
             log(std::format("Main camera changed to [{}, ID: {}]", camera->name, camera->UUID));
         }
 
-        /** Shuts down the Engine and closes the window */
-        static void shutdown() {
-            // Shutdown audio Engine
-            ma_engine_uninit(&MainEngine->audioEngine);
-
-            // Shutdown the window
-            glfwSetWindowShouldClose(MainEngine->window, GL_TRUE);
+        /** Shuts down the Engine */
+        static void requestEngineShutdown() {
+            MainEngine->shutdownRequested = true;
         }
 
         /** Sets the cursor mode to the one given */
@@ -160,7 +158,7 @@ class Engine : public BaseProject {
          * */
         static void requestSceneChange(Node *newRoot) {
             if (!newRoot) {
-                warning("Requesting a null scene does nothing");
+                warning("Requesting a NULL scene does nothing");
                 return;
             }
 
@@ -282,7 +280,6 @@ class Engine : public BaseProject {
             // Load scene nodes
             this->addNodeRecursive(root);
 
-            log(std::format("Loaded {} rendering objects", renderer.getTotalObjectCount()));
             info("Successfully loaded scene");
         }
 
@@ -347,8 +344,9 @@ class Engine : public BaseProject {
 
             log(std::format("Removed Node [{}, ID: {}]", node->name, node->UUID));
 
-            // Free memory
-            delete node;
+            // Free memory TODO: scenes can be reloaded?
+            // NOTE: also, models being deleted now as nodes creates a lot of problems with the Renderer (after fixing leaks)
+            // delete node;
         }
 
         /** Deletes a node from the scene and also deletes its descentants */
@@ -368,15 +366,12 @@ class Engine : public BaseProject {
 
             info("Clearing Scene");
 
-            size_t poolSize = renderer.getTotalObjectCount();
-
             // Clear scene nodes
             this->deleteNodeRecursive(this->scene);
 
             // Reset properties
             this->scene = nullptr;
 
-            log(std::format("Cleared {} rendering objects out of {}", poolSize - renderer.getTotalObjectCount(), poolSize));
             info("Scene successfully cleared");
         }
 
@@ -464,6 +459,23 @@ class Engine : public BaseProject {
             this->inputRotation.x = m_dy / MOUSE_RES;
 
         }
+
+        /** Shuts down the Engine and closes the window */
+        void shutdown() {
+
+            info("Shutting down Engine...");
+
+            this->clearScene();
+
+            // Shutdown audio Engine
+            ma_engine_uninit(&this->audioEngine);
+
+            // Shutdown the window
+            glfwSetWindowShouldClose(this->window, GL_TRUE);
+
+            info("Engine successfully shut down");
+        }
+
 
         /** Starts the Engine (called once before the first Engine loop) */
         void engineInit() {
@@ -619,6 +631,7 @@ class Engine : public BaseProject {
             // Update window properties in case it was resized
             RP.width = this->swapChainExtent.width;
             RP.height = this->swapChainExtent.height;
+
             txt.resizeScreen(this->swapChainExtent.width, this->swapChainExtent.height);
             ui.resizeScreen(this->swapChainExtent.width, this->swapChainExtent.height);
 
@@ -682,6 +695,9 @@ class Engine : public BaseProject {
             // Flush screen to update with node updates
             renderer.flushScreenUpdate();
 
+            // Cleanup memory from old models
+
+
             // Renderer updates
             // Update with camera data
             renderer.updateUniformBuffer(
@@ -695,6 +711,13 @@ class Engine : public BaseProject {
 
             txt.updateCommandBuffer();
             ui.updateCommandBuffer();
+
+            // Shutdown the Engine if request sfed
+            if (this->shutdownRequested)
+                this->shutdown();
+
+            // Deleted models memory cleanup
+            renderer.cleanDeletedModels();
         }
 
         /** Called when the window is created */

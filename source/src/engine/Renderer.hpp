@@ -157,6 +157,11 @@ class Renderer {
     std::unordered_map <std::string, Texture> normalTexAssets;
     std::unordered_map <std::string, std::unique_ptr<Material>> materialAssets;
     std::vector<Model3D*> sceneObjects; //stores all the models assigned to Renderer
+    struct ModelToDelete {
+        Model3D *model;
+        int framesRemaining;
+    };
+    std::vector<ModelToDelete> sceneObjectsDeleted;
 
     DirectionalLight *directionalLight = nullptr;
     std::vector<PointLight*> pointlights;
@@ -646,6 +651,10 @@ class Renderer {
             p.second->descriptorSetsCleanup();
         }
 
+        for (ModelToDelete& m : sceneObjectsDeleted)
+            m.framesRemaining = 0;
+        cleanDeletedModels();
+
         RPoffScreen.cleanup();
         RPsceneDepth.cleanup();
         RPsceneColor.cleanup();
@@ -687,11 +696,15 @@ class Renderer {
             t.second.cleanup();
         }
 
-
         PoffScreen.destroy();
         PsceneDepth.destroy();
         PsceneColor.destroy();
         Pskybox.destroy();
+
+        RPoffScreen.destroy();
+        RPsceneDepth.destroy();
+        RPsceneColor.destroy();
+
         for (auto& p : pipelinesMap) {
             p.second->localCleanup();
         }
@@ -863,6 +876,7 @@ class Renderer {
         pipelinesMap.at(model->getShaderType())->removeModel3D(model);
 
         // model->descriptorSetCleanup();
+        sceneObjectsDeleted.push_back({model, MAX_FRAMES_IN_FLIGHT});
         sceneObjects.erase(sceneObjects.begin() + i);
 
         queueScreenUpdate();
@@ -887,11 +901,17 @@ class Renderer {
         this->removeObject(objID);
     }
 
-    size_t getTotalObjectCount() {
-        size_t total = 0;
-        for (auto& p : pipelinesMap)
-            total += p.second->poolSize();
-        return total;
+    /** Cleanups models if they have expired (out of max frames in flight) */
+    void cleanDeletedModels() {
+        for (auto iterator = sceneObjectsDeleted.begin(); iterator != sceneObjectsDeleted.end(); ) {
+            if (iterator->framesRemaining <= 0) {
+                iterator->model->descriptorSetCleanup();
+                iterator = sceneObjectsDeleted.erase(iterator);
+            } else {
+                iterator->framesRemaining--;
+                iterator++;
+            }
+        }
     }
 
 };
