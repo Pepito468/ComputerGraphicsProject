@@ -12,7 +12,7 @@
 | Shaders          |         0          |        16       |       0        |         0         |
 | UI               |         38         |        0        |       0        |         0         |
 | Game Nodes       |         0          |        0        |      5.30      |         0         |
-| Engine           |         0          |        0        |       0        |        17         |
+| Engine           |         0          |        0        |       0        |        24         |
 | Audio            |         0          |        0        |       0        |         5         |
 
 ## External Libraries

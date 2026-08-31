@@ -33,25 +33,42 @@ class PlayerNode : public UpdateNode3D
     void shoot()
     {
         //create bullet
-        SphereCollider* bulletColl = new SphereCollider();
-        bulletColl->name = "bullColl";
-        bulletColl->layer = BULLETS;
-        bulletColl->collidesWith = ALL;
+        // SphereCollider* bulletColl = new SphereCollider();
+        // bulletColl->name = "bullColl";
+        // bulletColl->layer = NONE;
+        // bulletColl->collidesWith = ALL;
+        // BulletNode* bullet = new BulletNode();
+        // bullet->name = "bullet";
+        // Model3D *bulletMod = new Model3D("SuzanneUV.obj", {0, 0, 0}, {0, 0, 0}, {0.5f, 0.5f, 0.5f}, &bulletMat);
+        // bulletMod->name = "bullMod";
+        // bulletColl->adopt(bullet);
+        // bulletColl->adopt(bulletMod);
+        //
+        // const glm::vec3 dir = -getZAxis();
+        // const glm::vec3 v = glm::cross(VEC3_Z, dir);
+        // const float angle = acos(glm::dot(VEC3_Z, dir));
+        // const glm::mat4 rotMat = glm::rotate(angle, v);
+        // bulletColl->setGlobalMatrix(rotMat);
+        // bulletColl->setGlobalPosition(getGlobalPosition());
+        //
+        // Engine::instantiate(bulletColl);
+        //
+        // quack->playSound();
+
         BulletNode* bullet = new BulletNode();
         bullet->name = "bullet";
         Model3D *bulletMod = new Model3D("SuzanneUV.obj", {0, 0, 0}, {0, 0, 0}, {0.5f, 0.5f, 0.5f}, &bulletMat);
         bulletMod->name = "bullMod";
-        bulletColl->adopt(bullet);
-        bulletColl->adopt(bulletMod);
+        bullet->adopt(bulletMod);
 
         const glm::vec3 dir = -getZAxis();
         const glm::vec3 v = glm::cross(VEC3_Z, dir);
         const float angle = acos(glm::dot(VEC3_Z, dir));
         const glm::mat4 rotMat = glm::rotate(angle, v);
-        bulletColl->setGlobalMatrix(rotMat);
-        bulletColl->setGlobalPosition(getGlobalPosition());
+        bullet->setGlobalMatrix(rotMat);
+        bullet->setGlobalPosition(getGlobalPosition());
 
-        Engine::instantiate(bulletColl);
+        Engine::instantiate(bullet);
 
         quack->playSound();
     }
@@ -154,7 +171,7 @@ public:
         }
 
         //Shoot
-        if (Engine::isKeyBeingPressed(GLFW_KEY_F, true))
+        if (Engine::isKeyBeingPressed(GLFW_KEY_F))
             shoot();
 
         // Start music
@@ -170,7 +187,21 @@ public:
             }
         }
 
-        inputtxt->text = std::format("POS: {}", this->getGlobalPosition());
+        static float elapsedT = 1.0f;
+        static float count = 0;
+        elapsedT += Engine::getDeltaTime();
+        count++;
+        if (elapsedT >= 1.0f) {
+            inputtxt->text = std::format("FPS: {}", count / elapsedT);
+            elapsedT = 0.0f;
+            count = 0;
+            log(std::format("DATA: {} {} {} {}\n",
+                        Engine::MainEngine->DPSZs.sampledImagesInPool,
+                        Engine::MainEngine->DPSZs.samplersInPool,
+                        Engine::MainEngine->DPSZs.setsInPool,
+                        Engine::MainEngine->DPSZs.texturesInPool,
+                        Engine::MainEngine->DPSZs.uniformBlocksInPool));
+        }
     }
 };
 #endif

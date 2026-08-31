@@ -21,6 +21,7 @@ class BulletNode : public UpdateNode3D
 public:
     void onEnter() override
     {
+        return;
         if (Collider* c = dynamic_cast<Collider*>(this->parent))
         {
             bulletColl = c;
@@ -42,11 +43,11 @@ public:
         timer += Engine::getDeltaTime();
         if (timer >= LIFETIME)
         {
-            Engine::requestNodeDeletion(bulletColl, true);
+            Engine::requestNodeDeletion(this, true);
             return;
         }
 
-        bulletColl->globalTranslate(bulletColl->getZAxis() * SPEED * Engine::getDeltaTime());
+        this->globalTranslate(this->getZAxis() * SPEED * Engine::getDeltaTime());
     }
 };
 #endif

@@ -2,8 +2,6 @@
 #ifndef ENGINE_ENGINE_H
 #define ENGINE_ENGINE_H
 
-#include <json.hpp>
-
 #include "Debug.hpp"
 
 #include "Node.hpp"
@@ -31,7 +29,7 @@
 
 #include "common.h"
 
-#define POOL_SIZE 1000
+#define POOL_SIZE 5000
 #define LIGHT_RENDER_DISTANCE 20.0f
 #define DEFAULT_CURSOR GLFW_CURSOR_NORMAL
 #define AUDIO_LISTENER 0
@@ -708,14 +706,6 @@ class Engine : public BaseProject {
 
             // Engine logic
             this->engineLoop();
-
-            // TODO: move to node
-            static float elapsedT = 0.0f;
-            static float loadingBarSize = 1.0f;
-            elapsedT += this->deltaTime;
-            if (elapsedT > 1.0f) {
-                elapsedT = 0.0f;
-            }
 
             // Flush screen to update with node updates
             renderer.flushScreenUpdate();
