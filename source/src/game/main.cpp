@@ -381,7 +381,7 @@ Node* createForestScene()
         Model3D* tree = new Model3D("Spooky Tree.gltf", p, {0, yRot, 0}, VEC3_ONE * scale, &treeMat);
         models->adopt(tree);
     }
-    constexpr int TREE_NUM = 50;
+    constexpr int TREE_NUM = 100;
     glm::vec3 corner1 = {11, 0, 7.5f};
     glm::vec3 corner2 = {50, 0, 76.25f};
     glm::vec3 delta = corner2 - corner1;
@@ -417,7 +417,7 @@ Node* createForestScene()
         models->adopt(tree);
     }
     // Grass
-    constexpr int GRASS_NUM = 50;
+    constexpr int GRASS_NUM = 400;
     corner1 = {-50, 0, 76.25f};
     corner2 = {50, 0, -23.75f};
     delta = corner2 - corner1;
@@ -426,7 +426,7 @@ Node* createForestScene()
         glm::vec3 p = corner1 + delta * glm::vec3(randNorm(), randNorm(), randNorm());
         float yRot = 2 * M_PI * randNorm();
         float scale = 1.0f + 1.5f * randNorm();
-        Model3D* tree = new Model3D("Grass.gltf", p, {0, yRot, 0}, VEC3_ONE * scale, &treeMat);
+        Model3D* tree = new Model3D("Grass.gltf", p, {0, yRot, 0}, VEC3_ONE * scale, grassMat);
         models->adopt(tree);
     }
 

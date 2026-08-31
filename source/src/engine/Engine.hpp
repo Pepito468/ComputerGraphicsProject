@@ -29,7 +29,7 @@
 
 #include "common.h"
 
-#define POOL_SIZE 1000
+#define POOL_SIZE 3000
 #define LIGHT_RENDER_DISTANCE 20.0f
 #define DEFAULT_CURSOR GLFW_CURSOR_NORMAL
 
