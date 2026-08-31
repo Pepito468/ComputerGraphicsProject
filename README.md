@@ -1,5 +1,17 @@
 # Computer Graphics Project
 
+## Asset Sources
+### Models
+- Spooky Tree by Jarlan Perez [CC-BY](https://creativecommons.org/licenses/by/3.0/) via [Poly Pizza](https://poly.pizza/m/1xEhkk-WvFk)
+- Castle by CreativeTrio via [Poly Pizza](https://poly.pizza/m/4360GdbxRe)
+- Ghost Skull by Quaternius via [Poly Pizza](https://poly.pizza/m/TX8r9WBXpe)
+- Torch by Quaternius via [Poly Pizza](https://poly.pizza/m/Gq38E7hFZw)
+- Grass by Quaternius via [Poly Pizza](https://poly.pizza/m/vUJjrRsFp4)
+
+### Audio
+
+### Fonts
+
 ## Development Time (hours.mins)
 
 | Task              | Michele Sangaletti | Andrea Riccioli | Shaan Vashisht | Christian Vezzoli |
@@ -13,5 +25,5 @@
 | UI                |         33         |        0        |       0        |         0         |
 | Game Nodes        |         0          |        0        |       9        |         0         |
 | Engine            |         0          |        0        |       0        |        14         |
-| Asset Procurement |         0          |        0        |       6        |         0         |
-| Scene Layout      |         0          |        0        |       0        |         0         |
+| Asset Procurement |         0          |        0        |       11       |         0         |
+| Scene Layout      |         0          |        0        |       3        |         0         |

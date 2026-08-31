@@ -94,6 +94,13 @@ public:
             Engine::requestSceneChange(Engine::getSceneFromNameMap("Scene2"));
         }
 
+        if (Engine::isKeyBeingPressed(GLFW_KEY_L, true))
+        {
+            Model3D* tree = new Model3D("Spooky Tree.gltf", getGlobalPosition() * glm::vec3(1, 0, 1), VEC3_ZERO, VEC3_ONE, &bulletMat);
+            info(std::format("{}", tree->getGlobalPosition()));
+            Engine::instantiate(tree);
+        }
+
         //Check grounded
         isGrounded = Physics::raycast(playerColl->getGlobalPosition() - VEC3_Y * 1.35f, -VEC3_Y, {.maxDistance = 1.0f, .layer = ENVIRONMENT});
         if (isGrounded)

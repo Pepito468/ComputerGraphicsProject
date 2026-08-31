@@ -18,11 +18,9 @@
 #include "gamenodes/MovingPlanetChildUpdate.hpp"
 #include "gamenodes/PlayerNode.hpp"
 
-// LambertMaterial mat3 = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}};
-// ToonMaterial mat2 = {glm::vec3(0.9f, 0.45f, 0.9f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
-// LambertTexMaterial mat1 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "rock.png"};
-// //LambertTexMaterial mat2 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "VChecker.png"};
-// WaterMaterial mat4 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "water.png"};
+#define TEX_MAT(texName) new LambertTexMaterial(VEC3_ONE, {1, 1, 1, 100}, texName)
+
+float randNorm() {return (float)std::rand() / RAND_MAX;}
 
 LambertMaterial mat3 = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}};
 ToonMaterial mat2 = {glm::vec3(0.9f, 0.45f, 0.9f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
@@ -34,9 +32,11 @@ FireMaterial flame2 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "bi
 FireMaterial flame3 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "fire.png"};
 MagicCirleMaterial mat5 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "magicCircle.png"};
 
-LambertTexMaterial cubeMat = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "cubeD.png"};
-LambertMaterial blankMat = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}};
+LambertTexMaterial cubeMat = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "cube.png"};
+LambertMaterial blankMat = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}};
 LambertTexMaterial mageMat = {VEC3_ONE, {1, 1, 1, 100}, "mage.png"};
+LambertMaterial treeMat = {{0.095f, 0.009f, 0.0f}, {1.0f,1.0f,1.0f,100.0f}};
+LambertTexMaterial* grassMat = TEX_MAT("grass.png");
 
 Node* createScene1() {
 
@@ -103,7 +103,7 @@ Node* createScene1() {
         Model3D *m = new Model3D("Statue.gltf", {-1, -0.25, i}, {0, 0, 0}, {1, 1, 1}, &mat1);
         m->name = std::format("Statue-{}", i);
         models->adopt(m);
-    }
+   }
 
     Model3D *suzanne = new Model3D("SuzanneUV.obj", {4, 0, 1}, {0, glm::radians(-90.0f), 0}, {1, 1, 1}, &mat2);
     suzanne->name = "Suzanne";
@@ -206,7 +206,7 @@ Node* createScene2() {
         Model3D *m = new Model3D("Statue.gltf", {-1, 1, i}, {0, 0, 0}, {1, 1, 1}, &mat1);
         m->name = std::format("Statue-{}", i);
         models->adopt(m);
-    }
+   }
 
     Model3D *suzanne = new Model3D("SuzanneUV.obj", {4, 2, 1}, {0, glm::radians(-90.0f), 0}, {1, 1, 1}, &mat2);
     suzanne->name = "Suzanne";
@@ -280,7 +280,7 @@ Node* createUnitScene()
     models->name = "ModelContainer";
     root->adopt(models);
 
-    Model3D *plane = new Model3D("Unit Plane.gltf", {0, 0, 0}, {0, 0, 0}, {20, 1, 20}, &mat1);
+    Model3D *plane = new Model3D("Unit Plane.gltf", {0, 0, 0}, {0, 0, 0}, {20, 1, 200}, &mat1);
     BoxCollider* planeColl = new BoxCollider(1.0f, 0.05f, 1.0f);
     planeColl->name = "PlaneHB";
     planeColl->movementStatus = STATIC;
@@ -291,12 +291,12 @@ Node* createUnitScene()
 
     for (int i = 0; i < 5; i++)
     {
-        Model3D* cube = new Model3D("Unit Cube.gltf", {i, 2, 0}, {0, 0, 0}, {1, 1, 1}, &cubeMat);
+        Model3D* cube = new Model3D("Unit Cube.gltf", {i, 2, 0}, {0, 0, 0}, {1, 1, 1}, TEX_MAT("cube.png"));
         models->adopt(cube);
         BoxCollider* box = new BoxCollider();
         cube->adopt(box);
         box->setLocalPosition(VEC3_ZERO);
-    }
+   }
     Model3D* sphere = new Model3D("Unit Sphere.gltf", {0, 2, 3}, {0, 0, 0}, {1, 1, 1}, &blankMat);
     models->adopt(sphere);
     SphereCollider* sColl = new SphereCollider();
@@ -308,8 +308,127 @@ Node* createUnitScene()
     cap->adopt(cColl);
     cColl->setLocalPosition(VEC3_ZERO);
 
-    Model3D* mage = new Model3D("Mage.gltf", {0, 0, 7}, {0, 0, 0}, {1, 1, 1}, &mageMat);
+    Model3D* mage = new Model3D("Mage.gltf", {0, 0, 7}, {0, 0, 0}, {1, 1, 1}, TEX_MAT("mage.png"));
     models->adopt(mage);
+
+    Model3D* tree = new Model3D("Spooky Tree.gltf", {0, 0, 10}, {0, 0, 0}, VEC3_ONE, &treeMat);
+    models->adopt(tree);
+
+    Model3D* grass = new Model3D("Grass.gltf", {0, 0, 12}, {0, 0, 0}, VEC3_ONE, TEX_MAT("grass.png"));
+    models->adopt(grass);
+
+    Model3D* bridge = new Model3D("Bridge.gltf", {0, 0, 15}, {0, 0, 0}, VEC3_ONE, TEX_MAT("wood-metal.png"));
+    models->adopt(bridge);
+
+    Node3D* lever = new Node3D();
+    Model3D* lever_b = new Model3D("Lever_Base.gltf", {0, 0, 0}, {0, 0, 0}, VEC3_ONE, TEX_MAT("wood-metal.png"));
+    lever->adopt(lever_b);
+    Model3D* lever_h = new Model3D("Lever_Handle.gltf", {0, 0, 0}, {0, 0, 0}, VEC3_ONE, TEX_MAT("wood-metal.png"));
+    lever->adopt(lever_h);
+    lever->globalTranslate({0, 0, 17});
+    models->adopt(lever);
+
+    // Lights
+    AmbientLight *ambientLight = new AmbientLight({0.08f, 0.14f, 0.20f},{0.035f, 0.04f, 0.045f}, {0.0f, 1.0f, 0.0f});
+    ambientLight->name = "AmbientLight";
+    root->adopt(ambientLight);
+
+    DirectionalLight *directionalLight = new DirectionalLight(0.5,glm::vec3(1.0f, 0.95f, 0.8f),glm::normalize(glm::vec3(0.8f, 0.25f, 0.4f)));
+    directionalLight->name = "DirectionalLight";
+    root->adopt(directionalLight);
+
+    return root;
+}
+
+Node* createForestScene()
+{
+    Node *root = new Node();
+    root->name = "root";
+    CapsuleCollider* playerCollider = new CapsuleCollider();
+    playerCollider->name = "PlayerCollider";
+    playerCollider->layer = PLAYER;
+    playerCollider->collidesWith = ENVIRONMENT;
+    root->adopt(playerCollider);
+    PlayerNode* player = new PlayerNode();
+    player->name = "Player";
+    playerCollider->adopt(player);
+    PerspectiveCamera *camera = new PerspectiveCamera(0.01, 100, glm::radians(90.0f), 4.0f/3.0f, true);
+    camera->name = "PerspectiveCamera";
+    player->adopt(camera);
+    playerCollider->globalTranslate({0, 5, 0});
+    player->localTranslate({0, 1.25f, 0});
+
+    // Models
+    Node *models = new Node();
+    models->name = "ModelContainer";
+    root->adopt(models);
+
+    Model3D *plane = new Model3D("Unit Plane.gltf", {0, 0, 26.25f}, {0, 0, 0}, {100, 1, 100}, TEX_MAT("path.png"));
+    BoxCollider* planeColl = new BoxCollider(1.0f, 0.05f, 1.0f);
+    planeColl->name = "PlaneHB";
+    planeColl->movementStatus = STATIC;
+    planeColl->layer = ENVIRONMENT;
+    plane->name = "Plane";
+    plane->adopt(planeColl);
+    models->adopt(plane);
+
+    // trees
+    std::vector<glm::vec3> treePoints = {{-1.4900031, 0, -7.4666696},{-4.4717407, 0, -6.031718},{-8.147978, 0, -3.580738},{-10.602313, 0, -1.393214},{-9.764701, 0, 0.767875},{-9.589022, 0, 3.6422274},{-7.553951, 0, 5.9777937},{-6.3217177, 0, 8.688609},{-5.7114954, 0, 12.880987},{-5.5053144, 0, 16.703545},{-4.7294745, 0, 19.990808},{-5.131528, 0, 23.65886},{-5.42357, 0, 26.877836},{-6.032557, 0, 30.430645},{-6.3090844, 0, 33.90326},{-6.85261, 0, 37.44869},{-6.4628415, 0, 40.94384},{-6.26641, 0, 44.5801},{-6.5654893, 0, 47.67282},{-6.875375, 0, 50.579926},{-7.297063, 0, 53.87048},{-7.709286, 0, 57.348423},{-8.163952, 0, 60.07494},{-9.345858, 0, 62.902946},{-10.04399, 0, 66.019615},{-11.607886, 0, 69.18325},{-13.532837, 0, 71.799355},{-16.656973, 0, 74.4818},{-19.253984, 0, 75.87457},{-21.452354, 0, 76.007126},{-24.019505, 0, 75.77207},{-26.118036, 0, 75.84713},{-28.63543, 0, 75.61665},{-31.097372, 0, 75.85922},{-33.86248, 0, 75.60609},{-36.403374, 0, 75.63948},{-39.71114, 0, 75.336655},{-41.809048, 0, 75.41084},{-44.270298, 0, 75.653694},{-46.34424, 0, 75.463806},{-49.0102, 0, 75.21974},{47.273895, 0, 75.670456},{43.63944, 0, 75.76295},{39.9246, 0, 75.390755},{35.948547, 0, 75.02349},{31.850325, 0, 75.12774},{28.016043, 0, 75.2253},{24.182518, 0, 75.32285},{20.576504, 0, 73.94949},{16.422234, 0, 71.85604},{12.64167, 0, 68.82464},{9.759885, 0, 66.44759},{9.3373995, 0, 63.02035},{8.853088, 0, 59.40179},{7.3523927, 0, 53.49054},{7.281336, 0, 49.49707},{6.7269197, 0, 45.369324},{6.871913, 0, 41.94887},{7.104684, 0, 38.18357},{7.6438265, 0, 35.17796},{8.170417, 0, 32.10619},{7.254827, 0, 29.294895},{5.6194463, 0, 26.645168},{6.7455235, 0, 24.023676},{5.7489996, 0, 20.093536},{5.8929005, 0, 16.672071},{6.0555153, 0, 13.38281},{6.202599, 0, 9.495374},{8.456965, 0, 6.2582855},{9.08316, 0, 2.904467},{8.304268, 0, -0.39158508},{6.3752275, 0, -3.2675736},{3.5540397, 0, -6.7555957},{5.151063, 0, -6.088594},{8.860793, 0, 55.758366}};
+    for (glm::vec3 p : treePoints)
+    {
+        float yRot = 2 * M_PI * randNorm();
+        float scale = 0.9f + 0.6f * randNorm();
+        Model3D* tree = new Model3D("Spooky Tree.gltf", p, {0, yRot, 0}, VEC3_ONE * scale, &treeMat);
+        models->adopt(tree);
+    }
+    constexpr int TREE_NUM = 50;
+    glm::vec3 corner1 = {11, 0, 7.5f};
+    glm::vec3 corner2 = {50, 0, 76.25f};
+    glm::vec3 delta = corner2 - corner1;
+    for (int i = 0; i < TREE_NUM; ++i)
+    {
+        glm::vec3 p = corner1 + delta * glm::vec3(randNorm(), randNorm(), randNorm());
+        float yRot = 2 * M_PI * randNorm();
+        float scale = 1.2f + 0.6f * randNorm();
+        Model3D* tree = new Model3D("Spooky Tree.gltf", p, {0, yRot, 0}, VEC3_ONE * scale, &treeMat);
+        models->adopt(tree);
+    }
+    corner1 = {-11, 0, 7.5f};
+    corner2 = {-50, 0, 76.25f};
+    delta = corner2 - corner1;
+    for (int i = 0; i < TREE_NUM; ++i)
+    {
+        glm::vec3 p = corner1 + delta * glm::vec3(randNorm(), randNorm(), randNorm());
+        float yRot = 2 * M_PI * randNorm();
+        float scale = 1.2f + 0.6f * randNorm();
+        Model3D* tree = new Model3D("Spooky Tree.gltf", p, {0, yRot, 0}, VEC3_ONE * scale, &treeMat);
+        models->adopt(tree);
+    }
+    corner1 = {-50, 0, 7.5f};
+    corner2 = {50, 0, -23.75f};
+    delta = corner2 - corner1;
+    for (int i = 0; i < TREE_NUM; ++i)
+    {
+        glm::vec3 p = corner1 + delta * glm::vec3(randNorm(), randNorm(), randNorm());
+        if (glm::length(p) <= 13.0f) continue; //Too close to origin
+        float yRot = 2 * M_PI * randNorm();
+        float scale = 1.2f + 0.6f * randNorm();
+        Model3D* tree = new Model3D("Spooky Tree.gltf", p, {0, yRot, 0}, VEC3_ONE * scale, &treeMat);
+        models->adopt(tree);
+    }
+    // Grass
+    constexpr int GRASS_NUM = 50;
+    corner1 = {-50, 0, 76.25f};
+    corner2 = {50, 0, -23.75f};
+    delta = corner2 - corner1;
+    for (int i = 0; i < GRASS_NUM; ++i)
+    {
+        glm::vec3 p = corner1 + delta * glm::vec3(randNorm(), randNorm(), randNorm());
+        float yRot = 2 * M_PI * randNorm();
+        float scale = 1.0f + 1.5f * randNorm();
+        Model3D* tree = new Model3D("Grass.gltf", p, {0, yRot, 0}, VEC3_ONE * scale, &treeMat);
+        models->adopt(tree);
+    }
 
     // Lights
     AmbientLight *ambientLight = new AmbientLight({0.08f, 0.14f, 0.20f},{0.035f, 0.04f, 0.045f}, {0.0f, 1.0f, 0.0f});
@@ -328,15 +447,16 @@ int main() {
     Engine engine;
 
     Engine::mapScene("Unit", createUnitScene());
+    Engine::mapScene("Forest", createForestScene());
 
-    Engine::requestSceneChange(Engine::getSceneFromNameMap("Unit"));
+    Engine::requestSceneChange(Engine::getSceneFromNameMap("Forest"));
 
     try {
         engine.run(false);
-    } catch (const std::exception& e) {
+   } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;
-    }
+   }
 
     return EXIT_SUCCESS;
 }
