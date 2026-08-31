@@ -37,6 +37,7 @@
 #define DEFAULT_CURSOR GLFW_CURSOR_NORMAL
 #define AUDIO_LISTENER 0
 #define TEXT2D_SAFE_INDEX -2
+#define TEXT2D_UPDATE_INTERVAL 1.0f
 
 class Engine : public BaseProject {
 
@@ -561,11 +562,16 @@ class Engine : public BaseProject {
             this->recompute3DNodeHierarchy(this->scene, MAT4_I);
             this->recompute2DNodeHierarchy(this->scene, MAT4_I);
 
-            // Update Text2Ds
-            textEngine.removeAllText();
-            // If nothing is printed, TextMaker crashes, so print something regardless
-            textEngine.print(0.0f, 0.0f, " ", TEXT2D_SAFE_INDEX, "SS");
-            this->renderText2D(this->scene);
+            // Update Text2Ds (NOTE: updating it every frame crashes, so update it every some time)
+            static float elapsedTimeForText = TEXT2D_UPDATE_INTERVAL;
+            elapsedTimeForText += this->deltaTime;
+            if (elapsedTimeForText >= TEXT2D_UPDATE_INTERVAL) {
+                textEngine.removeAllText();
+                // If nothing is printed, TextMaker crashes, so print something regardless
+                textEngine.print(0.0f, 0.0f, " ", TEXT2D_SAFE_INDEX, "SS");
+                this->renderText2D(this->scene);
+                elapsedTimeForText = 0.0f;
+            }
 
             // Physics checks
             Physics::checkCollisions();
