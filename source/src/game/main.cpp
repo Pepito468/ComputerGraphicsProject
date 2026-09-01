@@ -13,8 +13,8 @@
 #include "AmbientLight.hpp"
 #include "ColliderLib.hpp"
 
-#include "AudioNode.hpp"
-#include "AudioNode3D.hpp"
+#include "audio/AudioNode.hpp"
+#include "audio/AudioNode3D.hpp"
 
 #include "common.h"
 #include "gamenodes/CustomCameraUpdate.hpp"
@@ -37,6 +37,8 @@ FireMaterial flame1 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "sm
 FireMaterial flame2 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "bigFlame.png"};
 FireMaterial flame3 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "fire.png"};
 MagicCirleMaterial mat5 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "magicCircle.png"};
+
+CookTorranceAnimMaterial animMat = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}, "Rock.png"};
 
 Node* createScene1() {
 
@@ -96,6 +98,18 @@ Node* createScene1() {
     plane->name = "Plane";
     plane->adopt(planeColl);
     models->adopt(plane);
+
+    AnimatedModel3D *man = new AnimatedModel3D(
+                                    {"assets/models/man/uomo.gltf",
+                                                "assets/models/man/running.gltf",
+                                                "assets/models/man/idle.gltf",
+                                                "assets/models/man/pointing.gltf",
+                                                "assets/models/man/waving.gltf"},
+                                                {{0,32,0.0f,0}, {0,16,0.0f,1}, {0,263,0.0f,2}, {0,83,0.0f,3}, {0,16,0.0f,4}}
+                                                ,"Armature|mixamo.com|Layer0", "Ch01_Body",
+                                                {2, 0, 0}, {0, 0, 0}, {3, 3, 3},
+                                                &animMat);
+    models->adopt(man);
 
     Model3D *magicCircle = new Model3D("Water.gltf", {0, 0.5, 0}, {0, 0, 0}, {2, 2, 2}, &mat5);
     models->adopt(magicCircle);

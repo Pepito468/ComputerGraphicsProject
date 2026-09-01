@@ -7,7 +7,7 @@
 #include "UpdateNode3D.hpp"
 #include "Collider.hpp"
 #include "Engine.hpp"
-#include "AudioNode3D.hpp"
+#include "audio/AudioNode3D.hpp"
 #include "glm/geometric.hpp"
 
 #define JUMP_FORCE 5.0f

@@ -175,4 +175,22 @@ public:
     }
 };
 
+class CookTorranceAnimMaterial : public Material {
+public:
+    CookTorranceAnimMaterial(glm::vec3 diffuse, glm::vec4 specular, std::string textureName = "Default.png") {
+        this->diffuse = diffuse;
+        this->specular = specular;
+
+        this->textureName = textureName;
+
+        shaderType = ShaderType::COOK_TORRANCE_ANIM;
+    }
+
+    ~CookTorranceAnimMaterial() override = default;
+    //TODO: al momento non lo invoca nessuno
+    void updateUBO(UniformBufferObject& ubo) override {
+        ubo.color = diffuse;
+        ubo.specular = specular;
+    }
+};
 #endif

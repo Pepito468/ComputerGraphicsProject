@@ -5,13 +5,29 @@
 #include "modules/Starter.hpp"
 #define  TEXTMAKER_IMPLEMENTATION
 #include "modules/TextMaker.hpp"
-#define  SCENE_IMPLEMENTATION
+#define  ANIMATIONS_IMPLEMENTATION
+#include "modules/Animations.hpp"
+
+#define MAX_BONES 65
 
 struct Vertex {
     glm::vec3 pos;
     glm::vec3 norm;
     glm::vec2 UV;
     glm::vec4 tan;
+};
+
+struct VertexAnim {glm::vec3 pos;
+    glm::vec3 norm;
+    glm::vec2 UV;
+    glm::uvec4 jointIndices;
+    glm::vec4 weights;
+};
+
+struct UniformBufferObjectAnimated {
+    alignas(16) glm::mat4 mvpMat[MAX_BONES];
+    alignas(16) glm::mat4 mMat[MAX_BONES];
+    alignas(16) glm::mat4 nMat[MAX_BONES];
 };
 
 struct GlobalUniformBufferObject {
@@ -53,9 +69,9 @@ struct UniformBufferObject {
     alignas(16) glm::vec4 param4;
 };
 
-enum ShaderType {LAMBERT_BLINN, LAMBERT_TEX, WATER, TOON, MAGIC_CIRCLE, FIRE};
+enum ShaderType {LAMBERT_BLINN, LAMBERT_TEX, WATER, TOON, MAGIC_CIRCLE, FIRE, COOK_TORRANCE_ANIM};
 
-constexpr std::initializer_list<ShaderType> allShadersTypes = {LAMBERT_BLINN, LAMBERT_TEX,WATER, TOON, MAGIC_CIRCLE, FIRE};
+constexpr std::initializer_list<ShaderType> allShadersTypes = {LAMBERT_BLINN, LAMBERT_TEX,WATER, TOON, MAGIC_CIRCLE, FIRE, COOK_TORRANCE_ANIM};
 
 const std::string getShaderFragName(ShaderType s)
 {
@@ -67,6 +83,7 @@ const std::string getShaderFragName(ShaderType s)
         case TOON:   return "Toon";
         case FIRE:   return "Fire";
         case MAGIC_CIRCLE: return "MagicCircle";
+        case COOK_TORRANCE_ANIM: return "CookTorranceAnim";
         default:      return "Error";
     }
 }
@@ -81,7 +98,15 @@ const std::string getShaderVertName(ShaderType s)
         case TOON:   return "PosNorm";
         case FIRE:   return "Fire";
         case MAGIC_CIRCLE: return "PosNormUV";
+        case COOK_TORRANCE_ANIM: return "PosNormUVWeights";
         default:      return "Error";
+    }
+}
+
+const bool IsAnimShader(ShaderType s) {
+    switch (s) {
+        case COOK_TORRANCE_ANIM:   return true;
+        default: return false;
     }
 }
 
@@ -92,6 +117,5 @@ const bool IsLateDraw(ShaderType s) {
         default: return false;
     }
 }
-
 
 #endif

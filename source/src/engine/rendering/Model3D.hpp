@@ -6,7 +6,7 @@
 
 /// A node represented with a 3D model
 class Model3D : public Node3D {
-
+    protected:
     std::string modelPath;
     Material* material;
     Model* model;
@@ -30,7 +30,7 @@ class Model3D : public Node3D {
     ~Model3D() = default;
 
     ///This must be called inside PipelineRender.descriptorSetsInits()
-    void descriptorSetInit(BaseProject* bp, DescriptorSetLayout* localLayout, RenderPass* RPoffScreen, RenderPass* RPsceneDepth, RenderPass* RPsceneColor) {
+    virtual void descriptorSetInit(BaseProject* bp, DescriptorSetLayout* localLayout, RenderPass* RPoffScreen, RenderPass* RPsceneDepth, RenderPass* RPsceneColor) {
         local.init(bp, localLayout, {material->getAlbedoTex()->getViewAndSampler(),
             material->getArmTex()->getViewAndSampler(),
             material->getNormalTex()->getViewAndSampler(),
@@ -40,7 +40,7 @@ class Model3D : public Node3D {
     }
 
     ///This must be called inside PipelineRender.descriptorSetsCleanups()
-    void descriptorSetCleanup() {
+    virtual void descriptorSetCleanup() {
         local.cleanup();
     }
 
@@ -69,7 +69,7 @@ class Model3D : public Node3D {
     }
 
     ///This must be called inside PipelineRender.updateUniformBuffer()
-    void updateUniformBuffer(uint32_t currentImage, glm::mat4 projection, glm::mat4 view) {
+    virtual void updateUniformBuffer(uint32_t currentImage, glm::mat4 projection, glm::mat4 view, float deltaT) {
         if (isVisible) {
             UniformBufferObject ubo;
 
@@ -85,6 +85,15 @@ class Model3D : public Node3D {
         }
     }
 
+    virtual void modelInit(BaseProject* bp, VertexDescriptor* vertexDescriptor) {
+        if (modelPath.find(".obj") != std::string::npos)
+            model->init(bp, vertexDescriptor, "assets/models/" + modelPath,OBJ);
+        else if (modelPath.find(".gltf") != std::string::npos)
+            model->init(bp, vertexDescriptor, "assets/models/" + modelPath,GLTF);
+        else
+            std::cout << "Error: " <<  modelPath << ", not a valid object file" << std::endl;
+    }
+
     //Getters and setters
     ShaderType getShaderType() const {return material->getShaderType();}
     std::string getModelPath() const {return modelPath;}
@@ -93,5 +102,92 @@ class Model3D : public Node3D {
     void setModel(Model* model) {this->model = model;}
     bool IsVisible() const {return isVisible;}
     void setIsVisible(bool visible) {this->isVisible = visible;}
+};
+
+class AnimatedModel3D : public Model3D {
+
+    static constexpr float speedUpAnimFact = 0.85f;
+    std::vector<AssetFile> assets;
+    std::vector<AnimBlendSegment> segments;
+    AnimBlender AB;
+    std::vector<Animations> Anim;
+    SkeletalAnimation SKA;
+
+    std::string armatureName;
+    std::string bodyName;
+
+public:
+
+    AnimatedModel3D(){}
+
+    /** <li>assetsPath: contains both model and animations, the model must be place at index 0</li>
+     *  <li>armatureName: the right one should be find inside the model file</li>
+     *  <li>bodyName: is the name of the model inside the model file</li>
+     */
+    AnimatedModel3D(std::vector<std::string> assetsPath,const std::vector<AnimBlendSegment>& segments, std::string armatureName, std::string bodyName, const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale, Material* material, bool isVisible = true)
+        : Model3D(assetsPath[0], position, rotation, scale, material, isVisible) {
+
+        for (auto s : assetsPath) {
+            assets.emplace_back();
+            if (s.find(".obj") != std::string::npos)
+                assets.back().init(s, OBJ);
+            else if (s.find(".gltf") != std::string::npos)
+                assets.back().init(s, GLTF);
+            else
+                std::cout << "Error: " <<  s << ", not a valid object file" << std::endl;
+        }
+
+        this->segments = segments;
+        this->armatureName = armatureName;
+        this->bodyName = bodyName;
+    }
+    ~AnimatedModel3D() = default;
+
+    void descriptorSetInit(BaseProject *bp, DescriptorSetLayout *localLayout, RenderPass *RPoffScreen, RenderPass *RPsceneDepth, RenderPass *RPsceneColor) override {
+        local.init(bp, localLayout, {material->getAlbedoTex()->getViewAndSampler()});
+
+
+        Anim.resize(assets.size());
+        for(int i = 0; i < Anim.size(); i++) {
+            Anim[i].init(assets[i]);
+        }
+        AB.init(segments);
+        AB.Start(2, 0.0f); //TODO: temp
+        SKA.init(Anim.data(), assets.size(), armatureName, 0);
+    }
+
+    void updateUniformBuffer(uint32_t currentImage, glm::mat4 projection, glm::mat4 view, float deltaT) override {
+        glm::mat4 World = getGlobalMatrix();
+        AB.Advance(deltaT * speedUpAnimFact);
+        UniformBufferObjectAnimated uboa {};
+        SKA.Sample(AB);
+        std::vector<glm::mat4> *TMsp = SKA.getTransformMatrices();
+        glm::mat4 AdaptMat =
+            glm::scale(glm::mat4(1.0f), glm::vec3(0.01f)) *
+            glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f,0.0f,0.0f));
+        for (size_t i = 0; i < MAX_BONES; i++) {
+            uboa.mMat[i]   = World * AdaptMat * (*TMsp)[i];
+            uboa.mvpMat[i] = projection * view * uboa.mMat[i];
+            uboa.nMat[i]   = glm::inverse(glm::transpose(uboa.mMat[i]));
+        }
+        local.map(currentImage, &uboa, 0);
+    }
+
+    void descriptorSetCleanup() override {
+        local.cleanup();
+        for(size_t ian = 0; ian < Anim.size(); ian++) {
+            Anim[ian].cleanup();
+        }
+    }
+
+    void modelInit(BaseProject *bp, VertexDescriptor *vertexDescriptor) override {
+        model->initFromAsset(bp, vertexDescriptor, &assets[0], "Mesh", 0, bodyName);
+    }
+
+    void changeAnim(int animationNumber, float blendTime) {
+        AB.Start(animationNumber, blendTime);
+    }
+
+
 };
 #endif
