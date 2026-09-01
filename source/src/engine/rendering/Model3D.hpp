@@ -152,7 +152,6 @@ public:
             Anim[i].init(assets[i]);
         }
         AB.init(segments);
-        AB.Start(2, 0.0f); //TODO: temp
         SKA.init(Anim.data(), assets.size(), armatureName, 0);
     }
 
