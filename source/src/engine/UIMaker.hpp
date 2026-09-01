@@ -574,7 +574,7 @@ public:
 	 */
 	void updateCommandBuffer() {
 		// std::cout << UI_DEBUG_STRING << " UI update command buffer" << std::endl;
-		debugPrint();
+		// debugPrint();
 
 		if (commandBufferMustUpdate) {
 			//could add an update field to each UIElement to avoid updating unchanged elements, but doesn't seem worth it

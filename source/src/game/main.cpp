@@ -158,6 +158,7 @@ Node* createScene1() {
 
     // Planet
     MovingPlanetUpdate *planet = new MovingPlanetUpdate();
+    planet->globalTranslate({0, 2, 0});
     planet->name = "Planet";
     root->adopt(planet);
     // Moving child
@@ -200,6 +201,9 @@ Node* createScene2() {
     // player->localTranslate({0, 1.25f, 0});
 
     CustomCameraUpdate *cameraContainer = new CustomCameraUpdate();
+    // Position over the plane
+    cameraContainer->globalTranslate({-2, 2, 0});
+    cameraContainer->globalRotateY(glm::radians(-90.0f));
     cameraContainer->name = "CameraContainer";
     PerspectiveCamera *camera1 = new PerspectiveCamera(0.01, 100, glm::radians(90.0f), 4.0f/3.0f);
     camera1->name = "PerspectiveCamera";
@@ -265,6 +269,7 @@ Node* createScene2() {
 
     // Planet
     MovingPlanetUpdate *planet = new MovingPlanetUpdate();
+    planet->globalTranslate({0, 2, 0});
     planet->name = "Planet";
     root->adopt(planet);
     // Moving child
