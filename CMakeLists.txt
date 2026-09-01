@@ -49,7 +49,7 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
 set_source_files_properties(${SRC_DIR}/Libs.cpp PROPERTIES COMPILE_OPTIONS "-g0")
 
-target_compile_options(${PROJECT_NAME} PRIVATE -g -O2)
+# target_compile_options(${PROJECT_NAME} PRIVATE -g -O2)
 
 # Segfault helper
 # target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=address -fno-omit-frame-pointer -g)
