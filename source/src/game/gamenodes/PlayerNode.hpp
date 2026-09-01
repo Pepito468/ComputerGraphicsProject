@@ -7,7 +7,7 @@
 #include "Collider.hpp"
 #include "Engine.hpp"
 
-#define WALK_SPEED 4.0f
+#define WALK_SPEED 10.0f
 #define JUMP_FORCE 5.0f
 #define GRAVITY 9.81f
 #define X_ROT_MIN glm::radians(-70.0f)
@@ -102,7 +102,7 @@ public:
         }
 
         //Check grounded
-        isGrounded = Physics::raycast(playerColl->getGlobalPosition() - VEC3_Y * 1.35f, -VEC3_Y, {.maxDistance = 1.0f, .layer = ENVIRONMENT});
+        isGrounded = Physics::raycast(playerColl->getGlobalPosition() - VEC3_Y * 1.5f, -VEC3_Y, {.maxDistance = 0.2f, .layer = ENVIRONMENT});
         if (isGrounded)
         {
             vertSpeed = 0.0f;
@@ -123,11 +123,37 @@ public:
         const float xRot = -Engine::getInputRotation().x * Engine::getDeltaTime();
         if (X_ROT_MIN <= getGlobalRotation().x + xRot && getGlobalRotation().x + xRot <= X_ROT_MAX)
             globalRotateX(xRot);
-        globalRotateY(-Engine::getInputRotation().y * Engine::getDeltaTime());
+        playerColl->globalRotateY(-Engine::getInputRotation().y * Engine::getDeltaTime());
 
         //Shoot
         if (Engine::isKeyBeingPressed(GLFW_KEY_F, true))
             shoot();
+    }
+
+    /// Creates the standard node tree for the player.
+    static Node3D* makeStandardPlayer()
+    {
+        CapsuleCollider* rootCollider = new CapsuleCollider();
+        rootCollider->name = "PlayerCollider";
+        rootCollider->layer = PLAYER;
+        rootCollider->collidesWith = ENVIRONMENT;
+
+        PlayerNode* controls = new PlayerNode();
+        controls->name = "Player";
+        rootCollider->adopt(controls);
+        controls->localTranslate({0, 2.75f, 0});
+
+        PerspectiveCamera *camera = new PerspectiveCamera(0.1f, 200, glm::radians(90.0f), 4.0f/3.0f, true);
+        camera->name = "PerspectiveCamera";
+        controls->adopt(camera);
+
+        LambertTexMaterial* mat = new LambertTexMaterial(VEC3_ONE, {1, 1, 1, 100}, "mage.png");
+        Model3D* model = new Model3D("Mage.gltf", VEC3_ZERO, VEC3_ZERO, VEC3_ONE, mat, false);
+        rootCollider->adopt(model);
+
+        rootCollider->globalTranslate({0, 5, 0});
+        rootCollider->localRotateY(M_PI);
+        return rootCollider;
     }
 };
 #endif

@@ -610,12 +610,12 @@ class Renderer {
 
 
         TenvMap.initCubic(bp, {
-            "assets/textures/skybox/px.png",
-            "assets/textures/skybox/nx.png",
-            "assets/textures/skybox/py.png",
-            "assets/textures/skybox/ny.png",
-            "assets/textures/skybox/pz.png",
-            "assets/textures/skybox/nz.png"
+            "assets/textures/skybox_dark/px.png",
+            "assets/textures/skybox_dark/nx.png",
+            "assets/textures/skybox_dark/py.png",
+            "assets/textures/skybox_dark/ny.png",
+            "assets/textures/skybox_dark/pz.png",
+            "assets/textures/skybox_dark/nz.png"
         }, VK_FORMAT_R8G8B8A8_UNORM);
     }
 
