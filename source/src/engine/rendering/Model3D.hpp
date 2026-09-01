@@ -94,6 +94,8 @@ class Model3D : public Node3D {
             std::cout << "Error: " <<  modelPath << ", not a valid object file" << std::endl;
     }
 
+    virtual void localCleanup() {}
+
     //Getters and setters
     ShaderType getShaderType() const {return material->getShaderType();}
     std::string getModelPath() const {return modelPath;}
@@ -115,6 +117,8 @@ class AnimatedModel3D : public Model3D {
 
     std::string armatureName;
     std::string bodyName;
+
+    bool justOnce = true;
 
 public:
 
@@ -147,13 +151,17 @@ public:
         local.init(bp, localLayout, {material->getAlbedoTex()->getViewAndSampler()});
 
 
-        Anim.resize(assets.size());
-        for(int i = 0; i < Anim.size(); i++) {
-            Anim[i].init(assets[i]);
+        if (justOnce) {
+            Anim.resize(assets.size());
+            for(int i = 0; i < Anim.size(); i++) {
+                Anim[i].init(assets[i]);
+            }
+            AB.init(segments);
+            AB.Start(2, 0.0f); //TODO: temp
+            SKA.init(Anim.data(), assets.size(), armatureName, 0);
+
+            justOnce = false;
         }
-        AB.init(segments);
-        AB.Start(2, 0.0f); //TODO: temp
-        SKA.init(Anim.data(), assets.size(), armatureName, 0);
     }
 
     void updateUniformBuffer(uint32_t currentImage, glm::mat4 projection, glm::mat4 view, float deltaT) override {
@@ -175,6 +183,9 @@ public:
 
     void descriptorSetCleanup() override {
         local.cleanup();
+    }
+
+    void localCleanup() override {
         for(size_t ian = 0; ian < Anim.size(); ian++) {
             Anim[ian].cleanup();
         }

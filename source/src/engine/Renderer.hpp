@@ -100,6 +100,9 @@ class Renderer {
 
         ///Must be called inside Renderer.localCleanup()
         void localCleanup() {
+            for (auto& m : pool) {
+                m->localCleanup();
+            }
             pipeline.destroy();
         }
 
