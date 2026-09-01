@@ -98,7 +98,7 @@ const std::string getShaderVertName(ShaderType s)
         case TOON:   return "PosNorm";
         case FIRE:   return "Fire";
         case MAGIC_CIRCLE: return "PosNormUV";
-        case COOK_TORRANCE_ANIM: return "PosNormUVWeights";
+        case COOK_TORRANCE_ANIM: return "PosNormUvWeights";
         default:      return "Error";
     }
 }

@@ -38,7 +38,7 @@ FireMaterial flame2 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "bi
 FireMaterial flame3 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "fire.png"};
 MagicCirleMaterial mat5 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "magicCircle.png"};
 
-CookTorranceAnimMaterial animMat = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}, "Rock.png"};
+CookTorranceAnimMaterial animMat = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}, "rock.png"};
 
 Node* createScene1() {
 
@@ -186,28 +186,28 @@ Node* createScene2() {
 
     Node *root = new Node();
     root->name = "root";
-    CapsuleCollider* playerCollider = new CapsuleCollider();
-    playerCollider->name = "PlayerCollider";
-    playerCollider->layer = PLAYER;
-    root->adopt(playerCollider);
-    PlayerNode* player = new PlayerNode();
-    player->name = "Player";
-    playerCollider->adopt(player);
-    PerspectiveCamera *camera = new PerspectiveCamera(0.01, 100, glm::radians(90.0f), 4.0f/3.0f, true);
-    camera->name = "PerspectiveCamera";
-    player->adopt(camera);
-    playerCollider->globalTranslate({-2, 5, 0});
-    player->localTranslate({0, 1.25f, 0});
+    // CapsuleCollider* playerCollider = new CapsuleCollider();
+    // playerCollider->name = "PlayerCollider";
+    // playerCollider->layer = PLAYER;
+    // root->adopt(playerCollider);
+    // PlayerNode* player = new PlayerNode();
+    // player->name = "Player";
+    // playerCollider->adopt(player);
+    // PerspectiveCamera *camera = new PerspectiveCamera(0.01, 100, glm::radians(90.0f), 4.0f/3.0f, true);
+    // camera->name = "PerspectiveCamera";
+    // player->adopt(camera);
+    // playerCollider->globalTranslate({-2, 5, 0});
+    // player->localTranslate({0, 1.25f, 0});
 
-    //CustomCameraUpdate *cameraContainer = new CustomCameraUpdate();
-    //cameraContainer->name = "CameraContainer";
-    //PerspectiveCamera *camera1 = new PerspectiveCamera(0.01, 100, glm::radians(90.0f), 4.0f/3.0f);
-    //camera1->name = "PerspectiveCamera";
-    //OrthoCamera *camera2 = new OrthoCamera(-4, 4, -2, 2, 0.01, 200);
-    //camera2->name = "OrthoCamera";
-    //root->adopt(cameraContainer);
-    //cameraContainer->adopt(camera1);
-    //cameraContainer->adopt(camera2);
+    CustomCameraUpdate *cameraContainer = new CustomCameraUpdate();
+    cameraContainer->name = "CameraContainer";
+    PerspectiveCamera *camera1 = new PerspectiveCamera(0.01, 100, glm::radians(90.0f), 4.0f/3.0f);
+    camera1->name = "PerspectiveCamera";
+    OrthoCamera *camera2 = new OrthoCamera(-4, 4, -2, 2, 0.01, 200);
+    camera2->name = "OrthoCamera";
+    root->adopt(cameraContainer);
+    cameraContainer->adopt(camera1);
+    cameraContainer->adopt(camera2);
 
     //engine.setMainCamera(camera1);
 
