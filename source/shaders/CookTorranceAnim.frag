@@ -109,6 +109,10 @@ void main() {
     const float shadowScale = 128.0f;
     vec2 texelSize = 1.0f / vec2(textureSize(shadowMap, 0));
     float notInShadow = 0.0f;
+
+    float depth = texture(shadowMap, lightMapUV).r;
+    notInShadow = depth + shadowBias >= lightMapDist ? 1.0f : 0.0f;
+    /*
     for(int x = -1; x <= 1; x++) {
     	for(int y = -1; y <= 1; y++) {
     		float depth = texture(shadowMap, lightMapUV + vec2(x, y) * texelSize).r;
@@ -116,7 +120,7 @@ void main() {
     	}
 
     }
-    notInShadow /= 9.0f;
+    notInShadow /= 9.0f;*/
 
 
 	vec3 color  = (Diffuse + Specular) * lightColor * notInShadow + Ambient;

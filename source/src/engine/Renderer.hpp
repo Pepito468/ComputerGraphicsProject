@@ -777,14 +777,18 @@ class Renderer {
     void populateShadowCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
         RPoffScreen.begin(commandBuffer, 0);
 
+        PoffScreen.bind(commandBuffer);
+        offScreen.bind(commandBuffer, PoffScreen, 0, currentImage);
         for (auto& o : sceneObjects) {
             if (!IsAnimShader(o->getShaderType())) {
-                PoffScreen.bind(commandBuffer);
-                offScreen.bind(commandBuffer, PoffScreen, 0, currentImage);
                 o->populateCommandBuffer(commandBuffer, currentImage, PoffScreen);
-            } else {
-                PoffScreenAnim.bind(commandBuffer);
-                offScreen.bind(commandBuffer, PoffScreenAnim, 0, currentImage);
+            }
+        }
+
+        PoffScreenAnim.bind(commandBuffer);
+        offScreen.bind(commandBuffer, PoffScreenAnim, 0, currentImage);
+        for (auto& o : sceneObjects) {
+            if (IsAnimShader(o->getShaderType())) {
                 o->populateCommandBuffer(commandBuffer, currentImage, PoffScreenAnim);
             }
         }
