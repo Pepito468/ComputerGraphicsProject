@@ -18,7 +18,9 @@
 #include "audio/AudioNode3D.hpp"
 
 #include "common.h"
+#include "gamenodes/AudioController.hpp"
 #include "gamenodes/CustomCameraUpdate.hpp"
+#include "gamenodes/FPSTextUpdater.hpp"
 #include "gamenodes/MovingPlanetUpdate.hpp"
 #include "gamenodes/MovingPlanetChildUpdate.hpp"
 #include "gamenodes/PlayerNode.hpp"
@@ -55,25 +57,9 @@ Node* createScene1() {
 
     Node *root = new Node();
     root->name = "root";
-    CapsuleCollider* playerCollider = new CapsuleCollider();
-    playerCollider->name = "PlayerCollider";
-    playerCollider->layer = PLAYER;
-    playerCollider->collidesWith = ENVIRONMENT;
-    root->adopt(playerCollider);
-    PlayerNode* player = new PlayerNode();
-    player->name = "Player";
-    playerCollider->adopt(player);
-    PerspectiveCamera *camera = new PerspectiveCamera(0.01, 100, glm::radians(90.0f), 4.0f/3.0f, true);
-    camera->name = "PerspectiveCamera";
-    player->adopt(camera);
-    playerCollider->globalTranslate({-2, 5, 0});
-    player->localTranslate({0, 1.25f, 0});
 
-    // Audio
-    AudioNode *quack = new AudioNode("quack.mp3", 0.1f);
-    quack->name = "quack";
-    player->adopt(quack);
-
+    Node3D* player = PlayerNode::makeStandardPlayer();
+    root->adopt(player);
 
     //CustomCameraUpdate *cameraContainer = new CustomCameraUpdate();
     //cameraContainer->name = "CameraContainer";
@@ -88,9 +74,7 @@ Node* createScene1() {
     //engine.setMainCamera(camera1);
     //
     // Text
-    Text2D *text = new Text2D("", {-1, -1}, "SS", false, true, true, TAL_LEFT, TRH_LEFT, TRV_TOP);
-    root->adopt(text);
-    player->inputtxt = text;
+    root->adopt(new FPSTextUpdater());
 
     // Models
     Node *models = new Node();
@@ -190,10 +174,9 @@ Node* createScene1() {
     Model3D *orbitingStatue = new Model3D("Statue.gltf", {0, 0, 0}, {0, 0, 0}, {1, 1, 1}, &mat1);
     orbitingStatue->localTranslate({1, 0, 0});
     movingChild->adopt(orbitingStatue);
-    AudioNode3D *movingAudio = new AudioNode3D("rocketJumpWaltz.mp3", 1.0f, 50.0f, 1.0f, INVERSE, 0.1f);
+    AudioController *movingAudio = new AudioController(new AudioNode3D("rocketJumpWaltz.mp3", 1.0f, 50.0f, 1.0f, INVERSE, 0.1f));
     movingAudio->name = "RocketJumWaltz";
     planet->adopt(movingAudio);
-    player->music = movingAudio;
 
     return root;
 }
@@ -309,19 +292,8 @@ Node* createUnitScene()
 {
     Node *root = new Node();
     root->name = "root";
-    CapsuleCollider* playerCollider = new CapsuleCollider();
-    playerCollider->name = "PlayerCollider";
-    playerCollider->layer = PLAYER;
-    playerCollider->collidesWith = ENVIRONMENT;
-    root->adopt(playerCollider);
-    PlayerNode* player = new PlayerNode();
-    player->name = "Player";
-    playerCollider->adopt(player);
-    PerspectiveCamera *camera = new PerspectiveCamera(0.01, 100, glm::radians(90.0f), 4.0f/3.0f, true);
-    camera->name = "PerspectiveCamera";
-    player->adopt(camera);
-    playerCollider->globalTranslate({-2, 5, 0});
-    player->localTranslate({0, 1.25f, 0});
+
+    root->adopt(PlayerNode::makeStandardPlayer());
 
     // Models
     Node *models = new Node();
@@ -394,6 +366,10 @@ Node* createForestScene()
     root->name = "root";
 
     root->adopt(PlayerNode::makeStandardPlayer());
+
+    root->adopt(new FPSTextUpdater());
+
+    root->adopt(new AudioController(new AudioNode("rocketJumpWaltz.mp3", 0.1f), true));
 
     // Models
     Node *models = new Node();

@@ -43,6 +43,7 @@ public:
         timer += Engine::getDeltaTime();
         if (timer >= LIFETIME)
         {
+            log("Bullet expired");
             Engine::requestNodeDeletion(this, true);
             return;
         }

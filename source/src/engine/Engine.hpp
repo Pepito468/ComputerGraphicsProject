@@ -578,6 +578,21 @@ class Engine : public BaseProject {
             // Call update() on all UpdateNodes
             this->updateUpdate3DNodes(this->scene);
 
+            // Check for escape
+            if (isKeyBeingPressed(GLFW_KEY_ESCAPE)) {
+                requestEngineShutdown();
+            }
+
+            // Pause game
+            if (isKeyBeingPressed(GLFW_KEY_P, true)) {
+                togglePauseMenu();
+                setCursorMode(isPauseMenuOpen() ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+            }
+
+            // Check for clicks in the menu
+            if (isKeyBeingPressed(GLFW_MOUSE_BUTTON_LEFT, true) && isPauseMenuOpen())
+                handleMenuClick();
+
             // Recompute hierarchy in case something changed
             this->recompute3DNodeHierarchy(this->scene, MAT4_I);
             this->recompute2DNodeHierarchy(this->scene, MAT4_I);

@@ -24,7 +24,7 @@
 | Testing           |         3          |        0        |       16       |         6         |
 | Shaders           |         0          |       16        |       0        |         0         |
 | UI                |         38         |        0        |       0        |         0         |
-| Game Nodes        |         0          |        0        |       9        |         0         |
+| Game Nodes        |         0          |        0        |       11       |         0         |
 | Engine            |         0          |        0        |       0        |        24         |
 | Audio             |         0          |        0        |       0        |         5         |
 | Asset Procurement |         0          |        0        |       11       |         0         |

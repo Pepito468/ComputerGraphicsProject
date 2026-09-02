@@ -25,7 +25,6 @@ class PlayerNode : public UpdateNode3D
     Collider* playerColl = nullptr;
     float vertSpeed = 0.0f;
     bool isGrounded = false;
-    float walk_speed = 4.0f;
 
     AudioNode *quack = nullptr;
 
@@ -37,7 +36,7 @@ class PlayerNode : public UpdateNode3D
         SphereCollider* bulletColl = new SphereCollider();
         bulletColl->name = "bullColl";
         bulletColl->layer = BULLETS;
-        bulletColl->collidesWith = ALL;
+        bulletColl->collidesWith = ENVIRONMENT;
         BulletNode* bullet = new BulletNode();
         bullet->name = "bullet";
         Model3D *bulletMod = new Model3D("SuzanneUV.obj", {0, 0, 0}, {0, 0, 0}, {0.5f, 0.5f, 0.5f}, &bulletMat);
@@ -59,15 +58,8 @@ class PlayerNode : public UpdateNode3D
 
 public:
 
-    AudioNode3D *music = nullptr;
-    Text2D *inputtxt = nullptr;
-    bool isMusicPlaying = false;
-
     void onEnter() override
     {
-        // Set cursor mode
-        // Engine::setCursorMode(GLFW_CURSOR_DISABLED);
-
         if (Collider* c = dynamic_cast<Collider*>(this->parent))
         {
             playerColl = c;
@@ -92,35 +84,10 @@ public:
 
     void update() override
     {
-        // Check for escape
-        if (Engine::isKeyBeingPressed(GLFW_KEY_C)) {
-            Engine::MainEngine->requestEngineShutdown();
-        }
+        if (Engine::isPauseMenuOpen())
+            return; // Game is paused, don't do anything
 
-        // Give cursor back if needed
-        if (Engine::isKeyBeingPressed(GLFW_KEY_ESCAPE, true)) {
-            if (Engine::isPauseMenuOpen()) {
-                Engine::setCursorMode(GLFW_CURSOR_DISABLED);
-            } else {
-                Engine::setCursorMode(GLFW_CURSOR_NORMAL);
-            }
-
-            Engine::togglePauseMenu();
-        }
-
-        if (Engine::isKeyBeingPressed(GLFW_MOUSE_BUTTON_LEFT, true)) {
-            if (Engine::isPauseMenuOpen()) {
-                Engine::handleMenuClick();
-            } // else {} if the left mouse button does something outside of menus
-        }
-
-        // Change scene
-        if (Engine::isKeyBeingPressed(GLFW_KEY_K, true)) {
-            Engine::requestSceneChange(Engine::getSceneFromNameMap("Scene2"));
-        } else if (Engine::isKeyBeingPressed(GLFW_KEY_L, true)) {
-            Engine::requestSceneChange(Engine::getSceneFromNameMap("Scene1"));
-        }
-
+        //Testing for object placement TODO remove
         if (Engine::isKeyBeingPressed(GLFW_KEY_L, true))
         {
             Model3D* tree = new Model3D("Spooky Tree.gltf", getGlobalPosition() * glm::vec3(1, 0, 1), VEC3_ZERO, VEC3_ONE, &bulletMat);
@@ -139,10 +106,9 @@ public:
         else
             vertSpeed -= GRAVITY * Engine::getDeltaTime();
 
-        float speed = walk_speed;
+        float speed = WALK_SPEED;
         if (Engine::isKeyBeingPressed(GLFW_KEY_LEFT_SHIFT))
             speed *= 1.5;
-
 
         // update the camera position and direction with the inputs
         glm::vec3 delta = VEC3_ZERO;
@@ -154,41 +120,14 @@ public:
 
         playerColl->globalTranslate(delta);
 
-        /// When the pause menu is open, moving the mouse doesn't move the camera
-        //TODO when the pause menu is open, "freeze" the game (or we can keep it running, like Dark Souls)
-        if (!Engine::isPauseMenuOpen()) {
-            const float xRot = -Engine::getInputRotation().x * Engine::getDeltaTime();
-            if (X_ROT_MIN <= getGlobalRotation().x + xRot && getGlobalRotation().x + xRot <= X_ROT_MAX)
-                globalRotateX(xRot);
-            playerColl->globalRotateY(-Engine::getInputRotation().y * Engine::getDeltaTime());
-        }
+        const float xRot = -Engine::getInputRotation().x * Engine::getDeltaTime();
+        if (X_ROT_MIN <= getGlobalRotation().x + xRot && getGlobalRotation().x + xRot <= X_ROT_MAX)
+            globalRotateX(xRot);
+        playerColl->globalRotateY(-Engine::getInputRotation().y * Engine::getDeltaTime());
 
         //Shoot
         if (Engine::isKeyBeingPressed(GLFW_KEY_F, true))
             shoot();
-
-        // Start music
-        if (music && Engine::isKeyBeingPressed(GLFW_KEY_M, true)) {
-            if (!isMusicPlaying) {
-                music->playSound();
-                music->enableLooping();
-                isMusicPlaying = true;
-            } else {
-                music->stopSound();
-                music->disableLooping();
-                isMusicPlaying = false;
-            }
-        }
-
-        static float elapsedT = 1.0f;
-        static float count = 0;
-        elapsedT += Engine::getDeltaTime();
-        count++;
-        if (inputtxt && elapsedT >= 1.0f) {
-            inputtxt->text = std::format("FPS: {}", count / elapsedT);
-            elapsedT = 0.0f;
-            count = 0;
-        }
     }
 
     /// Creates the standard node tree for the player.
@@ -211,6 +150,10 @@ public:
         LambertTexMaterial* mat = new LambertTexMaterial(VEC3_ONE, {1, 1, 1, 100}, "mage.png");
         Model3D* model = new Model3D("Mage.gltf", VEC3_ZERO, VEC3_ZERO, VEC3_ONE, mat, false);
         rootCollider->adopt(model);
+
+        AudioNode *quack = new AudioNode("quack.mp3", 0.1f);
+        quack->name = "quack";
+        controls->adopt(quack);
 
         rootCollider->globalTranslate({0, 5, 0});
         rootCollider->localRotateY(M_PI);
