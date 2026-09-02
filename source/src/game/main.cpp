@@ -21,6 +21,7 @@
 #include "gamenodes/AudioController.hpp"
 #include "gamenodes/CustomCameraUpdate.hpp"
 #include "gamenodes/FPSTextUpdater.hpp"
+#include "gamenodes/LeverNode.hpp"
 #include "gamenodes/MovingPlanetUpdate.hpp"
 #include "gamenodes/MovingPlanetChildUpdate.hpp"
 #include "gamenodes/PlayerNode.hpp"
@@ -390,27 +391,20 @@ Node* createForestScene()
     plane2->adopt(plane2Coll);
     models->adopt(plane2);
 
-    Node3D* lever = new Node3D();
-    Model3D* lever_b = new Model3D("Lever_Base.gltf", {0, 0, 0}, {0, 0, 0}, VEC3_ONE, wood_metalMat);
-    lever->adopt(lever_b);
-    Model3D* lever_h = new Model3D("Lever_Handle.gltf", {0, 0, 0}, {0, 0, 0}, VEC3_ONE, wood_metalMat);
-    lever->adopt(lever_h);
-    Collider* leverColl = new SphereCollider();
-    lever->adopt(leverColl);
-    lever->globalScaleAll(VEC3_ONE * 2.0f);
-    lever->globalTranslate({9, 0, 74});
-    lever->localRotateY(glm::radians(23.0f));
-    lever_h->localRotateX(glm::radians(50.0f));
-    models->adopt(lever);
+    Collider* bridgeWall = new BoxCollider(10.0f, 4.0f, 1.0f);
+    bridgeWall->name = "BridgeWall";
+    bridgeWall->setGlobalPosition({0, 0, 76.525f});
+    bridgeWall->movementStatus = STATIC;
+    bridgeWall->layer = ENVIRONMENT;
+    root->adopt(bridgeWall);
 
-    //TODO Implement lever system to deactivate wall
-    //Collider* bridgeWall = new BoxCollider(10.0f, 4.0f, 1.0f);
-    //bridgeWall->setGlobalPosition({0, 0, 76.525f});
-    //bridgeWall->movementStatus = STATIC;
-    //bridgeWall->layer = ENVIRONMENT;
-
-    Model3D* bridge = new Model3D("Bridge.gltf", {0, 0, 91.5f}, {glm::radians(-80.0f), M_PI, 0}, VEC3_ONE * 1.6f, wood_metalMat);
+    Model3D* bridge = new Model3D("Bridge.gltf", {0, 0, 91.5f}, {0, M_PI, 0}, VEC3_ONE * 1.6f, wood_metalMat);
     models->adopt(bridge);
+
+    Node3D* lever = LeverNode::makeStandardLever(bridge, bridgeWall);
+    lever->setGlobalPosition({9, 0, 74});
+    lever->localRotateY(glm::radians(23.0f));
+    root->adopt(lever);
 
     Model3D* castle = new Model3D("Castle.gltf", {0, 0, 105.0f}, {0, M_PI, 0}, VEC3_ONE, TEX_MAT("Diffuse_palette.jpg"));
     models->adopt(castle);

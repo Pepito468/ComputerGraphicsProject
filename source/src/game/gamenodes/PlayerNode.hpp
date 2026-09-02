@@ -1,13 +1,13 @@
-﻿#ifndef ENGINE_PLAYERNODE_HPP
-#define ENGINE_PLAYERNODE_HPP
+﻿#ifndef ENGINE_PLAYER_NODE_HPP
+#define ENGINE_PLAYER_NODE_HPP
 
 #include "BulletNode.hpp"
 #include "SphereCollider.hpp"
-#include "Text2D.hpp"
 #include "UpdateNode3D.hpp"
 #include "Collider.hpp"
 #include "Engine.hpp"
-#include "audio/AudioNode3D.hpp"
+#include "Physics.hpp"
+#include "InteractableNode.hpp"
 #include "glm/geometric.hpp"
 
 #define WALK_SPEED 10.0f
@@ -15,6 +15,7 @@
 #define GRAVITY 9.81f
 #define X_ROT_MIN glm::radians(-70.0f)
 #define X_ROT_MAX glm::radians(80.0f)
+#define INTERACTION_DIST 7.0f
 
 /**
  * Node representing the player
@@ -25,6 +26,8 @@ class PlayerNode : public UpdateNode3D
     Collider* playerColl = nullptr;
     float vertSpeed = 0.0f;
     bool isGrounded = false;
+
+    InteractableNode* selectedInteraction = nullptr;
 
     AudioNode *quack = nullptr;
 
@@ -44,7 +47,7 @@ class PlayerNode : public UpdateNode3D
         bulletColl->adopt(bullet);
         bulletColl->adopt(bulletMod);
 
-        const glm::vec3 dir = -getZAxis();
+        const glm::vec3 dir = getLookingDirection();
         const glm::vec3 v = glm::cross(VEC3_Z, dir);
         const float angle = acos(glm::dot(VEC3_Z, dir));
         const glm::mat4 rotMat = glm::rotate(angle, v);
@@ -54,6 +57,20 @@ class PlayerNode : public UpdateNode3D
         Engine::instantiate(bullet);
 
         quack->playSound();
+    }
+
+    void select(InteractableNode* i)
+    {
+        if (selectedInteraction == i) return;
+
+        log("Selected interactable: " + (i ? i->name : "NULL"));
+
+        if (selectedInteraction)
+            selectedInteraction->deselect();
+
+        selectedInteraction = i;
+        if (selectedInteraction)
+            selectedInteraction->select();
     }
 
 public:
@@ -128,6 +145,23 @@ public:
         //Shoot
         if (Engine::isKeyBeingPressed(GLFW_KEY_F, true))
             shoot();
+
+        //Check for interactable objects, assumes the collider is a child of the object
+        Physics::RaycastHit hit;
+        if (Physics::raycast(getGlobalPosition(), getLookingDirection(), &hit,  INTERACTION_DIST, INTERACTABLE))
+        {
+            if (InteractableNode* inter = dynamic_cast<InteractableNode*>(hit.collider->parent))
+            {
+                select(inter);
+            }
+            else
+                warning(std::format("Collider {} is INTERACTABLE but has no interactable parent", hit.collider));
+        }
+        else
+            select(nullptr);
+
+        if (selectedInteraction && Engine::isKeyBeingPressed(GLFW_KEY_E, true))
+            selectedInteraction->interact();
     }
 
     /// Creates the standard node tree for the player.
