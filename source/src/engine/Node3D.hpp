@@ -38,7 +38,7 @@
  *      the rotation angles are in radians
  *
  */
-class Node3D : public Node {
+class Node3D : public virtual Node {
 
     private:
 
@@ -453,7 +453,8 @@ class Node3D : public Node {
 
         /** Updates the father matrix and all that depends on it (updates global from local) */
         void updateFatherMatrix(glm::mat4 newFatherMatrix) {
-            this->updateGlobalTransformFromLocal(this, newFatherMatrix);
+            this->fatherMatrix = newFatherMatrix;
+            this->commitLocalUpdate();
         }
 
         /// Computes the local coordinates of the given point from the node's transform
@@ -474,6 +475,30 @@ class Node3D : public Node {
         /** Returns true if the node has a local reflection */
         bool isReflectedLocal() const {
             return glm::determinant(this->localMatrix) < 0.0f;
+        }
+
+        /** Returns the direction that this node is looking at */
+        glm::vec3 getLookingDirection() {
+            return -1.0f * this->getZAxis();
+        }
+
+        /** Modifies the global rotation of the node to look at the given point */
+        void lookAt(glm::vec3 point) {
+            // lookAt computes the camera matrix (inverse), so invert it to get the World Matrix
+            glm::mat4 rotationMatrix = glm::inverse(glm::lookAt(this->globalPosition, point, VEC3_Y));
+
+            this->globalMatrix =
+                glm::translate(MAT4_I, this->globalPosition) *
+                rotationMatrix *
+                glm::rotate(MAT4_I, -this->globalRotation.z, VEC3_Z) *
+                glm::rotate(MAT4_I, -this->globalRotation.x, VEC3_X) *
+                glm::rotate(MAT4_I, -this->globalRotation.y, VEC3_Y) *
+                glm::translate(MAT4_I, -this->globalPosition) *
+                this->globalMatrix;
+
+            this->updateGlobalTransformPropertiesFromGlobalMatrix();
+
+            this->commitGlobalUpdate();
         }
 
         static Node3D* fromJSON(const nlohmann::json& json, Node3D* node = nullptr) {
@@ -498,26 +523,23 @@ class Node3D : public Node {
 
     protected:
 
-        /** Commits a local update from the node */
-        virtual void commitLocalUpdate() {
+        /** Function called whenever this node's transform is updated in any way. */
+        virtual void onTransformUpdate() {}
 
-            // Commit update to self and to the node's children
-            this->updateGlobalTransformFromLocal(this, this->fatherMatrix);
-        }
+    private:
 
         /** Commits a global update from the node */
-        virtual void commitGlobalUpdate() {
+        void commitGlobalUpdate() {
 
             // Commit update to self
             this->updateLocalMatrixFromGlobal();
             this->updateLocalTransformPropertiesFromLocalMatrix();
 
-            // Propagate to children (updates local since their global doesn't change, father does)
-            for (Node *child : this->children)
-                this->updateGlobalTransformFromLocal(child, this->globalMatrix);
-        }
+            // Propagate to children
+            propagateUpdateToChildren(this, this->globalMatrix);
 
-    private:
+            this->onTransformUpdate();
+        }
 
         /**
          *  Updates the local matrix from the global
@@ -558,23 +580,17 @@ class Node3D : public Node {
 
         }
 
-        /** Recursively updates the node and its children and so on */
-        static void updateGlobalTransformFromLocal(Node *node, glm::mat4 fatherTransformMatrix) {
+        /** Commits a local update from the node */
+        void commitLocalUpdate() {
 
-            // Update self
-            // If node id Node3D, update it, else skip to its children
-            if (Node3D* node3d = dynamic_cast<Node3D*>(node)) {
-                node3d->fatherMatrix = fatherTransformMatrix;
-                node3d->updateGlobalMatrixFromLocal();
-                node3d->updateGlobalTransformPropertiesFromGlobalMatrix();
-                fatherTransformMatrix = node3d->globalMatrix;
-            }
+            // Commit update to self
+            this->updateGlobalMatrixFromLocal();
+            this->updateGlobalTransformPropertiesFromGlobalMatrix();
 
-            // Propagate to children
-            for (Node *child : node->children) {
-                updateGlobalTransformFromLocal(child, fatherTransformMatrix);
-            }
+            // Propagate
+            propagateUpdateToChildren(this, this->globalMatrix);
 
+            this->onTransformUpdate();
         }
 
         /**
@@ -613,6 +629,20 @@ class Node3D : public Node {
                     glm::length(glm::vec3(this->globalMatrix[Y_ROTATION_INDEX])),
                     glm::length(glm::vec3(this->globalMatrix[Z_ROTATION_INDEX]))
                     );
+
+        }
+
+        /** Recursively updates the node's descendants.
+         * NOTE: changes the global *from* the local */
+        static void propagateUpdateToChildren(Node *node, glm::mat4 fatherTransformMatrix) {
+
+            for (Node *child : node->children) {
+                // If node id Node3D, update it, else skip to its children
+                if (Node3D* node3d = dynamic_cast<Node3D*>(child))
+                    node3d->updateFatherMatrix(fatherTransformMatrix);
+                else
+                    propagateUpdateToChildren(child, fatherTransformMatrix);
+            }
 
         }
 

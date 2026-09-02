@@ -11,8 +11,8 @@ class CustomCameraUpdate : public UpdateNode3D {
 
     void onEnter() override {
         // Position over the plane
-        this->globalTranslate({-2, 2, 0});
-        this->globalRotateY(glm::radians(-90.0f));
+        // this->globalTranslate({-2, 2, 0});
+        // this->globalRotateY(glm::radians(-90.0f));
 
         for (Node *child : this->children) {
             if (PerspectiveCamera *camera = dynamic_cast<PerspectiveCamera*>(child))
@@ -26,15 +26,22 @@ class CustomCameraUpdate : public UpdateNode3D {
 
         // Check for escape
         if(Engine::MainEngine->isKeyBeingPressed(GLFW_KEY_ESCAPE)) {
-            Engine::MainEngine->shutdown();
+            Engine::MainEngine->requestEngineShutdown();
+        }
+
+        // Change scene
+        if (Engine::isKeyBeingPressed(GLFW_KEY_K, true)) {
+            Engine::requestSceneChange(Engine::getSceneFromNameMap("Scene2"));
+        } else if (Engine::isKeyBeingPressed(GLFW_KEY_L, true)) {
+            Engine::requestSceneChange(Engine::getSceneFromNameMap("Scene1"));
         }
 
         // Camera change
-        // if (Engine::MainEngine->isKeyBeingPressed(GLFW_KEY_P)) {
-        //     PCamera->setMain();
-        // }
-        // else if (Engine::MainEngine->isKeyBeingPressed(GLFW_KEY_O))
-        //     OCamera->setMain();
+        if (Engine::MainEngine->isKeyBeingPressed(GLFW_KEY_P)) {
+            Engine::setMainCamera(PCamera);
+        }
+        else if (Engine::MainEngine->isKeyBeingPressed(GLFW_KEY_O))
+            Engine::setMainCamera(OCamera);
 
         // FOV update (ortho does not have FOV)
         if (Engine::MainEngine->isKeyBeingPressed(GLFW_KEY_F))

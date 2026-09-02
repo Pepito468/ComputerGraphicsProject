@@ -166,20 +166,10 @@ public:
     /// @return The bounding box containing the collider.
     virtual AABBExtents getAABBExtents() const = 0;
 
-    void commitGlobalUpdate() override
-    {
+    void onTransformUpdate() override {
         if (movementStatus == STATIC) warning(std::format("Collider {} has moved, even though it was marked static!", name));
 
         movementStatus = MOBILE_HAS_MOVED;
-        Node3D::commitGlobalUpdate();
-    }
-
-    void commitLocalUpdate() override
-    {
-        if (movementStatus == STATIC) warning(std::format("Collider {} has moved, even though it was marked static!", name));
-
-        movementStatus = MOBILE_HAS_MOVED;
-        Node3D::commitLocalUpdate();
     }
 
 protected:

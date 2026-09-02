@@ -9,7 +9,8 @@ layout (location = 1) in vec3 fragNorm;
 layout (location = 2) in vec2 fragUV;
 layout (location = 3) in vec4 fragTan;
 layout (location = 4) in vec3 shadowPos;
-// layout (location = 5) in vec4 screenPos;
+layout (location = 5) in vec4 screenPos;
+
 
 // now we need to read the values in the uniforms
 // in this shader, we need the local uniforms
@@ -64,49 +65,33 @@ layout(binding = 0, set = 0) uniform GlobalUniformBufferObject {
     float time;
 } gubo;
 
-#define TAU 6.28318530717958647692528676655900576839433879875021
-
-//from: https://gist.github.com/ayamflow/c06bc0c8a64f985dd431bd0ac5b557cd
-vec2 rotateUV(vec2 uv, float rotation, vec2 mid)
-{
-    return vec2(
-      cos(rotation) * (uv.x - mid.x) + sin(rotation) * (uv.y - mid.y) + mid.x,
-      cos(rotation) * (uv.y - mid.y) - sin(rotation) * (uv.x - mid.x) + mid.y
-    );
+// Converts hue/saturation/brightness to rgb
+vec3 hsv2rgb(vec3 c) {
+    vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
+    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 
-//from: https://www.geeks3d.com/3dfr/20140627/effet-2d-le-twirl-ou-swirl-en-glsl/
-vec2 twirl(float twirl_amount, float t){
-    vec2 uv = fragUV.xy-0.5;
-    uv.y *= -1.0;
-    float angle = atan(uv.y,uv.x);
-    float radius = length(uv);
-    angle+= radius * twirl_amount*t;
-    return radius*vec2(cos(angle), sin(angle));
-}
+void main() {
+    float speed = ubo.param1.x;
+    float saturation = ubo.param1.y;
+    float brightness = ubo.param1.z;
+    float heightInfluence = ubo.param1.w;
 
-//from: https://www.youtube.com/watch?v=mh14NDWnHog
-void main()
-{
-    float t = gubo.time;
-    vec4 lighterColor = vec4(0.94, 0.52, 0.05, 1.0);
-    vec4 darkerColor = vec4(0.74, 0.32, 0.01, 1.0);
-    vec4 background = vec4(0.64, 0.32, 0.075, 1.0);
-    float twirlStrength = 10;
-    float rippleCount = 4;
-    float noiseSpeed = .2;
-    float rippleStrength = 1.3;
-    float colorIntensity = 20;
+    // apply color effect:
+    // apply a color (from the spectrum)
+    // and apply it differencly based on the position (height) in the model
+    float hue = fract(gubo.time * speed + fragPos.y * heightInfluence);
+    // convert to rgb
+    vec3 rainbow = hsv2rgb(vec3(hue, saturation, brightness));
 
-    vec4 twirl = texture(armTex,  twirl(twirlStrength, t)+0.5);
+    // fresnel shimmer
+    vec3 N = normalize(fragNorm);
+    vec3 V = normalize(gubo.eyePos - fragPos);
+    // 1.0 is from fresnel, 0.0 is a guard, 2.0 is the falloff
+    float fresnel = pow(1.0 - max(dot(N, V), 0.0), 2.0);
+    // apply additively (creates edges)
+    rainbow += fresnel * 0.25;
 
-    //Ripple
-    float dist = distance(fragUV, vec2(0.5));
-    dist *= rippleCount;
-    dist = 1-dist;
-    dist += fract(noiseSpeed*t);
-    float ripple = sin(dist*TAU)*rippleStrength;
-
-    vec4 albedo = texture(tex,fragUV);
-    outColor = mix(albedo*background, albedo*lighterColor*darkerColor*twirl*colorIntensity, clamp(ripple,0.0,1.0));
+    outColor = vec4(rainbow, 1.0);
 }

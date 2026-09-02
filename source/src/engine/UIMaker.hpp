@@ -14,32 +14,47 @@
 
 /*
 	TODO list:
+	- Fix leaked objects
+		- Add a forceModelUpdate flag to UIMaker and a needsUpdating flag to UIElements
+	- Button functions
+	- Sliders
+	- Checkboxes (maybe)
+	- N-stage buttons (A -> click -> B -> click -> C -> click -> A -> ...) (maybe)
 	- Main menu
 	- Pause menu
-		- Settings (maybe)
-		- Fullscreen background tint
-	- Buttons
-	- Sliders and checkboxes (maybe)
-	- Resizable ui
-		- UI that scale with a fixed aspect ratio
-	- Fix leaked objects
+		- Commands (maybe)
+	- Settings
+		- Volume
+		- Mouse sensitivity
+		- Buttons to change scene
 */
 
 #define DEFAULT_SUBMIT_ORDER 9999
 #define DEFAULT_WINDOW_WIDTH 1080
 #define DEFAULT_WINDOW_HEIGHT 720
 
-#define MAX_OLD_MODELS_BUFFER 3
+#define UI_ID_NULL					-1
+#define UI_ID_PAUSE_MENU_BACKGROUND	20
+#define UI_ID_COMMANDS				99
+#define UI_ID_BUTTON_RESUME			100
+#define UI_ID_BUTTON_QUIT			101
+#define UI_ID_SLIDER_VOLUME			150
+#define UI_ID_SLIDER_SENSITIVITY	151
+#define UI_ID_BUTTON_SCENE1			200
+#define UI_ID_BUTTON_SCENE2			201
+
+#define UI_DEBUG_STRING COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT
 
 enum UIOriginH { UIO_LEFT, UIO_CENTER, UIO_RIGHT };
 enum UIOriginV { UIO_TOP, UIO_MIDDLE, UIO_BOTTOM };
 
-enum UIElementType { UI_STATIC, UI_BUTTON, UI_SLIDER, UI_CHECKBOX };
-enum ResizableType {
-	NOT_RESIZABLE,			/// When resizing the window, the UIElement will keep its dimensions constant
-	FULL_RESIZABLE,			/// When resizing the window, the UIElement will scale proportionally
-	WIDTH_ONLY_RESIZABLE,	/// When resizing the window, the UIElement will only scale horizontally
-	HEIGHT_ONLY_RESIZABLE 	/// When resizing the window, the UIElement will only scale vertically
+enum UIElementType { UI_NORMAL, UI_BUTTON, UI_SLIDER };
+enum ResizableType {	/// When resizing the window, the UIElement will...
+	NOT_RESIZABLE,			/// keep its dimensions constant
+	FULL_RESIZABLE,			/// scale proportionally
+	WIDTH_ONLY_RESIZABLE,	/// only scale horizontally
+	HEIGHT_ONLY_RESIZABLE, 	/// only scale vertically
+	KEEP_ASPECT_RATIO		/// scale while keeping its aspect ratio the same
 };
 
 /// Stores the position of the vertex
@@ -59,12 +74,19 @@ struct TextureFilesWithParams {
 	std::list<std::string> TextureFiles;
 	bool isTransparent = false;
 	ResizableType resize = NOT_RESIZABLE;
+	UIElementType type = UI_NORMAL;
 };
 
 struct TextureDataWithParams {
 	std::list<GeneratedTextureData> TextureData;
 	bool isTransparent = false;
 	ResizableType resize = NOT_RESIZABLE;
+	UIElementType type = UI_NORMAL;
+};
+
+struct InteractedUIElementData {
+	int id;
+	//other data...
 };
 
 class UIMaker {
@@ -79,6 +101,7 @@ class UIMaker {
 		float x, y;
 		
 		/// Scale
+		/// NOTE: negative scale produce mirroring, and might have unintuitive behavior with UIOrigin
 		float sx, sy;	/// If the UIElement is scalable, these are relative to a screen sized 1080x720
 		
 		/**
@@ -103,7 +126,10 @@ class UIMaker {
 
 		bool isVisible = true;
 		bool isTransparent = false;
+		UIElementType type = UI_NORMAL;
 		ResizableType resize = NOT_RESIZABLE;
+
+		int submitOrder;
 
 		void addTexture(Texture t) {
 			T.textureVec.push_back(t);
@@ -118,27 +144,14 @@ class UIMaker {
 			this->RegV = RegV;
 		}
 
-		void createMesh(VertexDescriptor* VD, int screenW, int screenH, BaseProject* BP) {
-			/// Old model cleanup
-			// if (this->M) {
-			// 	this->oldM.push_back(this->M);
-			// 	if (this->oldM.size() > MAX_OLD_MODELS_BUFFER) {
-			// 		delete(this->oldM.front());
-			// 		this->oldM.pop_front();
-			// 	}
-			// }
-
-			int mainStride = sizeof(UIVertex);
-			this->M = new Model();
-			
-			this->M->indices.resize(6);
-			this->M->vertices.resize(4 * mainStride);
-			// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " mainStride: " << mainStride << std::endl;
-
-			float tpx = 0.0f;
-			float tpy = 0.0f;
-			
-			UIVertex *V_vertex = (UIVertex *)(&this->M->vertices[0]);
+		/**
+		 * Returns the pixel coordinates of this UIElement:
+		 * - coordinates[0] is the upper left corner;
+		 * - coordinates[1] is the bottom right corner.
+		 */
+		std::array<glm::vec2, 2> getPixelCoordinates(int screenW, int screenH) {
+			float tpx = 0.0f, tpy = 0.0f;
+			std::array<glm::vec2, 2> coordinates = {};
 
 			tpx = (this->x + 1.0f)/2.0f * screenW - this->sx * (
 				(this->RegH == UIO_RIGHT  ? (float)this->T.width	   : 0.0f) +
@@ -148,17 +161,39 @@ class UIMaker {
 				(this->RegV == UIO_BOTTOM ? (float)this->T.height	   : 0.0f) +
 				(this->RegV == UIO_MIDDLE ? (float)this->T.height/2.0f : 0.0f)
 			);
+
+			coordinates[0].x = tpx;
+			coordinates[0].y = tpy;
+
+			coordinates[1].x = tpx + (float)(this->T.width) * this->sx;
+			coordinates[1].y = tpy + (float)(this->T.height) * this->sy;
+
+			return coordinates;
+		}
+
+		/**
+		 * Recreates the mesh of this UIElement
+		 */
+		void createMesh(VertexDescriptor* VD, int screenW, int screenH, BaseProject* BP) {
+			int mainStride = sizeof(UIVertex);
+			// std::cout << UI_DEBUG_STRING << " mainStride: " << mainStride << std::endl;
+			this->M = new Model();
+			this->M->indices.resize(6);
+			this->M->vertices.resize(4 * mainStride);
 			
-			makeUIVertex(V_vertex, tpx, tpy, 0, 0, screenW, screenH);
+			UIVertex *V_vertex = (UIVertex *)(&this->M->vertices[0]);
+			std::array<glm::vec2, 2> coordinates = getPixelCoordinates(screenW, screenH);
+			
+			makeUIVertex(V_vertex, coordinates[0].x, coordinates[0].y, 0, 0, screenW, screenH);
 			V_vertex++;
 
-			makeUIVertex(V_vertex, tpx + (float)(this->T.width) * this->sx, tpy, 1, 0, screenW, screenH);
+			makeUIVertex(V_vertex, coordinates[1].x, coordinates[0].y, 1, 0, screenW, screenH);
 			V_vertex++;
 			
-			makeUIVertex(V_vertex, tpx, tpy + (float)(this->T.height) * this->sy, 0, 1, screenW, screenH);
+			makeUIVertex(V_vertex, coordinates[0].x, coordinates[1].y, 0, 1, screenW, screenH);
 			V_vertex++;
 
-			makeUIVertex(V_vertex, tpx + (float)(this->T.width) * this->sx, tpy + (float)(this->T.height) * this->sy, 1, 1, screenW, screenH);
+			makeUIVertex(V_vertex, coordinates[1].x, coordinates[1].y, 1, 1, screenW, screenH);
 			V_vertex++;
 			
 			this->M->indices[0] = 0;
@@ -168,12 +203,12 @@ class UIMaker {
 			this->M->indices[4] = 2;
 			this->M->indices[5] = 3;
 
-			// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " init mesh" << std::endl;
+			// std::cout << UI_DEBUG_STRING << " init mesh" << std::endl;
 			this->M->initMesh(BP, VD, false);
 		}
 
 		void makeUIVertex(UIVertex *V, float px, float py, float tx, float ty, int screenW, int screenH) {
-			// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " makeUIVertex: ";
+			// std::cout << UI_DEBUG_STRING << " makeUIVertex: ";
 			/// Transforms pixel to screen coordinates
 			V->pos.x = (px + 0.5f) / (float)screenW * 2.0f - 1.0f;
 			V->pos.y = (py + 0.5f) / (float)screenH * 2.0f - 1.0f;
@@ -193,26 +228,66 @@ class UIMaker {
 		}
 
 		/**
-		 * Recreates the local descript set using textureVec[i] as the texture
-		 * Throws an error if i is an invalid index of the vector
+		 * Recreates the local descript set using textureVec[textureId] as the texture
+		 * Throws an error if textureId is an invalid index of the vector
 		 */
-		void recreateDescriptorSet(DescriptorSetLayout *DSL, BaseProject *BP, int i) {
-			if (i >= this->T.textureVec.size() || i < 0) {
-				error("Tried to access texture out of bounds: " + std::to_string(i) + " | texture vector size " + std::to_string(this->T.textureVec.size()));
+		void recreateDescriptorSet(DescriptorSetLayout *DSL, BaseProject *BP, int textureId) {
+			if (textureId >= this->T.textureVec.size() || textureId < 0) {
+				error("Tried to access texture out of bounds: " + std::to_string(textureId) + " | texture vector size " + std::to_string(this->T.textureVec.size()));
 			}
 
-			DescriptorSet temp;
-			temp.init(BP, DSL, {this->T.textureVec[i].getViewAndSampler()});
-			this->DS = temp;
+			this->DS.init(BP, DSL, {this->T.textureVec[textureId].getViewAndSampler()});
 		}
 
+		/**
+		 * Manages the scale of this UIElement based on its resize type and the screen dimensions
+		 * NOTE: scalable elements use DEFAULT_WINDOW_WIDTH and DEFAULT_WINDOW_HEIGHT as the "default" scaling
+		 */
 		void scaleToScreen (int screenW, int screenH) {
-			if (this->resize == FULL_RESIZABLE || this->resize == WIDTH_ONLY_RESIZABLE)
-				this->sx = (float)screenW / DEFAULT_WINDOW_WIDTH;
-			
-			if (this->resize == FULL_RESIZABLE || this->resize == HEIGHT_ONLY_RESIZABLE)
-				this->sy = (float)screenH / DEFAULT_WINDOW_HEIGHT;
+			float aspectRatio = this->sx / this->sy, xRatio = (float)screenW / DEFAULT_WINDOW_WIDTH, yRatio = (float)screenH / DEFAULT_WINDOW_HEIGHT;
+
+			if (this->resize == KEEP_ASPECT_RATIO) {
+				if (xRatio < yRatio) {
+					this->sx = xRatio;
+					this->sy = xRatio / aspectRatio;
+				} else {
+					this->sx = yRatio * aspectRatio;
+					this->sy = yRatio;
+				}
+			} else {
+				if (this->resize == FULL_RESIZABLE || this->resize == WIDTH_ONLY_RESIZABLE)
+					this->sx = xRatio;
+				
+				if (this->resize == FULL_RESIZABLE || this->resize == HEIGHT_ONLY_RESIZABLE)
+					this->sy = yRatio;
+			}
 		}
+
+		/**
+		 * Returns true if the point (_x, _y) is within the hitbox of this UIElement
+		 */
+		bool isPointInsideHitbox(float _x, float _y, int screenW, int screenH) {
+			std::array<glm::vec2, 2> coordinates = getPixelCoordinates(screenW, screenH);
+			float x1 = coordinates[0].x, x2 = coordinates[1].x;
+			float y1 = coordinates[0].y, y2 = coordinates[1].y;
+			bool inside = true;
+			
+			// std::cout << "Hitbox: " << x1 << " x " << y1 << " | " << x2 << " x " << y2 << std::endl << "Point: " << _x << " x " << _y << std::endl;
+			inside &= ((x1 <= _x) && (_x <= x2));
+			inside &= ((y1 <= _y) && (_y <= y2));
+			// std::cout << "Inside: " << inside << std::endl;
+
+			return inside;
+		}
+	};
+
+	/**
+	 * Stores data about a button, including a pointer to the UIElement
+	 */
+	struct ButtonData {
+		int id;
+		bool hovered;
+		bool clicked;
 	};
 
 	VertexDescriptor UI_VD;
@@ -221,14 +296,76 @@ class UIMaker {
 	RenderPass UI_RP;
 
 	int screenW, screenH;	//should be swapchain width and height instead of screen, but can't access it (TextMaker has the same bug)
-	int submitOrder;
 	
 	double mousePosX, mousePosY;
 	
 	std::unordered_map<int, UIElement> UIElementsMap = {};
+	std::list<ButtonData> ButtonsList = {};
 	
 	bool commandBufferMustUpdate = false;
 	
+	/**
+	 * After the cursor moves, checks every button to see if their status changed
+	 */
+	InteractedUIElementData updateButtonStatus(bool mouseClick) {
+		for (auto &b : ButtonsList) {
+			bool inside = UIElementsMap[b.id].isPointInsideHitbox((float)mousePosX, (float)mousePosY, screenW, screenH);
+			// std::cout << UI_DEBUG_STRING << " hovered: " << b.hovered << "; inside: " << inside << std::endl;
+
+			if (b.hovered) {
+				if (!inside) {
+					// if the button was previously hovered and now the cursor is outside the hitbox
+					UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 0);
+					b.hovered = false;
+					commandBufferMustUpdate = true;
+				} else {
+					if (mouseClick && !b.clicked) {
+						// if the button was previously hovered and now the cursor clicks it
+						// std::cout << UI_DEBUG_STRING << " clicked a button" << std::endl;
+						b.clicked = true;
+						UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 2);
+						commandBufferMustUpdate = true;
+						return {b.id};
+					} else if (b.clicked && !mouseClick) {
+						// if the button was previously clicked, restore its texture to hovered
+						// TODO for now it only updates if the mouse moves, maybe find a way to change it after x time
+						// also multiple clicks without moving the mouse are ignored, maybe should change it
+						b.clicked = false;
+						UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 1);
+						commandBufferMustUpdate = true;
+					}
+				}
+			} else if (!b.hovered && inside) {
+				// if the button was not previously hovered and now the button is inside the hitbox
+				UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 1);
+				b.hovered = true;
+				commandBufferMustUpdate = true;
+			}
+		}
+
+		return {UI_ID_NULL};
+	}
+
+	/**
+	 * Takes care of the common parts of initElement(<TextureFilesWithParams>) and initElement(<TextureDataWithParams>)
+	 * Assumes the given id is not used by another UIElement
+	 */
+	void initElement(int id, bool isTransparent, ResizableType resize, UIElementType type) {
+		UIElementsMap[id].P.init(BP, &UI_VD, "shaders/UIElement.vert.spv", "shaders/UIElement.frag.spv", {&UI_DSL});
+		UIElementsMap[id].P.setCompareOp(VK_COMPARE_OP_LESS_OR_EQUAL);
+		UIElementsMap[id].P.setCullMode(VK_CULL_MODE_NONE);
+		UIElementsMap[id].P.setTransparency(isTransparent);
+
+		UIElementsMap[id].submitOrder = DEFAULT_SUBMIT_ORDER + id;
+		UIElementsMap[id].resize = resize;
+		UIElementsMap[id].type = type;
+		if (type != UI_NORMAL) {
+			if (type == UI_BUTTON) {
+				ButtonsList.push_back({id, false, false});
+			} //else if {} for the other types 
+		}
+	}
+
 public:
 	UIMaker(BaseProject *_BP) {
 		BP = _BP;
@@ -239,20 +376,64 @@ public:
 	//--------------------------------------------
 
 	/**
-	* Initializes the UIMaker with the given textures, creating a pipeline for each UIElement
-	* By default, TextureFiles and TextureDataList are empty lists, and so = DEFAULT_SUBMIT_ORDER
+	 * Initialises a UIElement with the given id and parameters
+	 * Prints a warning if the id is already in use and skips execution
+	 */
+	void initElement(int id, TextureFilesWithParams textureFile) {
+		if (UIElementsMap.find(id) != UIElementsMap.end()) {
+			warning("Another element with the same id ()" + std::to_string(id) + ") is already present in UIElementsMap, skipping insertion");
+			return;
+		}
+
+		int garbage;
+
+		for (auto t : textureFile.TextureFiles) {
+			Texture temp;
+			temp.init(BP, t);
+
+			UIElementsMap[id].addTexture(temp);
+		}
+
+		/// Assumes all texture with the same size
+		unsigned char* pixels = stbi_load(textureFile.TextureFiles.front().c_str(), &UIElementsMap[id].T.width, &UIElementsMap[id].T.height, &garbage, STBI_rgb_alpha);
+		stbi_image_free(pixels);
+
+		initElement(id, textureFile.isTransparent, textureFile.resize, textureFile.type);
+	}
+
+	/**
+	 * Initialises a UIElement with the given id and parameters
+	 * Prints a warning if the id is already in use and skips execution
+	 */
+	void initElement(int id, TextureDataWithParams textureData) {
+		if (UIElementsMap.find(id) != UIElementsMap.end()) {
+			warning("Another element with the same id ()" + std::to_string(id) + ") is already present in UIElementsMap, skipping insertion");
+			return;
+		}
+
+		for (auto t : textureData.TextureData) {
+			Texture temp;
+			temp.initPixels(BP, t.width, t.height, 4, sizeof(uint8_t), {t.pixels.data()});
+
+			UIElementsMap[id].addTexture(temp);
+		}
+
+		/// Assumes all texture with the same size
+		UIElementsMap[id].T.width = textureData.TextureData.front().width;
+		UIElementsMap[id].T.height = textureData.TextureData.front().height;
+
+		initElement(id, textureData.isTransparent, textureData.resize, textureData.type);
+	}
+
+	/**
+	* Finalizes the UIMaker initialization, setting global parameters and (eventually) adding a UIElement for all given textures
+	* To be called after all other initElements
 	* NOTE: the id of the UIElement depends on the position in the lists TextureFiles and TextureDataList (in order)
 	*/
 	void init(int sW, int sH, std::list<TextureFilesWithParams> TextureFilesList = {}, std::list<TextureDataWithParams> TextureDataList = {}, int so = DEFAULT_SUBMIT_ORDER)  {
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " UI init" << std::endl;
+		// std::cout << UI_DEBUG_STRING << " UI init" << std::endl;
 		screenW = sW;
 		screenH = sH;
-		submitOrder = so;
-
-		int UIElementsNumber = TextureFilesList.size() + TextureDataList.size();
-
-		createUIDescriptorSetAndVertexLayout();
-		createUIPipeline(UIElementsNumber);
 
 		UI_RP.init(BP, sW, sH, -1, RenderPass::getStandardAttchmentsProperties(AT_SURFACE_NOAA_DEPTH, BP));
 		UI_RP.properties[0].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
@@ -260,112 +441,64 @@ public:
 		UI_RP.properties[1].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 		UI_RP.properties[1].initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-		int i = 0, garbage;
+		int i = 0;
 		for (auto textureChunk : TextureFilesList) {
-			UIElementsMap[i].P.setTransparency(textureChunk.isTransparent);
-
-			for (auto t : textureChunk.TextureFiles) {
-				Texture temp;
-				temp.init(BP, t);
-
-				UIElementsMap[i].addTexture(temp);
+			// if there's already a UIElement with that id, try the next one
+			while (UIElementsMap.find(i) != UIElementsMap.end()) {
+				i++;
 			}
-			/// Assumes all texture with the same size
-			unsigned char* pixels = stbi_load(textureChunk.TextureFiles.front().c_str(), &UIElementsMap[i].T.width, &UIElementsMap[i].T.height, &garbage, STBI_rgb_alpha);
-			stbi_image_free(pixels);
 
-			UIElementsMap[i].resize = textureChunk.resize;
+			initElement(i, textureChunk);
 			i++;
 		}
 
 		for (auto textureChunk : TextureDataList) {
-			UIElementsMap[i].P.setTransparency(textureChunk.isTransparent);
-
-			for (auto t : textureChunk.TextureData) {
-				Texture temp;
-				temp.initPixels(BP, t.width, t.height, 4, sizeof(uint8_t), {t.pixels.data()});
-
-				UIElementsMap[i].addTexture(temp);
+			while (UIElementsMap.find(i) != UIElementsMap.end()) {
+				i++;
 			}
 
-			UIElementsMap[i].T.width = textureChunk.TextureData.front().width;
-			UIElementsMap[i].T.height = textureChunk.TextureData.front().height;
-
-			UIElementsMap[i].resize = textureChunk.resize;
+			initElement(i, textureChunk);
 			i++;
 		}
 
-		BP->DPSZs.texturesInPool += UIElementsNumber;
-		BP->DPSZs.setsInPool += UIElementsNumber;
-	}
-
-	/**
-	* Sets up the Vertex Descriptor and Descriptor Set Layout
-	*/
-	void createUIDescriptorSetAndVertexLayout() {
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " Create UI descriptor sets and vertex layouts" << std::endl;
+		/// Sets up the Vertex Descriptor and Descriptor Set Layout
+		// std::cout << UI_DEBUG_STRING << " Create UI descriptor sets and vertex layouts" << std::endl;
 		UI_VD.init(BP, {{0, sizeof(UIVertex), VK_VERTEX_INPUT_RATE_VERTEX}}, {
 			{0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(UIVertex, pos), sizeof(glm::vec2), POS2D},
 			{0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(UIVertex, uv), sizeof(glm::vec2), UV}
 		});
 
 		UI_DSL.init(BP, {{0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1}});
+
+		BP->DPSZs.texturesInPool += UIElementsMap.size();
+		BP->DPSZs.setsInPool += UIElementsMap.size();
 	}
 
- 	/**
-	* Sets up the main Pipeline with a default shader
-	*/
-	void createUIPipeline(int pipelinesNumber) {
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " Creating " << pipelinesNumber << " UI pipelines with UI_VD = " << &UI_VD << std::endl;
-		for (int i = 0; i < pipelinesNumber; i++) {
-			UIElementsMap[i].P.init(BP, &UI_VD, "shaders/UIElement.vert.spv", "shaders/UIElement.frag.spv", {&UI_DSL});
-			UIElementsMap[i].P.setCompareOp(VK_COMPARE_OP_LESS_OR_EQUAL);
-			UIElementsMap[i].P.setCullMode(VK_CULL_MODE_NONE);
+	void pipelinesAndDescriptorSetsInit() {
+		// std::cout << UI_DEBUG_STRING << " UI pipelines and descriptor sets init" << std::endl;
+		UI_RP.create();
+
+		for (auto& e : UIElementsMap) {
+			// std::cout << UI_DEBUG_STRING << " creating pipeline #" << e.first << std::endl;
+			e.second.P.create(&UI_RP);
+			//TODO to create >1 viewports, need multiViewport feature; is it worth it?
 		}
-	}
 
-	/**
-	 * Creates a descriptor set for each UIElement
-	 */
-	void createUIDescriptorSets() {
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " UI descritor sets init";
+		/// Creates a descriptor set for each UIElement
+		// std::cout << UI_DEBUG_STRING << " UI descritor sets init";
 		for (auto& e : UIElementsMap) {
 			e.second.createDescriptorSet(&UI_DSL, BP);
 		}
 	}
 
-	void pipelinesAndDescriptorSetsInit() {
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " UI pipelines and descriptor sets init" << std::endl;
-		UI_RP.create();
-
-		for (auto& e : UIElementsMap) {
-			// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " creating pipeline #" << e.first << std::endl;
-			e.second.P.create(&UI_RP);
-			/* TODO to create >1 viewports, need multiViewport feature; is it worth it?
-			if (e.second.hasScissor) {
-				std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " creating scissor and viewport" << std::endl;
-				e.second.P.setScissor({
-					{(int32_t)(screenW - e.second.T.width), (int32_t)(screenH - e.second.T.height)},
-					{(int32_t)e.second.T.width, (int32_t)e.second.T.height}
-				});
-				e.second.P.setViewport({{
-					(float)(screenW - e.second.T.width), (float)(screenH - e.second.T.height), 
-					(float)(e.second.T.width), (float)(e.second.T.height), 0.0f, 1.0f
-				}});
-			} */
-		}
-
-		createUIDescriptorSets();
-	}
-
 	static void populateCommandBufferAccess(VkCommandBuffer commandBuffer, int currentImage, void *Params) {
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " populate command buffer access" << std::endl;
+		// std::cout << UI_DEBUG_STRING << " populate command buffer access" << std::endl;
 		UIMaker *T = ((UIMakerAndModel *)Params)->ui;
 		T->populateCommandBuffer(commandBuffer, currentImage);
 	}
 
 	void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " populate command buffer" << std::endl;
+		// std::cout << UI_DEBUG_STRING << " populate command buffer" << std::endl;
 		UI_RP.begin(commandBuffer, currentImage);
 
 		for (auto& e : UIElementsMap) {
@@ -380,9 +513,11 @@ public:
 		UI_RP.end(commandBuffer);
 	}
 
-	void setMousePosition(double x, double y) {
+	InteractedUIElementData updateMouseStatus(double x, double y, bool clicked = false) {
 		this->mousePosX = x;
 		this->mousePosY = y;
+
+		return updateButtonStatus(clicked);
 	}
 
 	void toggleVisibility(int id) {
@@ -391,6 +526,7 @@ public:
 			error("Invalid UI id: " + std::to_string(id));
 
 		elem->second.isVisible = !elem->second.isVisible;
+		commandBufferMustUpdate = true;
 	}
 	
 	//--------------------------------------------
@@ -400,7 +536,7 @@ public:
 	* Throws an error if the id isn't present in UIElementsMap, and a warning if either sx or sy are 0
 	*/
 	int renderUI(float x, float y, int id, UIOriginH RegH = UIO_LEFT, UIOriginV RegV = UIO_TOP, float sx = 1.0f, float sy = 1.0f) {
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " renderUI id = " << id << std::endl;
+		// std::cout << UI_DEBUG_STRING << " renderUI id = " << id << std::endl;
 		if (sx == 0 || sy == 0)
 			warning("1-dimensional UI element: id = " + std::to_string(id) + ", sx = " + std::to_string(sx) + ", sy = " + std::to_string(sy));
 		
@@ -418,7 +554,7 @@ public:
 	* Rearranges UI elements on screen resize
 	*/
 	void resizeScreen(int sW, int sH) {
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " UI resizeScreen" << std::endl;
+		// std::cout << UI_DEBUG_STRING << " UI resizeScreen" << std::endl;
 		screenW = sW;
 		screenH = sH;
 		UI_RP.width = sW;
@@ -436,12 +572,9 @@ public:
 	 * If at least a UIElement was changed (commandBufferMustUpdate = true), redraws every UIElement.
 	 * Also, updates mousePos[X, Y] if the cursor isn't locked
 	 */
-	void updateCommandBuffer(bool isCursorAvailable) {
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " UI update command buffer" << std::endl;
+	void updateCommandBuffer() {
+		// std::cout << UI_DEBUG_STRING << " UI update command buffer" << std::endl;
 		// debugPrint();
-		if (isCursorAvailable) {
-			//TODO deal with buttons, etc...
-		}
 
 		if (commandBufferMustUpdate) {
 			//could add an update field to each UIElement to avoid updating unchanged elements, but doesn't seem worth it
@@ -451,7 +584,7 @@ public:
 				UIMakerAndModel *uim = (UIMakerAndModel *)malloc(sizeof(UIMakerAndModel));
 				uim->ui = this;
 				uim->M = e.second.M;
-				BP->submitCommandBuffer("ui" + std::to_string(e.first), submitOrder,UIMaker::populateCommandBufferAccess, uim, UIMaker::freeCommandBuffer);
+				BP->submitCommandBuffer("ui" + std::to_string(e.first), e.second.submitOrder, UIMaker::populateCommandBufferAccess, uim, UIMaker::freeCommandBuffer);
 			}
 
 			commandBufferMustUpdate = false;
@@ -462,16 +595,17 @@ public:
 	* Creates the mesh for the given UI element
 	*/
 	void createUIMesh(int id) {
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " createUImesh with id " << id << std::endl;
+		// std::cout << UI_DEBUG_STRING << " createUImesh with id " << id << std::endl;
 		auto elem = UIElementsMap.find(id);
 		if (elem == UIElementsMap.end())
 			error("Invalid UI id: " + std::to_string(id));
 		
+		// std::cout << UI_DEBUG_STRING << " creating mesh of " << id << std::endl;
 		UIElementsMap[id].createMesh(&UI_VD, screenW, screenH, BP);
 	}
 
 	void recreateUIDescriptorSet(int id, int idTexture) {
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " re-create DS with id " << id << "and texture " << idTexture << std::endl;
+		// std::cout << UI_DEBUG_STRING << " re-create DS with id " << id << "and texture " << idTexture << std::endl;
 		auto elem = UIElementsMap.find(id);
 		if (elem == UIElementsMap.end())
 			error("Invalid UI id: " + std::to_string(id));
@@ -485,7 +619,7 @@ public:
 	* Removes a single UI element, given its id
 	*/
 	void removeUIElement(int id) {
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " removeUIElement id = " << id << std::endl;
+		// std::cout << UI_DEBUG_STRING << " removeUIElement id = " << id << std::endl;
 		//TODO implement proper deconstructor
 		UIElementsMap.erase(id);
 		commandBufferMustUpdate = true;
@@ -495,34 +629,34 @@ public:
 	* Removes all UI elements
 	*/
 	void removeUI() {
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " removeUI" << std::endl;
+		// std::cout << UI_DEBUG_STRING << " removeUI" << std::endl;
 		//TODO implement proper deconstructor
 		UIElementsMap.clear();
 		commandBufferMustUpdate = true;
 	}
 
 	void pipelinesAndDescriptorSetsCleanup() {
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " UI pipelines and descript sets cleanup" << std::endl;
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << "\tCleaning pipelines" << std::endl;
+		// std::cout << UI_DEBUG_STRING << " UI pipelines and descript sets cleanup" << std::endl;
+		// std::cout << UI_DEBUG_STRING << "\tCleaning pipelines" << std::endl;
 		for (auto& e : UIElementsMap)
 			e.second.P.cleanup();
 	
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << "\tCleaning render pass" << std::endl;
+		// std::cout << UI_DEBUG_STRING << "\tCleaning render pass" << std::endl;
 		UI_RP.cleanup();
 		
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << "\tCleaning descriptor sets" << std::endl;
+		// std::cout << UI_DEBUG_STRING << "\tCleaning descriptor sets" << std::endl;
 		for (auto& e : UIElementsMap)
 			e.second.DS.cleanup();
 	}
 
 	void localCleanup() {
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " local cleanup" << std::endl;
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << "\tCleaning textures" << std::endl;
+		// std::cout << UI_DEBUG_STRING << " local cleanup" << std::endl;
+		// std::cout << UI_DEBUG_STRING << "\tCleaning textures" << std::endl;
 		for (auto& e : UIElementsMap) 
 			for (auto& t : e.second.T.textureVec)
 				t.cleanup();
 		
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << "\tCleaning models" << std::endl;
+		// std::cout << UI_DEBUG_STRING << "\tCleaning models" << std::endl;
 		for (auto& e : UIElementsMap) {
 			// while (e.second.oldM.size() > 0 && e.second.oldM.front()) {
 			// 	delete(e.second.oldM.front());
@@ -534,19 +668,19 @@ public:
 			}
 		}
 
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << "\tCleaning descriptor set layout" << std::endl;
+		// std::cout << UI_DEBUG_STRING << "\tCleaning descriptor set layout" << std::endl;
 		UI_DSL.cleanup();
 		
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << "\tDestroying pipelines" << std::endl;
+		// std::cout << UI_DEBUG_STRING << "\tDestroying pipelines" << std::endl;
 		for (auto& e : UIElementsMap) 
 			e.second.P.destroy();
 
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << "\tDestroying render pass" << std::endl;
+		// std::cout << UI_DEBUG_STRING << "\tDestroying render pass" << std::endl;
 		UI_RP.destroy();
 	}
 
 	static void freeCommandBuffer(void *Params) {
-		// std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " free command buffer" << std::endl;
+		// std::cout << UI_DEBUG_STRING << " free command buffer" << std::endl;
 		Model *M = ((UIMakerAndModel *)Params)->M;
 		M->cleanup();
 		delete(M);
@@ -557,7 +691,7 @@ public:
 	//--------------------------------------------
 
 	void debugPrint() {
-		std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " DEBUG PRINTING -------------------------------" << std::endl;
+		std::cout << UI_DEBUG_STRING << " DEBUG PRINTING -------------------------------" << std::endl;
 
 		std::cout << "UIElements map size: " << UIElementsMap.size() << std::endl;
 		for (auto e : UIElementsMap) {
@@ -592,7 +726,7 @@ public:
 			}
 			std::cout << std::endl;
 
-			std::cout << "Resizable type: ";
+			std::cout << "\tResizable type: ";
 			switch (e.second.resize) {
 			case NOT_RESIZABLE:
 				std::cout << "not resizable";
@@ -606,10 +740,27 @@ public:
 			case HEIGHT_ONLY_RESIZABLE:
 				std::cout << "only height resizable";
 				break;
+			case KEEP_ASPECT_RATIO:
+				std::cout << "keep aspect ratio";
+				break;
 			}
 			std::cout << std::endl;
 
-                        std::cout << "\tModel:";
+			std::cout << "\tUI element type: ";
+			switch (e.second.type) {
+			case UI_NORMAL:
+				std::cout << "normal";
+				break;
+			case UI_BUTTON:
+				std::cout << "button";
+				break;
+			case UI_SLIDER:
+				std::cout << "slider";
+				break;
+			}
+			std::cout << std::endl;
+
+			std::cout << "\tModel:";
 			if(e.second.M) {
 				for (auto i : e.second.M->indices) {
 					std::cout << " " << i;
@@ -620,8 +771,10 @@ public:
 			std::cout << std::endl;
 
 			std::cout << "\tTextures: #" << e.second.T.textureVec.size() << " " << e.second.T.width << " x " << e.second.T.height << std::endl;
+
+			std::cout << "\tIsVisible: " << e.second.isVisible << std::endl;
 		}
 
-		std::cout << COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT << " END DEBUG PRINTING ---------------------------" << std::endl;
+		std::cout << UI_DEBUG_STRING << " END DEBUG PRINTING ---------------------------" << std::endl;
 	}
 };

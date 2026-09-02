@@ -6,7 +6,7 @@ class MovingPlanetUpdate : public UpdateNode3D {
     float currentPosInCircle = 0.0f;
 
     virtual void onEnter() override {
-        this->globalTranslate({0, 2, 0});
+        // this->globalTranslate({0, 2, 0});
     }
 
     virtual void update() override {

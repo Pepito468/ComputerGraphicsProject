@@ -175,4 +175,54 @@ public:
     }
 };
 
+class CookTorranceAnimMaterial : public Material {
+public:
+    CookTorranceAnimMaterial(glm::vec3 diffuse, glm::vec4 specular, std::string textureName = "Default.png") {
+        this->diffuse = diffuse;
+        this->specular = specular;
+
+        this->textureName = textureName;
+
+        shaderType = ShaderType::COOK_TORRANCE_ANIM;
+    }
+
+    ~CookTorranceAnimMaterial() override = default;
+    //TODO: al momento non lo invoca nessuno
+    void updateUBO(UniformBufferObject& ubo) override {
+        ubo.color = diffuse;
+        ubo.specular = specular;
+    }
+};
+
+class RainbowMaterial : public Material {
+    struct params {
+        float cycleSpeed;
+        float saturation;
+        float brightness;
+        float heightInfluence;
+    } params = {1, 1, 1, 0.3};
+
+    public:
+
+        RainbowMaterial(float cycleSpeed = 1.0f, float saturation = 1.0f, float brightness = 1.0f,
+                float heightInfluence = 0.3f, std::string textureName = "Default.png") {
+
+            this->diffuse = glm::vec3(1.0f);
+            this->specular = glm::vec4(0.0f);
+
+            this->textureName = textureName;
+
+            this->params = {cycleSpeed, saturation, brightness, heightInfluence};
+
+            shaderType = ShaderType::RAINBOW;
+        };
+
+        ~RainbowMaterial() override = default;
+
+        void updateUBO(UniformBufferObject& ubo) override {
+            ubo.color = diffuse;
+            ubo.specular = specular;
+            ubo.param1 = {params.cycleSpeed, params.saturation, params.brightness, params.heightInfluence};
+        };
+};
 #endif

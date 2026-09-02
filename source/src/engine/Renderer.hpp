@@ -66,7 +66,11 @@ class Renderer {
 
         ///Must be called inside Renderer.localInit()
         void localInit(BaseProject* bp, DescriptorSetLayout& globalLayout, DescriptorSetLayout& offScreenLayout, VertexDescriptor& vertexDescriptor) {
-            pipeline.init(bp, &vertexDescriptor, vertShader, fragShader, {&globalLayout, localLayout, &offScreenLayout});
+
+            if (!IsAnimShader(shaderType))
+                pipeline.init(bp, &vertexDescriptor, vertShader, fragShader, {&globalLayout, localLayout, &offScreenLayout});
+            else
+                pipeline.init(bp, &vertexDescriptor, vertShader, fragShader, {&globalLayout, localLayout, &offScreenLayout});
 
             if (IsLateDraw(shaderType))
                 pipeline.setTransparency(true);
@@ -96,6 +100,9 @@ class Renderer {
 
         ///Must be called inside Renderer.localCleanup()
         void localCleanup() {
+            for (auto& m : pool) {
+                m->localCleanup();
+            }
             pipeline.destroy();
         }
 
@@ -103,7 +110,8 @@ class Renderer {
         void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage, DescriptorSet& global, DescriptorSet& offScreen) {
             pipeline.bind(commandBuffer);
             global.bind(commandBuffer, pipeline, 0, currentImage);
-            offScreen.bind(commandBuffer, pipeline, 2, currentImage);
+            if (!IsAnimShader(shaderType))
+                offScreen.bind(commandBuffer, pipeline, 2, currentImage);
 
             for (auto& p : pool) {
                     p->populateCommandBuffer(commandBuffer, currentImage, pipeline);
@@ -111,10 +119,10 @@ class Renderer {
         }
 
         ///Must be called inside Renderer.updateUniformBuffer()
-        void updateUniformBuffer(uint32_t currentImage,  glm::vec3 CamPos, glm::mat4 Projection, glm::mat4 View) {
+        void updateUniformBuffer(uint32_t currentImage,  glm::vec3 CamPos, glm::mat4 Projection, glm::mat4 View, float deltaT) {
 
             for (auto& p : pool) {
-                p->updateUniformBuffer(currentImage, Projection, View);
+                p->updateUniformBuffer(currentImage, Projection, View, deltaT);
             }
         }
 
@@ -135,15 +143,16 @@ class Renderer {
         }
 
         size_t poolSize() const { return pool.size(); }
+        ShaderType getShaderType() const {return shaderType;}
     };
 
     // Variable to update screen
     bool screenDirty = false;
 
     //Vulkan variables
-    DescriptorSetLayout globalLayout, localLayout, skyboxLayout;
+    DescriptorSetLayout globalLayout, localLayout,animLayout, skyboxLayout;
     DescriptorSet global;
-    VertexDescriptor vertexDescriptor, VDskybox;
+    VertexDescriptor vertexDescriptor,VDanim, VDskybox;
 
     //Variable taken from engine
     BaseProject* bp;
@@ -157,6 +166,11 @@ class Renderer {
     std::unordered_map <std::string, Texture> normalTexAssets;
     std::unordered_map <std::string, std::unique_ptr<Material>> materialAssets;
     std::vector<Model3D*> sceneObjects; //stores all the models assigned to Renderer
+    struct ModelToDelete {
+        Model3D *model;
+        int framesRemaining;
+    };
+    std::vector<ModelToDelete> sceneObjectsDeleted;
 
     DirectionalLight *directionalLight = nullptr;
     std::vector<PointLight*> pointlights;
@@ -167,7 +181,7 @@ class Renderer {
     DescriptorSetLayout offScreenLayout;
     DescriptorSet offScreen, skybox;
     RenderPass RPoffScreen;
-    Pipeline PoffScreen, Pskybox;
+    Pipeline PoffScreen, PoffScreenAnim, Pskybox;
 
     //Scene depth
     DescriptorSetLayout sceneDepthLayout;
@@ -210,7 +224,10 @@ class Renderer {
         this->screenUpdate = std::move(screenUpdate);
 
         for (auto t : allShadersTypes) {
-            pipelinesMap.insert({t, std::make_unique<PipelineRenderer>(&localLayout, t)});
+            if (!IsAnimShader(ShaderType(t)))
+                pipelinesMap.insert({t, std::make_unique<PipelineRenderer>(&localLayout, t)});
+            else
+                pipelinesMap.insert({t, std::make_unique<PipelineRenderer>(&animLayout, t)});
             std::cout << getShaderFragName(t) << std::endl;
         }
 
@@ -324,13 +341,14 @@ class Renderer {
             if (modelAssets.find(model3D->getModelPath()) == modelAssets.end()) {
                 modelAssets.insert({model3D->getModelPath(), {}});
 
-                Model* m = &modelAssets.at(model3D->getModelPath());
-                if (model3D->getModelPath().find(".obj") != std::string::npos)
-                    m->init(bp, &vertexDescriptor, "assets/models/" + model3D->getModelPath(),OBJ);
-                else if (model3D->getModelPath().find(".gltf") != std::string::npos)
-                    m->init(bp, &vertexDescriptor, "assets/models/" + model3D->getModelPath(),GLTF);
+                model3D->setModel(&modelAssets[model3D->getModelPath()]);
+                if (!IsAnimShader(model3D->getShaderType()))
+                    model3D->modelInit(bp, &vertexDescriptor);
                 else
-                    std::cout << "Error: " <<  model3D->getModelPath() << ", not a valid object file" << std::endl;
+                    model3D->modelInit(bp, &VDanim);
+
+            } else {
+                model3D->setModel(&modelAssets[model3D->getModelPath()]);
             }
         } catch(std::runtime_error& e) {
             // Error is thrown by Starter.hpp if the model does not exist
@@ -360,7 +378,6 @@ class Renderer {
 
 
         //Insert model and texture
-        model3D->setModel(&modelAssets[model3D->getModelPath()]);
         model3D->getMaterial()->setAlbedoTex(&albedoTexAssets[model3D->getMaterial()->getTextureName()]);
         model3D->getMaterial()->setArmTex(&armTexAssets[model3D->getMaterial()->getTextureName()]);
         model3D->getMaterial()->setNormalTex(&normalTexAssets[model3D->getMaterial()->getTextureName()]);
@@ -441,11 +458,28 @@ class Renderer {
      * <li>If you want to add models on runtime use "instantiate" instead</li>
      */
     void preLoadModel(Model3D* model3D) {
-
         //Key doesn't exist
-        if (modelAssets.find(model3D->getModelPath()) == modelAssets.end())
-            modelAssets.insert({model3D->getModelPath(), {}});
-          if ( albedoTexAssets.find(model3D->getMaterial()->getTextureName()) == albedoTexAssets.end()) {
+        try {
+            if (modelAssets.find(model3D->getModelPath()) == modelAssets.end()) {
+                modelAssets.insert({model3D->getModelPath(), {}});
+
+                model3D->setModel(&modelAssets[model3D->getModelPath()]);
+
+                if (!IsAnimShader(model3D->getShaderType()))
+                    model3D->modelInit(bp, &vertexDescriptor);
+                else
+                    model3D->modelInit(bp, &VDanim);
+
+            } else {
+                model3D->setModel(&modelAssets[model3D->getModelPath()]);
+            }
+        } catch(std::runtime_error& e) {
+            // Error is thrown by Starter.hpp if the model does not exist
+            error(e.what());
+        }
+
+
+        if ( albedoTexAssets.find(model3D->getMaterial()->getTextureName()) == albedoTexAssets.end()) {
             albedoTexAssets.insert({model3D->getMaterial()->getTextureName(),{}});
             Texture* t = &albedoTexAssets.at(model3D->getMaterial()->getTextureName());
             t->init(bp,"assets/textures/albedo_" + model3D->getMaterial()->getTextureName());
@@ -464,7 +498,6 @@ class Renderer {
         }
 
         //Insert model and texture
-        model3D->setModel(&modelAssets[model3D->getModelPath()]);
         model3D->getMaterial()->setAlbedoTex(&albedoTexAssets[model3D->getMaterial()->getTextureName()]);
         model3D->getMaterial()->setArmTex(&armTexAssets[model3D->getMaterial()->getTextureName()]);
         model3D->getMaterial()->setNormalTex(&normalTexAssets[model3D->getMaterial()->getTextureName()]);
@@ -510,6 +543,21 @@ class Renderer {
                 sizeof(glm::vec4), TANGENT}
            });
 
+        VDanim.init(bp,{
+        {0, sizeof(VertexAnim), VK_VERTEX_INPUT_RATE_VERTEX}
+        }, {
+        {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexAnim, pos),
+                sizeof(glm::vec3), POSITION},
+        {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexAnim, norm),
+                sizeof(glm::vec3), NORMAL},
+        {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(VertexAnim, UV),
+                sizeof(glm::vec2), UV},
+        {0, 3, VK_FORMAT_R32G32B32A32_UINT, offsetof(VertexAnim, jointIndices),
+                sizeof(glm::uvec4), JOINTINDEX},
+        {0, 4, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(VertexAnim, weights),
+                sizeof(glm::vec4), JOINTWEIGHT}
+        });
+
         VDskybox.init(bp, {
               {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
             }, {
@@ -529,6 +577,15 @@ class Renderer {
             {5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4, 1}, //sceneDepth
             {6, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 5, 1} //sceneColor
           });
+
+        animLayout.init(bp, {
+            // this array contains the binding:
+            // first  element : the binding number
+            // second element : the type of element (buffer or texture)
+            // third  element : the pipeline stage where it will be used
+            {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(UniformBufferObjectAnimated), 1},
+            {1,VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,VK_SHADER_STAGE_ALL_GRAPHICS,0,1}, //albedo
+            });
 
         globalLayout.init(bp, {
             // this array contains the binding:
@@ -556,6 +613,8 @@ class Renderer {
                   });
 
 
+        //TODO:
+        /*
         for (auto& m : modelAssets) {
             if (m.first.find(".obj") != std::string::npos)
                 m.second.init(bp, &vertexDescriptor, "assets/models/" + m.first,OBJ);
@@ -563,7 +622,7 @@ class Renderer {
                 m.second.init(bp, &vertexDescriptor, "assets/models/" + m.first,GLTF);
             else
                 std::cout << "Error: " <<  m.first << ", not a valid object file" << std::endl;
-        }
+        }*/
 
         for (auto& t : albedoTexAssets) {
             t.second.init(bp,"assets/textures/albedo_" + t.first);
@@ -578,7 +637,10 @@ class Renderer {
         }
 
         for (auto& p : pipelinesMap) {
-            p.second->localInit(bp, globalLayout, offScreenLayout, vertexDescriptor);
+            if (!IsAnimShader(p.second->getShaderType()))
+                p.second->localInit(bp, globalLayout, offScreenLayout, vertexDescriptor);
+            else
+                p.second->localInit(bp, globalLayout, offScreenLayout, VDanim);
         }
 
         float shadowMapSize = 2048;
@@ -600,6 +662,7 @@ class Renderer {
 
 
         PoffScreen.init(bp, &vertexDescriptor, "shaders/ShadowMap.vert.spv", "shaders/ShadowMap.frag.spv", {&offScreenLayout, &localLayout});
+        PoffScreenAnim.init(bp, &VDanim, "shaders/ShadowMapAnim.vert.spv", "shaders/ShadowMap.frag.spv", { &offScreenLayout, &animLayout});
         PsceneDepth.init(bp, &vertexDescriptor, "shaders/SceneDepth.vert.spv", "shaders/SceneDepth.frag.spv", {&sceneDepthLayout, &localLayout});
         PsceneColor.init(bp, &vertexDescriptor, "shaders/SceneColor.vert.spv", "shaders/SceneColor.frag.spv", {&sceneColorLayout, &localLayout});
 
@@ -635,6 +698,7 @@ class Renderer {
             TenvMap.getViewAndSampler()
         });
         PoffScreen.create(&RPoffScreen);
+        PoffScreenAnim.create(&RPoffScreen);
         PsceneDepth.create(&RPsceneDepth);
         PsceneColor.create(&RPsceneColor);
 
@@ -658,12 +722,18 @@ class Renderer {
             p.second->descriptorSetsCleanup();
         }
 
+        for (ModelToDelete& m : sceneObjectsDeleted)
+            m.framesRemaining = 0;
+        cleanDeletedModels();
+
         RPoffScreen.cleanup();
         RPsceneDepth.cleanup();
         RPsceneColor.cleanup();
 
         PoffScreen.cleanup();
+        PoffScreenAnim.cleanup();
         PsceneDepth.cleanup();
+        PsceneColor.cleanup();
         Pskybox.cleanup();
     }
 
@@ -677,10 +747,12 @@ class Renderer {
         skyboxLayout.cleanup();
 
         localLayout.cleanup();
+        animLayout.cleanup();
 
         TenvMap.cleanup();
         vertexDescriptor.cleanup();
         VDskybox.cleanup();
+        VDanim.cleanup();
         SkyboxCube.cleanup();
 
         for (auto& m : modelAssets) {
@@ -698,11 +770,16 @@ class Renderer {
             t.second.cleanup();
         }
 
-
         PoffScreen.destroy();
+        PoffScreenAnim.destroy();
         PsceneDepth.destroy();
         PsceneColor.destroy();
         Pskybox.destroy();
+
+        RPoffScreen.destroy();
+        RPsceneDepth.destroy();
+        RPsceneColor.destroy();
+
         for (auto& p : pipelinesMap) {
             p.second->localCleanup();
         }
@@ -711,11 +788,21 @@ class Renderer {
 
     void populateShadowCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
         RPoffScreen.begin(commandBuffer, 0);
+
         PoffScreen.bind(commandBuffer);
         offScreen.bind(commandBuffer, PoffScreen, 0, currentImage);
-
         for (auto& o : sceneObjects) {
-            o->populateCommandBuffer(commandBuffer, currentImage, PoffScreen);
+            if (!IsAnimShader(o->getShaderType())) {
+                o->populateCommandBuffer(commandBuffer, currentImage, PoffScreen);
+            }
+        }
+
+        PoffScreenAnim.bind(commandBuffer);
+        offScreen.bind(commandBuffer, PoffScreenAnim, 0, currentImage);
+        for (auto& o : sceneObjects) {
+            if (IsAnimShader(o->getShaderType())) {
+                o->populateCommandBuffer(commandBuffer, currentImage, PoffScreenAnim);
+            }
         }
 
         RPoffScreen.end(commandBuffer);
@@ -727,7 +814,7 @@ class Renderer {
         sceneColor.bind(commandBuffer, PsceneColor, 0, currentImage);
 
         for (auto& o : sceneObjects) {
-            if (o->getShaderType() != ShaderType::WATER)
+            if (o->getShaderType() != ShaderType::WATER && !IsAnimShader(o->getShaderType()))
                 o->populateCommandBuffer(commandBuffer, currentImage, PsceneColor);
         }
 
@@ -740,7 +827,7 @@ class Renderer {
         sceneDepth.bind(commandBuffer, PsceneDepth, 0, currentImage);
 
         for (auto& o : sceneObjects) {
-            if (o->getShaderType() != ShaderType::WATER)
+            if (o->getShaderType() != ShaderType::WATER && !IsAnimShader(o->getShaderType()))
             o->populateCommandBuffer(commandBuffer, currentImage, PsceneDepth);
         }
 
@@ -769,7 +856,7 @@ class Renderer {
     }
 
     ///This method prepare stuff for Vulkan, must be called inside Engine.updateUniformBuffer()
-    void updateUniformBuffer(uint32_t currentImage,  glm::vec3 CamPos, glm::mat4 Projection, glm::mat4 View, float time) {
+    void updateUniformBuffer(uint32_t currentImage,  glm::vec3 CamPos, glm::mat4 Projection, glm::mat4 View, float time, float deltaT) {
         GlobalUniformBufferObject gubo;
 
         gubo.ambientUpper = ambientLight->upper;
@@ -849,7 +936,7 @@ class Renderer {
         skybox.map(currentImage, &skyboxUBO, 0);
 
         for (auto& p : pipelinesMap) {
-            p.second->updateUniformBuffer(currentImage, CamPos, Projection, View);
+            p.second->updateUniformBuffer(currentImage, CamPos, Projection, View, deltaT);
         }
     }
 
@@ -874,6 +961,7 @@ class Renderer {
         pipelinesMap.at(model->getShaderType())->removeModel3D(model);
 
         // model->descriptorSetCleanup();
+        sceneObjectsDeleted.push_back({model, MAX_FRAMES_IN_FLIGHT});
         sceneObjects.erase(sceneObjects.begin() + i);
 
         queueScreenUpdate();
@@ -890,19 +978,25 @@ class Renderer {
 
     /** Removes an object, given the the Model3D */
     void removeObject(Model3D *model) {
-        size_t objID = findObject(model);
-        if (objID == (size_t) -1) {
+        int objID = findObject(model);
+        if (objID == -1) {
             error("Object not found!");
         }
 
         this->removeObject(objID);
     }
 
-    size_t getTotalObjectCount() {
-        size_t total = 0;
-        for (auto& p : pipelinesMap)
-            total += p.second->poolSize();
-        return total;
+    /** Cleanups models if they have expired (out of max frames in flight) */
+    void cleanDeletedModels() {
+        for (auto iterator = sceneObjectsDeleted.begin(); iterator != sceneObjectsDeleted.end(); ) {
+            if (iterator->framesRemaining <= 0) {
+                iterator->model->descriptorSetCleanup();
+                iterator = sceneObjectsDeleted.erase(iterator);
+            } else {
+                iterator->framesRemaining--;
+                iterator++;
+            }
+        }
     }
 
 };

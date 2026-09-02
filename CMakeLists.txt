@@ -18,18 +18,23 @@ set(MAIN_DIR source)
 set(SRC_DIR ${MAIN_DIR}/src/game)
 set(INCLUDE_DIR ${MAIN_DIR}/include)
 set(ENGINE_DIR ${MAIN_DIR}/src/engine)
+
 set(UTIL_DIR ${ENGINE_DIR}/utils)
 set(CAM_DIR ${ENGINE_DIR}/cameras)
 set(COL_DIR ${ENGINE_DIR}/colliders)
 set(UI_DIR ${ENGINE_DIR}/ui)
 set(LIGHT_DIR ${ENGINE_DIR}/lights)
 set(REND_DIR ${ENGINE_DIR}/rendering)
+set(AUDIO_DIR ${ENGINE_DIR}/audio)
+set(MODULES_DIR ${INCLUDE_DIR}/modules)
+
 file(GLOB SRC_FILES CONFIGURE_DEPENDS "${SRC_DIR}/*.cpp")
 
 
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 target_include_directories(${PROJECT_NAME} PRIVATE 
     "${INCLUDE_DIR}"
+    "${MODULES_DIR}"
     "${ENGINE_DIR}"
     "${UTIL_DIR}"
     "${CAM_DIR}"
@@ -37,11 +42,14 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     "${UI_DIR}"
     "${LIGHT_DIR}"
     "${REND_DIR}"
+    "${AUDIO_DIR}"
 )
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
 set_source_files_properties(${SRC_DIR}/Libs.cpp PROPERTIES COMPILE_OPTIONS "-g0")
+
+# target_compile_options(${PROJECT_NAME} PRIVATE -g -O2)
 
 # Segfault helper
 # target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=address -fno-omit-frame-pointer -g)
@@ -138,4 +146,16 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     "${ASSET_SRC_DIR}"
     "${ASSET_DST_DIR}"
   COMMENT "Copying asset in: ${ASSET_DST_DIR}"
+)
+
+# --------------------
+# AUDIO
+# --------------------
+set(AUDIO_SRC_DIR "${CMAKE_SOURCE_DIR}/source/assets/audio")
+set(AUDIO_DST_DIR "$<TARGET_FILE_DIR:${PROJECT_NAME}>/assets")
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${AUDIO_SRC_DIR}"
+    "${AUDIO_DST_DIR}"
+    COMMENT "Copying audio from in: ${AUDIO_DST_DIR}"
 )

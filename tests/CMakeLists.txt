@@ -5,6 +5,7 @@ include_directories(../source/src/engine/colliders)
 include_directories(../source/src/engine/lights)
 include_directories(../source/src/engine/ui)
 include_directories(../source/src/engine/rendering)
+include_directories(../source/src/engine/audio/)
 include_directories(../source/include/modules)
 include_directories(../source/include)
 

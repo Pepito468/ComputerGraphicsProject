@@ -3,6 +3,7 @@
 
 #include "Engine.hpp"
 
+#include "Material.hpp"
 #include "PerspectiveCamera.hpp"
 #include "OrthoCamera.hpp"
 
@@ -13,6 +14,10 @@
 #include "AmbientLight.hpp"
 #include "ColliderLib.hpp"
 
+#include "audio/AudioNode.hpp"
+#include "audio/AudioNode3D.hpp"
+
+#include "common.h"
 #include "gamenodes/CustomCameraUpdate.hpp"
 #include "gamenodes/MovingPlanetUpdate.hpp"
 #include "gamenodes/MovingPlanetChildUpdate.hpp"
@@ -31,6 +36,10 @@ FireMaterial flame1 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "sm
 FireMaterial flame2 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "bigFlame.png"};
 FireMaterial flame3 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "fire.png"};
 MagicCirleMaterial mat5 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "magicCircle.png"};
+
+CookTorranceAnimMaterial animMat = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}, "rock.png"};
+
+RainbowMaterial rMat = {0.2, 1, 1, 0.3};
 
 LambertTexMaterial cubeMat = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "cube.png"};
 LambertMaterial blankMat = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}};
@@ -60,6 +69,11 @@ Node* createScene1() {
     playerCollider->globalTranslate({-2, 5, 0});
     player->localTranslate({0, 1.25f, 0});
 
+    // Audio
+    AudioNode *quack = new AudioNode("quack.mp3", 0.1f);
+    quack->name = "quack";
+    player->adopt(quack);
+
 
     //CustomCameraUpdate *cameraContainer = new CustomCameraUpdate();
     //cameraContainer->name = "CameraContainer";
@@ -72,6 +86,11 @@ Node* createScene1() {
     //cameraContainer->adopt(camera2);
 
     //engine.setMainCamera(camera1);
+    //
+    // Text
+    Text2D *text = new Text2D("", {-1, -1}, "SS", false, true, true, TAL_LEFT, TRH_LEFT, TRV_TOP);
+    root->adopt(text);
+    player->inputtxt = text;
 
     // Models
     Node *models = new Node();
@@ -82,6 +101,10 @@ Node* createScene1() {
     statue->name = "Statue";
     models->adopt(statue);
 
+    Model3D *statuer = new Model3D("Statue.gltf", {-1, -0.5, 0}, {0, 0, 0}, {4, 4, 4}, &rMat);
+    statuer->name = "Statue";
+    models->adopt(statuer);
+
     Model3D *plane = new Model3D("Water.gltf", {0, 0.1, 0}, {0, 0, 0}, {10, 10, 10}, &mat1);
     BoxCollider* planeColl = new BoxCollider(2.0f, 0.05f, 2.0f);
     planeColl->name = "PlaneHB";
@@ -90,6 +113,18 @@ Node* createScene1() {
     plane->name = "Plane";
     plane->adopt(planeColl);
     models->adopt(plane);
+
+    AnimatedModel3D *man = new AnimatedModel3D(
+                                    {"assets/models/man/uomo.gltf",
+                                                "assets/models/man/running.gltf",
+                                                "assets/models/man/idle.gltf",
+                                                "assets/models/man/pointing.gltf",
+                                                "assets/models/man/waving.gltf"},
+                                                {{0,32,0.0f,0}, {0,16,0.0f,1}, {0,263,0.0f,2}, {0,83,0.0f,3}, {0,16,0.0f,4}}
+                                                ,"Armature|mixamo.com|Layer0", "Ch01_Body",
+                                                {2, 0, 0}, {0, 0, 0}, {3, 3, 3},
+                                                &animMat);
+    models->adopt(man);
 
     Model3D *magicCircle = new Model3D("Water.gltf", {0, 0.5, 0}, {0, 0, 0}, {2, 2, 2}, &mat5);
     models->adopt(magicCircle);
@@ -138,6 +173,7 @@ Node* createScene1() {
 
     // Planet
     MovingPlanetUpdate *planet = new MovingPlanetUpdate();
+    planet->globalTranslate({0, 2, 0});
     planet->name = "Planet";
     root->adopt(planet);
     // Moving child
@@ -154,6 +190,10 @@ Node* createScene1() {
     Model3D *orbitingStatue = new Model3D("Statue.gltf", {0, 0, 0}, {0, 0, 0}, {1, 1, 1}, &mat1);
     orbitingStatue->localTranslate({1, 0, 0});
     movingChild->adopt(orbitingStatue);
+    AudioNode3D *movingAudio = new AudioNode3D("rocketJumpWaltz.mp3", 1.0f, 50.0f, 1.0f, INVERSE, 0.1f);
+    movingAudio->name = "RocketJumWaltz";
+    planet->adopt(movingAudio);
+    player->music = movingAudio;
 
     return root;
 }
@@ -162,28 +202,31 @@ Node* createScene2() {
 
     Node *root = new Node();
     root->name = "root";
-    CapsuleCollider* playerCollider = new CapsuleCollider();
-    playerCollider->name = "PlayerCollider";
-    playerCollider->layer = PLAYER;
-    root->adopt(playerCollider);
-    PlayerNode* player = new PlayerNode();
-    player->name = "Player";
-    playerCollider->adopt(player);
-    PerspectiveCamera *camera = new PerspectiveCamera(0.01, 100, glm::radians(90.0f), 4.0f/3.0f, true);
-    camera->name = "PerspectiveCamera";
-    player->adopt(camera);
-    playerCollider->globalTranslate({-2, 5, 0});
-    player->localTranslate({0, 1.25f, 0});
+    // CapsuleCollider* playerCollider = new CapsuleCollider();
+    // playerCollider->name = "PlayerCollider";
+    // playerCollider->layer = PLAYER;
+    // root->adopt(playerCollider);
+    // PlayerNode* player = new PlayerNode();
+    // player->name = "Player";
+    // playerCollider->adopt(player);
+    // PerspectiveCamera *camera = new PerspectiveCamera(0.01, 100, glm::radians(90.0f), 4.0f/3.0f, true);
+    // camera->name = "PerspectiveCamera";
+    // player->adopt(camera);
+    // playerCollider->globalTranslate({-2, 5, 0});
+    // player->localTranslate({0, 1.25f, 0});
 
-    //CustomCameraUpdate *cameraContainer = new CustomCameraUpdate();
-    //cameraContainer->name = "CameraContainer";
-    //PerspectiveCamera *camera1 = new PerspectiveCamera(0.01, 100, glm::radians(90.0f), 4.0f/3.0f);
-    //camera1->name = "PerspectiveCamera";
-    //OrthoCamera *camera2 = new OrthoCamera(-4, 4, -2, 2, 0.01, 200);
-    //camera2->name = "OrthoCamera";
-    //root->adopt(cameraContainer);
-    //cameraContainer->adopt(camera1);
-    //cameraContainer->adopt(camera2);
+    CustomCameraUpdate *cameraContainer = new CustomCameraUpdate();
+    // Position over the plane
+    cameraContainer->globalTranslate({-2, 2, 0});
+    cameraContainer->globalRotateY(glm::radians(-90.0f));
+    cameraContainer->name = "CameraContainer";
+    PerspectiveCamera *camera1 = new PerspectiveCamera(0.01, 100, glm::radians(90.0f), 4.0f/3.0f);
+    camera1->name = "PerspectiveCamera";
+    OrthoCamera *camera2 = new OrthoCamera(-4, 4, -2, 2, 0.01, 200);
+    camera2->name = "OrthoCamera";
+    root->adopt(cameraContainer);
+    cameraContainer->adopt(camera1);
+    cameraContainer->adopt(camera2);
 
     //engine.setMainCamera(camera1);
 
@@ -241,6 +284,7 @@ Node* createScene2() {
 
     // Planet
     MovingPlanetUpdate *planet = new MovingPlanetUpdate();
+    planet->globalTranslate({0, 2, 0});
     planet->name = "Planet";
     root->adopt(planet);
     // Moving child
@@ -528,6 +572,8 @@ int main() {
 
     Engine engine;
 
+    Engine::mapScene("Scene1", createScene1());
+    Engine::mapScene("Scene2", createScene2());
     Engine::mapScene("Unit", createUnitScene());
     Engine::mapScene("Forest", createForestScene());
 
@@ -535,10 +581,10 @@ int main() {
 
     try {
         engine.run(false);
-   } catch (const std::exception& e) {
+    } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;
-   }
+    }
 
     return EXIT_SUCCESS;
 }

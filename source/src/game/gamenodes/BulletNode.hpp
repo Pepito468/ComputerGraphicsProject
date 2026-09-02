@@ -21,13 +21,14 @@ class BulletNode : public UpdateNode3D
 public:
     void onEnter() override
     {
+        return;
         if (Collider* c = dynamic_cast<Collider*>(this->parent))
         {
             bulletColl = c;
             bulletColl->onCollision = [this](const Collider* other)
             {
                 log("Bullet collided with " + other->name);
-                Engine::requestNodeDeletion(bulletColl);
+                Engine::requestNodeDeletion(bulletColl, true);
             };
         }
         else
@@ -42,11 +43,11 @@ public:
         timer += Engine::getDeltaTime();
         if (timer >= LIFETIME)
         {
-            Engine::requestNodeDeletion(bulletColl);
+            Engine::requestNodeDeletion(this, true);
             return;
         }
 
-        bulletColl->globalTranslate(bulletColl->getZAxis() * SPEED * Engine::getDeltaTime());
+        this->globalTranslate(this->getZAxis() * SPEED * Engine::getDeltaTime());
     }
 };
 #endif
