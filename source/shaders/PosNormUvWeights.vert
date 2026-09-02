@@ -1,6 +1,10 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
+layout(binding = 0, set = 0) uniform ShadowMapUniformBufferObject {
+	mat4 mvpMat;
+} subo;
+
 layout(binding = 0, set = 1) uniform UniformBufferObject {
 	mat4 mvpMat[65];
 	mat4 mMat[65];
@@ -17,6 +21,7 @@ layout(location = 4) in vec4 inJointWeight;
 layout(location = 0) out vec3 fragPos;
 layout(location = 1) out vec3 fragNorm;
 layout(location = 2) out vec2 fragUV;
+layout(location = 3) out vec3 shadowPos;
 
 void main() {
 	gl_Position = inJointWeight.x * 
@@ -48,4 +53,6 @@ void main() {
 			   (ubo.nMat[inJointIndex.w] * vec4(inNorm, 0.0)).xyz;
 
 	fragUV = inUV;
+
+	shadowPos = vec3(subo.mvpMat * vec4(fragPos,1.0));
 }

@@ -148,7 +148,10 @@ public:
     ~AnimatedModel3D() = default;
 
     void descriptorSetInit(BaseProject *bp, DescriptorSetLayout *localLayout, RenderPass *RPoffScreen, RenderPass *RPsceneDepth, RenderPass *RPsceneColor) override {
-        local.init(bp, localLayout, {material->getAlbedoTex()->getViewAndSampler()});
+        local.init(bp, localLayout,
+            {material->getAlbedoTex()->getViewAndSampler(), //albedoTex
+                    RPoffScreen->attachments[0].getViewAndSampler() //shadowMap
+            });
 
 
         if (justOnce) {

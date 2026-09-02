@@ -70,7 +70,7 @@ class Renderer {
             if (!IsAnimShader(shaderType))
                 pipeline.init(bp, &vertexDescriptor, vertShader, fragShader, {&globalLayout, localLayout, &offScreenLayout});
             else
-                pipeline.init(bp, &vertexDescriptor, vertShader, fragShader, {&globalLayout, localLayout});
+                pipeline.init(bp, &vertexDescriptor, vertShader, fragShader, {&globalLayout, localLayout, &offScreenLayout});
 
             if (IsLateDraw(shaderType))
                 pipeline.setTransparency(true);
@@ -650,7 +650,7 @@ class Renderer {
 
 
         PoffScreen.init(bp, &vertexDescriptor, "shaders/ShadowMap.vert.spv", "shaders/ShadowMap.frag.spv", {&offScreenLayout, &localLayout});
-        PoffScreenAnim.init(bp, &VDanim, "shaders/ShadowMapAnim.vert.spv", "shaders/ShadowMap.frag.spv", {&offScreenLayout, &animLayout});
+        PoffScreenAnim.init(bp, &VDanim, "shaders/ShadowMapAnim.vert.spv", "shaders/ShadowMap.frag.spv", { &offScreenLayout, &animLayout});
         PsceneDepth.init(bp, &vertexDescriptor, "shaders/SceneDepth.vert.spv", "shaders/SceneDepth.frag.spv", {&sceneDepthLayout, &localLayout});
         PsceneColor.init(bp, &vertexDescriptor, "shaders/SceneColor.vert.spv", "shaders/SceneColor.frag.spv", {&sceneColorLayout, &localLayout});
 

@@ -4,6 +4,7 @@
 layout(location = 0) in vec3 fragPos;
 layout(location = 1) in vec3 fragNorm;
 layout(location = 2) in vec2 fragUV;
+layout(location = 3) in vec3 shadowPos;
 
 layout(location = 0) out vec4 outColor;
 
@@ -14,6 +15,7 @@ layout(binding = 0, set = 0) uniform GlobalUniformBufferObject {
 } gubo;
 
 layout (binding = 1, set = 1) uniform sampler2D tex;
+layout (binding = 2, set = 1) uniform sampler2D shadowMap;
 
 
 const float PI = 3.14159265359;
@@ -100,8 +102,24 @@ void main() {
 				   (Norm.y > 0 ? cyp : cyn) * (Norm.y * Norm.y) +
 				   (Norm.z > 0 ? czp : czn) * (Norm.z * Norm.z)) * albedo;
 
+	float lightMapDist = shadowPos.z;
+    vec2 lightMapUV = (shadowPos.xy + 1.0f) / 2.0f;
 
-	vec3 color  = (Diffuse + Specular) * lightColor + Ambient;
+    float shadowBias = max(0.012f * (1.0f - dot(Norm, lightDir)), 0.002f);
+    const float shadowScale = 128.0f;
+    vec2 texelSize = 1.0f / vec2(textureSize(shadowMap, 0));
+    float notInShadow = 0.0f;
+    for(int x = -1; x <= 1; x++) {
+    	for(int y = -1; y <= 1; y++) {
+    		float depth = texture(shadowMap, lightMapUV + vec2(x, y) * texelSize).r;
+    		notInShadow += depth + shadowBias >= lightMapDist ? 1.0f : 0.0f;
+    	}
+
+    }
+    notInShadow /= 9.0f;
+
+
+	vec3 color  = (Diffuse + Specular) * lightColor * notInShadow + Ambient;
     color = color / (color + vec3(1.0));
     color = pow(color, vec3(1.0 / 2.2));
 	
