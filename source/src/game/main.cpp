@@ -3,6 +3,7 @@
 
 #include "Engine.hpp"
 
+#include "Material.hpp"
 #include "PerspectiveCamera.hpp"
 #include "OrthoCamera.hpp"
 
@@ -39,6 +40,8 @@ FireMaterial flame3 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "fi
 MagicCirleMaterial mat5 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "magicCircle.png"};
 
 CookTorranceAnimMaterial animMat = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}, "rock.png"};
+
+RainbowMaterial rMat = {0.2, 1, 1, 0.3};
 
 Node* createScene1() {
 
@@ -89,6 +92,10 @@ Node* createScene1() {
     Model3D *statue = new Model3D("Statue.gltf", {1, -0.5, 0}, {0, 0, 0}, {4, 4, 4}, &mat1);
     statue->name = "Statue";
     models->adopt(statue);
+
+    Model3D *statuer = new Model3D("Statue.gltf", {-1, -0.5, 0}, {0, 0, 0}, {4, 4, 4}, &rMat);
+    statuer->name = "Statue";
+    models->adopt(statuer);
 
     Model3D *plane = new Model3D("Water.gltf", {0, 0.1, 0}, {0, 0, 0}, {10, 10, 10}, &mat1);
     BoxCollider* planeColl = new BoxCollider(2.0f, 0.05f, 2.0f);
