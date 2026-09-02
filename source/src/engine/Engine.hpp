@@ -386,12 +386,15 @@ class Engine : public BaseProject {
             } else if (Camera *camera = dynamic_cast<Camera*>(node)) {
                 if (camera == this->mainCamera) 
                     this->mainCamera = nullptr;
+            } else if (AudioNode *audio = dynamic_cast<AudioNode*>(node)) {
+                audio->stopSound();
             }
 
             log(std::format("Removed Node [{}, ID: {}]", node->name, node->UUID));
 
-            // Free memory TODO: scenes can be reloaded?
-            // NOTE: also, models being deleted now as nodes creates a lot of problems with the Renderer (after fixing leaks)
+            // NOTE: I decided to relegate memory cleanup to the user, since node
+            // deletion causes a lot of issues with the Model cleanup.
+            // I might try smart pointers later
             // delete node;
         }
 

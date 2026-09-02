@@ -133,6 +133,8 @@ public:
         // Change scene
         if (Engine::isKeyBeingPressed(GLFW_KEY_K, true)) {
             Engine::requestSceneChange(Engine::getSceneFromNameMap("Scene2"));
+        } else if (Engine::isKeyBeingPressed(GLFW_KEY_L, true)) {
+            Engine::requestSceneChange(Engine::getSceneFromNameMap("Scene1"));
         }
 
         //Check grounded
@@ -195,12 +197,6 @@ public:
             inputtxt->text = std::format("FPS: {}", count / elapsedT);
             elapsedT = 0.0f;
             count = 0;
-            log(std::format("DATA: {} {} {} {}\n",
-                        Engine::MainEngine->DPSZs.sampledImagesInPool,
-                        Engine::MainEngine->DPSZs.samplersInPool,
-                        Engine::MainEngine->DPSZs.setsInPool,
-                        Engine::MainEngine->DPSZs.texturesInPool,
-                        Engine::MainEngine->DPSZs.uniformBlocksInPool));
         }
     }
 };
