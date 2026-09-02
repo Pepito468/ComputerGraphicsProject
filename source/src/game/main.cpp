@@ -317,14 +317,137 @@ Node* createScene2() {
     return root;
 }
 
+Node* createDarkScene() {
+
+    Node *root = new Node();
+    root->name = "root";
+
+    // Player
+    CapsuleCollider *playerCollider = new CapsuleCollider();
+    playerCollider->name = "PlayerCollider";
+    playerCollider->layer = PLAYER;
+    playerCollider->collidesWith = ENVIRONMENT;
+    root->adopt(playerCollider);
+    PlayerNode* player = new PlayerNode();
+    player->name = "Player";
+    playerCollider->adopt(player);
+    PerspectiveCamera *camera = new PerspectiveCamera(0.01, 100, glm::radians(90.0f), 4.0f/3.0f, true);
+    camera->name = "PerspectiveCamera";
+    player->adopt(camera);
+    player->localTranslate({0, 1.25f, 0});
+
+    // Assign Sonar
+    player->sonarMat = &sMat;
+
+    playerCollider->globalTranslate({0, 20, 0});
+
+
+    Node *staticObjects = new Node();
+    staticObjects->name = "StaticObjectsContainer";
+    root->adopt(staticObjects);
+
+#define LABSIZE 12
+    float cellSize = 4;
+    const char labyrinth[LABSIZE][LABSIZE] = {
+        {'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W'},
+        {'W', '.', '.', '.', 'W', '.', '.', '.', 'W', '.', '.', 'W'},
+        {'W', 'W', 'W', '.', 'W', '.', 'W', '.', 'W', '.', 'W', 'W'},
+        {'W', '.', '.', '.', '.', '.', 'W', '.', '.', '.', '.', 'W'},
+        {'W', '.', 'W', 'W', 'W', 'W', 'W', '.', 'W', 'W', '.', 'W'},
+        {'W', '.', '.', '.', 'W', '.', '.', '.', 'W', 'W', '.', 'W'},
+        {'W', 'W', 'W', '.', 'W', '.', 'W', 'W', '.', 'W', '.', 'W'},
+        {'W', 'S', 'W', '.', '.', '.', 'W', '.', '.', '.', '.', 'W'},
+        {'W', '.', 'W', 'W', 'W', '.', 'W', '.', 'W', '.', 'W', 'W'},
+        {'W', '.', '.', '.', '.', '.', '.', 'W', '.', '.', '.', 'W'},
+        {'W', '.', 'W', '.', 'W', 'W', '.', '.', 'W', 'W', '.', 'E'},
+        {'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W'},
+    };
+
+    glm::vec3 offset[4] = {
+        {0, 0, cellSize/2.0f},
+        {0, 0, -cellSize/2.0f},
+        {cellSize/2.0f, 0, 0},
+        {-cellSize/2.0f, 0, 0}
+    };
+
+    glm::vec3 rotations[4] = {
+        {std::numbers::pi/2, 0, 0},
+        {std::numbers::pi/2, 0, std::numbers::pi},
+        {std::numbers::pi/2, std::numbers::pi/2, 0},
+        {std::numbers::pi/2, -std::numbers::pi/2, 0}
+    };
+
+    // Floor
+    Model3D *floor = new Model3D("Water.gltf", {cellSize * LABSIZE/2, 0, cellSize * LABSIZE/2}, {0, 0, 0}, {cellSize * LABSIZE, 1, cellSize * LABSIZE}, &sMat);
+    floor->name = "Floor";
+    staticObjects->adopt(floor);
+    BoxCollider* floorCollider = new BoxCollider(5.0f, 0.05f, 5.0f);
+    floorCollider->name = "Floorcoll";
+    floorCollider->movementStatus = STATIC;
+    floorCollider->layer = ENVIRONMENT;
+    floor->adopt(floorCollider);
+
+    // Walls
+    for (int i = 0; i < LABSIZE; i++) {
+        for (int j = 0; j < LABSIZE; j++) {
+            switch(labyrinth[i][j]) {
+                case '.':
+                    break;
+                case 'W':
+                    for (int k = 0; k < 4; k++) {
+                        const glm::vec3 pos = glm::vec3(i*cellSize, cellSize/2, j*cellSize) + offset[k];
+                        Model3D *wall = new Model3D("Water.gltf", pos, rotations[k], {cellSize/2, 1, cellSize/2}, &sMat);
+                        wall->name = std::format("Wall {} {} {}", i, j, k);
+                        staticObjects->adopt(wall);
+
+                        // Colliders tank the FPS and idk where they are when spawned
+                        BoxCollider* wallCollider = new BoxCollider(0.5f, 0.5f, 0.5f);
+                        wall->name = std::format("WallColl {} {} {}", i, j, k);
+                        wallCollider->movementStatus = STATIC;
+                        wallCollider->layer = ENVIRONMENT;
+                        // wall->adopt(wallCollider);
+                    }
+                    break;
+                case 'S':
+                    // Maybe add a room before the maze? (and after?)
+                    playerCollider->setGlobalPosition({i*cellSize, 30, j*cellSize});
+                    break;
+                case 'E':
+                    // Do something
+                    break;
+                default:
+                    error("What?");
+            }
+        }
+    }
+
+
+    // Lights
+    AmbientLight *ambientLight = new AmbientLight({0.08f, 0.14f, 0.20f},{0.035f, 0.04f, 0.045f}, {0.0f, 1.0f, 0.0f});
+    ambientLight->name = "AmbientLight";
+    root->adopt(ambientLight);
+
+    DirectionalLight *directionalLight = new DirectionalLight(0.5,glm::vec3(1.0f, 0.95f, 0.8f),glm::normalize(glm::vec3(0.8f, 0.25f, 0.4f)));
+    directionalLight->name = "DirectionalLight";
+    root->adopt(directionalLight);
+
+    // FPS
+    Text2D *text = new Text2D("", {-1, -1}, "SS", false, true, true, TAL_LEFT, TRH_LEFT, TRV_TOP);
+    root->adopt(text);
+    player->inputtxt = text;
+
+    return root;
+}
+
 int main() {
 
     Engine engine;
 
     Engine::setGlobalVariable("Scene1", createScene1());
     Engine::setGlobalVariable("Scene2", createScene2());
+    Engine::setGlobalVariable("SceneDark", createDarkScene());
 
-    Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene1")));
+    Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("SceneDark")));
 
     try {
         engine.run(false);
@@ -336,6 +459,7 @@ int main() {
     // Free the scenes
     freeNodeTree(std::any_cast<Node*>(Engine::getGlobalVariable("Scene1")));
     freeNodeTree(std::any_cast<Node*>(Engine::getGlobalVariable("Scene2")));
+    freeNodeTree(std::any_cast<Node*>(Engine::getGlobalVariable("SceneDark")));
 
     return EXIT_SUCCESS;
 }

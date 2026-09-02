@@ -72,7 +72,8 @@ class PlayerNode : public UpdateNode3D
 
         Engine::instantiate(bullet);
 
-        quack->playSound();
+        if (quack)
+            quack->playSound();
     }
 
 public:
@@ -197,7 +198,8 @@ public:
         elapsedT += Engine::getDeltaTime();
         count++;
         if (elapsedT >= 1.0f) {
-            inputtxt->text = std::format("FPS: {}", count / elapsedT);
+            if (inputtxt)
+                inputtxt->text = std::format("FPS: {}", count / elapsedT);
             elapsedT = 0.0f;
             count = 0;
         }
