@@ -119,8 +119,5 @@ void main() {
         intensity = max(intensity, band * lifeFade);
     }
 
-    // Ignore already black material
-    if (intensity = 0)
-        discard;
     outColor = vec4(vec3(intensity), 1.0);
 }
