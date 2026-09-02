@@ -48,7 +48,7 @@ class Engine : public BaseProject {
         // Time elapsed from last frame
         float deltaTime = 0.0f;
         // Time elapsed since the start
-        float time = 0.0f;
+        float currentTime = 0.0f;
         // Translation input
         glm::vec3 inputTranslation = VEC3_ZERO;
         // Rotation input
@@ -67,7 +67,7 @@ class Engine : public BaseProject {
 
         std::set<Node*> nodesQueuedToBeDeleted;
 
-        std::map<std::string, Node*> scenes;
+        std::map<std::string, std::any> globalVariables;
 
         ma_engine audioEngine;
 
@@ -101,6 +101,10 @@ class Engine : public BaseProject {
 
         static glm::vec3 getInputRotation() {
             return MainEngine->inputRotation;
+        }
+
+        static float getCurrentTime() {
+            return MainEngine->currentTime;
         }
 
         /** Returns true if the given key is being pressed */
@@ -144,31 +148,6 @@ class Engine : public BaseProject {
             return (getCursorMode() == GLFW_CURSOR_NORMAL);
         }
 
-        /** Communicates to the ui that something was clicked in the menu, and handles calling of engine functions */
-        static void handleMenuClick() {
-            double mouseX, mouseY; //TODO I didn't bother changing the global cursorPos[X/Y] since updateMouseStatus is gonna get called anyway. If other functions use the global variable, this probably should update them
-            glfwGetCursorPos(MainEngine->window, &mouseX, &mouseY);
-            InteractedUIElementData data = MainEngine->ui.updateMouseStatus(mouseX, mouseY, true);
-
-            switch (data.id) {	//TODO
-                case UI_ID_BUTTON_RESUME:
-                    Engine::setCursorMode(GLFW_CURSOR_DISABLED);
-                    Engine::togglePauseMenu();
-                    break;
-                case UI_ID_BUTTON_QUIT:
-                    Engine::MainEngine->requestEngineShutdown();
-                    break;
-                case UI_ID_BUTTON_SCENE1:
-                    Engine::requestSceneChange(Engine::getSceneFromNameMap("Scene1"));
-                    break;
-                case UI_ID_BUTTON_SCENE2:
-                    Engine::requestSceneChange(Engine::getSceneFromNameMap("Scene2"));
-                    break;
-                default:
-                    break;
-            }
-        }
-
         /** Returns the scene's root */
         static Node* getSceneRoot() {
             return MainEngine->scene;
@@ -201,16 +180,16 @@ class Engine : public BaseProject {
             MainEngine->ui.toggleVisibility(UI_ID_BUTTON_SCENE2);
         }
 
-        /** Maps a name to a scene (for convenience).
-         * @note deleting a scene does not delete its mapping from here.
-         * */
-        static void mapScene(const std::string& sceneName, Node* sceneRoot) {
-            MainEngine->scenes[sceneName] = sceneRoot;
+        /** Maps a name to a global variable. */
+        static void setGlobalVariable(const std::string& name, std::any value) {
+            MainEngine->globalVariables[name] = value;
         }
 
-        /** Returns the scene mapped with its name (or nullptr if no scene was mapped with that name) */
-        static Node* getSceneFromNameMap(const std::string& sceneName) {
-            return MainEngine->scenes[sceneName];
+        /** Returns the global variable mapped with its name.
+         * @note returns nullptr if no variable is mapped to the given name
+         */
+        static auto getGlobalVariable(const std::string& name) {
+            return MainEngine->globalVariables[name];
         }
 
         /**
@@ -248,6 +227,31 @@ class Engine : public BaseProject {
                     requestNodeDeletion(child, true);
 
             log(std::format("Node deletion request accepted [{}, ID: {}], delete children? [{}]", node->name, node->UUID, deleteDescendants ? "Y" : "N"));
+        }
+
+        /** Communicates to the ui that something was clicked in the menu, and handles calling of engine functions */
+        static void handleMenuClick() {
+            double mouseX, mouseY; //TODO I didn't bother changing the global cursorPos[X/Y] since updateMouseStatus is gonna get called anyway. If other functions use the global variable, this probably should update them
+            glfwGetCursorPos(MainEngine->window, &mouseX, &mouseY);
+            InteractedUIElementData data = MainEngine->ui.updateMouseStatus(mouseX, mouseY, true);
+
+            switch (data.id) {	//TODO
+                case UI_ID_BUTTON_RESUME:
+                    Engine::setCursorMode(GLFW_CURSOR_DISABLED);
+                    Engine::togglePauseMenu();
+                    break;
+                case UI_ID_BUTTON_QUIT:
+                    Engine::MainEngine->requestEngineShutdown();
+                    break;
+                case UI_ID_BUTTON_SCENE1:
+                    Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene1")));
+                    break;
+                case UI_ID_BUTTON_SCENE2:
+                    Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene2")));
+                    break;
+                default:
+                    break;
+            }
         }
 
     private:
@@ -573,7 +577,7 @@ class Engine : public BaseProject {
             this->updateGlobals();
 
             // Update total time
-            this->time += this->deltaTime;
+            this->currentTime += this->deltaTime;
 
             // Call update() on all UpdateNodes
             this->updateUpdate3DNodes(this->scene);
@@ -719,7 +723,7 @@ class Engine : public BaseProject {
                     this->mainCamera->getGlobalPosition(),
                     this->mainCamera->getProjectionMatrix(),
                     this->mainCamera->getViewMatrix(), 
-                    this->time,
+                    this->currentTime,
                     deltaTime);
 
             renderer.updateLightCulling(this->mainCamera->getGlobalPosition(), LIGHT_RENDER_DISTANCE);

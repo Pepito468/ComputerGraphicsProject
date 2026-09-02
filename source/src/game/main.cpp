@@ -1,3 +1,4 @@
+#include <any>
 #include <iostream>
 #include <ostream>
 
@@ -42,6 +43,13 @@ MagicCirleMaterial mat5 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f},
 CookTorranceAnimMaterial animMat = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}, "rock.png"};
 
 RainbowMaterial rMat = {0.2, 1, 1, 0.3};
+SonarMaterial sMat = {3, 2, 20};
+
+void freeNodeTree(Node *node) {
+    for (Node *child : node->children)
+        freeNodeTree(child);
+    delete node;
+}
 
 Node* createScene1() {
 
@@ -96,6 +104,18 @@ Node* createScene1() {
     Model3D *statuer = new Model3D("Statue.gltf", {-1, -0.5, 0}, {0, 0, 0}, {4, 4, 4}, &rMat);
     statuer->name = "Statue";
     models->adopt(statuer);
+
+    // Sonar plane
+    Model3D *sonar = new Model3D("Water.gltf", {-3, 3, -10}, {std::numbers::pi/2, 0, 0}, {10, 10, 10}, &sMat);
+    sonar->name = "Sonar";
+    player->sonarMat = &sMat;
+    models->adopt(sonar);
+    Model3D *statues = new Model3D("Statue.gltf", {-5, 0, -7}, {0, 0, 0}, {5, 5, 5}, &sMat);
+    statues->name = "Statue";
+    models->adopt(statues);
+
+    // Sonar statue
+
 
     Model3D *plane = new Model3D("Water.gltf", {0, 0.1, 0}, {0, 0, 0}, {10, 10, 10}, &mat1);
     BoxCollider* planeColl = new BoxCollider(2.0f, 0.05f, 2.0f);
@@ -301,10 +321,10 @@ int main() {
 
     Engine engine;
 
-    Engine::mapScene("Scene1", createScene1());
-    Engine::mapScene("Scene2", createScene2());
+    Engine::setGlobalVariable("Scene1", createScene1());
+    Engine::setGlobalVariable("Scene2", createScene2());
 
-    Engine::requestSceneChange(Engine::getSceneFromNameMap("Scene1"));
+    Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene1")));
 
     try {
         engine.run(false);
@@ -312,6 +332,10 @@ int main() {
         std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;
     }
+
+    // Free the scenes
+    freeNodeTree(std::any_cast<Node*>(Engine::getGlobalVariable("Scene1")));
+    freeNodeTree(std::any_cast<Node*>(Engine::getGlobalVariable("Scene2")));
 
     return EXIT_SUCCESS;
 }

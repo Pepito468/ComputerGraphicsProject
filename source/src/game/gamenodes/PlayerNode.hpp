@@ -2,6 +2,7 @@
 #define ENGINE_PLAYERNODE_HPP
 
 #include "BulletNode.hpp"
+#include "Material.hpp"
 #include "SphereCollider.hpp"
 #include "Text2D.hpp"
 #include "UpdateNode3D.hpp"
@@ -29,6 +30,7 @@ class PlayerNode : public UpdateNode3D
     AudioNode *quack = nullptr;
 
     ToonMaterial bulletMat = {glm::vec3(0.9f, 0.45f, 0.9f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
+    RainbowMaterial rMat = {0.2, 1, 1, 0.3};
 
     void shoot()
     {
@@ -57,7 +59,7 @@ class PlayerNode : public UpdateNode3D
 
         BulletNode* bullet = new BulletNode();
         bullet->name = "bullet";
-        Model3D *bulletMod = new Model3D("SuzanneUV.obj", {0, 0, 0}, {0, 0, 0}, {0.5f, 0.5f, 0.5f}, &bulletMat);
+        Model3D *bulletMod = new Model3D("SuzanneUV.obj", {0, 0, 0}, {0, 0, 0}, {0.5f, 0.5f, 0.5f}, &rMat);
         bulletMod->name = "bullMod";
         bullet->adopt(bulletMod);
 
@@ -78,6 +80,7 @@ public:
     AudioNode3D *music = nullptr;
     Text2D *inputtxt = nullptr;
     bool isMusicPlaying = false;
+    SonarMaterial *sonarMat = nullptr;
 
     void onEnter() override
     {
@@ -132,9 +135,9 @@ public:
 
         // Change scene
         if (Engine::isKeyBeingPressed(GLFW_KEY_K, true)) {
-            Engine::requestSceneChange(Engine::getSceneFromNameMap("Scene2"));
+            Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene2")));
         } else if (Engine::isKeyBeingPressed(GLFW_KEY_L, true)) {
-            Engine::requestSceneChange(Engine::getSceneFromNameMap("Scene1"));
+            Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene1")));
         }
 
         //Check grounded
@@ -197,6 +200,11 @@ public:
             inputtxt->text = std::format("FPS: {}", count / elapsedT);
             elapsedT = 0.0f;
             count = 0;
+        }
+
+        if (Engine::isKeyBeingPressed(GLFW_KEY_U, true) and sonarMat) {
+            log("SONAR");
+            sonarMat->trigger(this->getGlobalPosition(), Engine::getCurrentTime());
         }
     }
 };

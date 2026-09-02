@@ -31,9 +31,9 @@ class CustomCameraUpdate : public UpdateNode3D {
 
         // Change scene
         if (Engine::isKeyBeingPressed(GLFW_KEY_K, true)) {
-            Engine::requestSceneChange(Engine::getSceneFromNameMap("Scene2"));
+            Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene2")));
         } else if (Engine::isKeyBeingPressed(GLFW_KEY_L, true)) {
-            Engine::requestSceneChange(Engine::getSceneFromNameMap("Scene1"));
+            Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene1")));
         }
 
         // Camera change

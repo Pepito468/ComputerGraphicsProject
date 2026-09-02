@@ -67,11 +67,15 @@ struct UniformBufferObject {
     alignas(16) glm::vec4 param2;
     alignas(16) glm::vec4 param3;
     alignas(16) glm::vec4 param4;
+    alignas(16) glm::vec4 param5;
+    alignas(16) glm::vec4 param6;
+    alignas(16) glm::vec4 param7;
+    alignas(16) glm::vec4 param8;
 };
 
-enum ShaderType {LAMBERT_BLINN, LAMBERT_TEX, WATER, TOON, MAGIC_CIRCLE, FIRE, COOK_TORRANCE_ANIM, RAINBOW};
+enum ShaderType {LAMBERT_BLINN, LAMBERT_TEX, WATER, TOON, MAGIC_CIRCLE, FIRE, COOK_TORRANCE_ANIM, RAINBOW, SONAR};
 
-constexpr std::initializer_list<ShaderType> allShadersTypes = {LAMBERT_BLINN, LAMBERT_TEX,WATER, TOON, MAGIC_CIRCLE, FIRE, COOK_TORRANCE_ANIM, RAINBOW};
+constexpr std::initializer_list<ShaderType> allShadersTypes = {LAMBERT_BLINN, LAMBERT_TEX,WATER, TOON, MAGIC_CIRCLE, FIRE, COOK_TORRANCE_ANIM, RAINBOW, SONAR};
 
 const std::string getShaderFragName(ShaderType s)
 {
@@ -85,6 +89,7 @@ const std::string getShaderFragName(ShaderType s)
         case MAGIC_CIRCLE: return "MagicCircle";
         case COOK_TORRANCE_ANIM: return "CookTorranceAnim";
         case RAINBOW: return "Rainbow";
+        case SONAR: return "Sonar";
         default:      return "Error";
     }
 }
@@ -101,6 +106,7 @@ const std::string getShaderVertName(ShaderType s)
         case MAGIC_CIRCLE: return "PosNormUV";
         case COOK_TORRANCE_ANIM: return "PosNormUvWeights";
         case RAINBOW: return "Rainbow";
+        case SONAR: return "Sonar";
         default:      return "Error";
     }
 }
