@@ -168,7 +168,7 @@ public:
             shoot();
 
         // Start music
-        if (Engine::isKeyBeingPressed(GLFW_KEY_M, true)) {
+        if (music && Engine::isKeyBeingPressed(GLFW_KEY_M, true)) {
             if (!isMusicPlaying) {
                 music->playSound();
                 music->enableLooping();
@@ -184,7 +184,7 @@ public:
         static float count = 0;
         elapsedT += Engine::getDeltaTime();
         count++;
-        if (elapsedT >= 1.0f) {
+        if (inputtxt && elapsedT >= 1.0f) {
             inputtxt->text = std::format("FPS: {}", count / elapsedT);
             elapsedT = 0.0f;
             count = 0;
