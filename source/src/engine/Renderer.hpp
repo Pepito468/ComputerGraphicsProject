@@ -181,7 +181,7 @@ class Renderer {
     DescriptorSetLayout offScreenLayout;
     DescriptorSet offScreen, skybox;
     RenderPass RPoffScreen;
-    Pipeline PoffScreen, Pskybox;
+    Pipeline PoffScreen, PoffScreenAnim, Pskybox;
 
     //Scene depth
     DescriptorSetLayout sceneDepthLayout;
@@ -650,6 +650,7 @@ class Renderer {
 
 
         PoffScreen.init(bp, &vertexDescriptor, "shaders/ShadowMap.vert.spv", "shaders/ShadowMap.frag.spv", {&offScreenLayout, &localLayout});
+        PoffScreenAnim.init(bp, &VDanim, "shaders/ShadowMapAnim.vert.spv", "shaders/ShadowMap.frag.spv", {&offScreenLayout, &animLayout});
         PsceneDepth.init(bp, &vertexDescriptor, "shaders/SceneDepth.vert.spv", "shaders/SceneDepth.frag.spv", {&sceneDepthLayout, &localLayout});
         PsceneColor.init(bp, &vertexDescriptor, "shaders/SceneColor.vert.spv", "shaders/SceneColor.frag.spv", {&sceneColorLayout, &localLayout});
 
@@ -685,6 +686,7 @@ class Renderer {
             TenvMap.getViewAndSampler()
         });
         PoffScreen.create(&RPoffScreen);
+        PoffScreenAnim.create(&RPoffScreen);
         PsceneDepth.create(&RPsceneDepth);
         PsceneColor.create(&RPsceneColor);
 
@@ -717,6 +719,7 @@ class Renderer {
         RPsceneColor.cleanup();
 
         PoffScreen.cleanup();
+        PoffScreenAnim.cleanup();
         PsceneDepth.cleanup();
         PsceneColor.cleanup();
         Pskybox.cleanup();
@@ -756,6 +759,7 @@ class Renderer {
         }
 
         PoffScreen.destroy();
+        PoffScreenAnim.destroy();
         PsceneDepth.destroy();
         PsceneColor.destroy();
         Pskybox.destroy();
@@ -772,12 +776,17 @@ class Renderer {
 
     void populateShadowCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
         RPoffScreen.begin(commandBuffer, 0);
-        PoffScreen.bind(commandBuffer);
-        offScreen.bind(commandBuffer, PoffScreen, 0, currentImage);
 
         for (auto& o : sceneObjects) {
-            if (!IsAnimShader(o->getShaderType()))
+            if (!IsAnimShader(o->getShaderType())) {
+                PoffScreen.bind(commandBuffer);
+                offScreen.bind(commandBuffer, PoffScreen, 0, currentImage);
                 o->populateCommandBuffer(commandBuffer, currentImage, PoffScreen);
+            } else {
+                PoffScreenAnim.bind(commandBuffer);
+                offScreen.bind(commandBuffer, PoffScreenAnim, 0, currentImage);
+                o->populateCommandBuffer(commandBuffer, currentImage, PoffScreenAnim);
+            }
         }
 
         RPoffScreen.end(commandBuffer);
