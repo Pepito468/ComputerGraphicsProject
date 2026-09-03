@@ -1,3 +1,6 @@
+#ifndef UIMAKER_H
+#define UIMAKER_H
+
 #include <cstdint>
 #include <list>
 #include <vector>
@@ -14,11 +17,13 @@
 
 /*
 	TODO list:
-	- Fix leaked objects
-		- Add a forceModelUpdate flag to UIMaker and a needsUpdating flag to UIElements
-	- Button functions
+	- Add a forceModelUpdate flag to UIMaker and a needsUpdating flag to UIElements (maybe)
+	- Constraints for uielements initialization:
+		- Buttons should have 3 textures
+		- Sliders should have sx = s1 = 1.0f
+		- Sliders should have REGH = UIO_LEFT
 	- Sliders
-	- Checkboxes (maybe)
+	- Checkboxes (equiv 2-stage buttons) (maybe)
 	- N-stage buttons (A -> click -> B -> click -> C -> click -> A -> ...) (maybe)
 	- Main menu
 	- Pause menu
@@ -26,7 +31,6 @@
 	- Settings
 		- Volume
 		- Mouse sensitivity
-		- Buttons to change scene
 */
 
 #define DEFAULT_SUBMIT_ORDER 9999
@@ -86,8 +90,46 @@ struct TextureDataWithParams {
 
 struct InteractedUIElementData {
 	int id;
-	//other data...
+	float data;
 };
+
+inline bool isPointInsideRectangle(float _x, float _y, float x1, float y1, float x2, float y2) {
+	bool inside = true;
+			
+	// std::cout << "Hitbox: " << x1 << " x " << y1 << " | " << x2 << " x " << y2 << std::endl << "Point: " << _x << " x " << _y << std::endl;
+	inside &= ((x1 <= _x) && (_x <= x2));
+	inside &= ((y1 <= _y) && (_y <= y2));
+	// std::cout << "Inside: " << inside << std::endl;
+
+	return inside;
+}
+
+inline bool isPointInsideRectangle(float _x, float _y, glm::vec2 a, glm::vec2 b) {
+	return isPointInsideRectangle(_x, _y, a.x, a.y, b.x, b.y);
+}
+
+inline std::array<glm::vec2, 2> getPixelCoordinates(int screenW, int screenH, float x, float y, float sx, float sy, UIOriginH RegH, UIOriginV RegV, int width, int height) {
+	// std::cout << UI_DEBUG_STRING << " getting coordinates of an element: " << x << " x " << y << "|" << sx << " x " << sy << std::endl;
+	float tpx = 0.0f, tpy = 0.0f;
+	std::array<glm::vec2, 2> coordinates = {};
+
+	tpx = (x + 1.0f)/2.0f * screenW - sx * (
+		(RegH == UIO_RIGHT  ? (float)width		: 0.0f) +
+		(RegH == UIO_CENTER ? (float)width/2.0f	: 0.0f)
+	);
+	tpy = (y + 1.0f)/2.0f * screenH - sy * (
+		(RegV == UIO_BOTTOM ? (float)height		: 0.0f) +
+		(RegV == UIO_MIDDLE ? (float)height/2.0f: 0.0f)
+	);
+
+	coordinates[0].x = tpx;
+	coordinates[0].y = tpy;
+
+	coordinates[1].x = tpx + (float)(width) * sx;
+	coordinates[1].y = tpy + (float)(height) * sy;
+
+	return coordinates;
+}
 
 class UIMaker {
 	struct UIMakerAndModel {
@@ -150,25 +192,7 @@ class UIMaker {
 		 * - coordinates[1] is the bottom right corner.
 		 */
 		std::array<glm::vec2, 2> getPixelCoordinates(int screenW, int screenH) {
-			float tpx = 0.0f, tpy = 0.0f;
-			std::array<glm::vec2, 2> coordinates = {};
-
-			tpx = (this->x + 1.0f)/2.0f * screenW - this->sx * (
-				(this->RegH == UIO_RIGHT  ? (float)this->T.width	   : 0.0f) +
-				(this->RegH == UIO_CENTER ? (float)this->T.width/2.0f  : 0.0f)
-			);
-			tpy = (this->y + 1.0f)/2.0f * screenH - this->sy * (
-				(this->RegV == UIO_BOTTOM ? (float)this->T.height	   : 0.0f) +
-				(this->RegV == UIO_MIDDLE ? (float)this->T.height/2.0f : 0.0f)
-			);
-
-			coordinates[0].x = tpx;
-			coordinates[0].y = tpy;
-
-			coordinates[1].x = tpx + (float)(this->T.width) * this->sx;
-			coordinates[1].y = tpy + (float)(this->T.height) * this->sy;
-
-			return coordinates;
+			return ::getPixelCoordinates(screenW,screenH, x, y, sx, sy, RegH, RegV, T.width, T.height);
 		}
 
 		/**
@@ -243,7 +267,7 @@ class UIMaker {
 		 * Manages the scale of this UIElement based on its resize type and the screen dimensions
 		 * NOTE: scalable elements use DEFAULT_WINDOW_WIDTH and DEFAULT_WINDOW_HEIGHT as the "default" scaling
 		 */
-		void scaleToScreen (int screenW, int screenH) {
+		void scaleToScreen(int screenW, int screenH) {
 			float aspectRatio = this->sx / this->sy, xRatio = (float)screenW / DEFAULT_WINDOW_WIDTH, yRatio = (float)screenH / DEFAULT_WINDOW_HEIGHT;
 
 			if (this->resize == KEEP_ASPECT_RATIO) {
@@ -270,24 +294,28 @@ class UIMaker {
 			std::array<glm::vec2, 2> coordinates = getPixelCoordinates(screenW, screenH);
 			float x1 = coordinates[0].x, x2 = coordinates[1].x;
 			float y1 = coordinates[0].y, y2 = coordinates[1].y;
-			bool inside = true;
-			
-			// std::cout << "Hitbox: " << x1 << " x " << y1 << " | " << x2 << " x " << y2 << std::endl << "Point: " << _x << " x " << _y << std::endl;
-			inside &= ((x1 <= _x) && (_x <= x2));
-			inside &= ((y1 <= _y) && (_y <= y2));
-			// std::cout << "Inside: " << inside << std::endl;
 
-			return inside;
+			return isPointInsideRectangle(_x, _y, x1, y1, x2, y2);
 		}
 	};
 
 	/**
-	 * Stores data about a button, including a pointer to the UIElement
+	 * Stores button specific data
 	 */
 	struct ButtonData {
 		int id;
 		bool hovered;
 		bool clicked;
+	};
+
+	/**
+	 * Stores slider specific data (the id is the index of the map)
+	 */
+	struct SliderData {
+		bool moving;
+		float currentMaxScale;
+		glm::vec2 upperLeftCorner;
+		glm::vec2 lowerRightCorner;
 	};
 
 	VertexDescriptor UI_VD;
@@ -301,50 +329,9 @@ class UIMaker {
 	
 	std::unordered_map<int, UIElement> UIElementsMap = {};
 	std::list<ButtonData> ButtonsList = {};
+	std::unordered_map<int, SliderData> SlidersMap = {};
 	
 	bool commandBufferMustUpdate = false;
-	
-	/**
-	 * After the cursor moves, checks every button to see if their status changed
-	 */
-	InteractedUIElementData updateButtonStatus(bool mouseClick) {
-		for (auto &b : ButtonsList) {
-			bool inside = UIElementsMap[b.id].isPointInsideHitbox((float)mousePosX, (float)mousePosY, screenW, screenH);
-			// std::cout << UI_DEBUG_STRING << " hovered: " << b.hovered << "; inside: " << inside << std::endl;
-
-			if (b.hovered) {
-				if (!inside) {
-					// if the button was previously hovered and now the cursor is outside the hitbox
-					UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 0);
-					b.hovered = false;
-					commandBufferMustUpdate = true;
-				} else {
-					if (mouseClick && !b.clicked) {
-						// if the button was previously hovered and now the cursor clicks it
-						// std::cout << UI_DEBUG_STRING << " clicked a button" << std::endl;
-						b.clicked = true;
-						UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 2);
-						commandBufferMustUpdate = true;
-						return {b.id};
-					} else if (b.clicked && !mouseClick) {
-						// if the button was previously clicked, restore its texture to hovered
-						// TODO for now it only updates if the mouse moves, maybe find a way to change it after x time
-						// also multiple clicks without moving the mouse are ignored, maybe should change it
-						b.clicked = false;
-						UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 1);
-						commandBufferMustUpdate = true;
-					}
-				}
-			} else if (!b.hovered && inside) {
-				// if the button was not previously hovered and now the button is inside the hitbox
-				UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 1);
-				b.hovered = true;
-				commandBufferMustUpdate = true;
-			}
-		}
-
-		return {UI_ID_NULL};
-	}
 
 	/**
 	 * Takes care of the common parts of initElement(<TextureFilesWithParams>) and initElement(<TextureDataWithParams>)
@@ -359,11 +346,41 @@ class UIMaker {
 		UIElementsMap[id].submitOrder = DEFAULT_SUBMIT_ORDER + id;
 		UIElementsMap[id].resize = resize;
 		UIElementsMap[id].type = type;
-		if (type != UI_NORMAL) {
-			if (type == UI_BUTTON) {
-				ButtonsList.push_back({id, false, false});
-			} //else if {} for the other types 
+
+		switch(type) {
+		case UI_BUTTON:
+			ButtonsList.push_back({id, false, false});
+			break;
+		case UI_SLIDER:
+			SlidersMap[id] = {false};
+			break;
+		default:
+			break;
 		}
+	}
+
+	/**
+	 * Initializes the slider hitbox, using DEFAULT_WINDOW_* as the window dimension
+	 */
+	void setSliderHitbox(int id) {
+		std::array<glm::vec2, 2> coordinates = UIElementsMap[id].getPixelCoordinates(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT);
+		SlidersMap[id].currentMaxScale = 1.0f;
+		SlidersMap[id].upperLeftCorner = coordinates[0];
+		SlidersMap[id].lowerRightCorner = coordinates[1];
+	}
+
+	/**
+	 * Updates the slider hitbox in case of window resize
+	 (int screenW, int screenH, float x, float y, float sx, float sy, UIOriginH RegH, UIOriginV RegV, int width, int height) 
+	 */
+	void updateSliderHitbox(int id, int sW, int sH) {
+		UIElement temp = UIElementsMap[id];
+
+		// sy is passed both as sx and sy, since sx is used as the value of the slider
+		std::array<glm::vec2, 2> coordinates = ::getPixelCoordinates(sW, sH, temp.x, temp.y, temp.sy, temp.sy, temp.RegH, temp.RegV, temp.T.width, temp.T.height);
+		SlidersMap[id].currentMaxScale = temp.sy;
+		SlidersMap[id].upperLeftCorner = coordinates[0];
+		SlidersMap[id].lowerRightCorner = coordinates[1];
 	}
 
 public:
@@ -513,11 +530,82 @@ public:
 		UI_RP.end(commandBuffer);
 	}
 
-	InteractedUIElementData updateMouseStatus(double x, double y, bool clicked = false) {
+	std::list<InteractedUIElementData> updateMouseStatus(double x, double y, bool mouseClick = false, bool holding = false) {
+		std::list<InteractedUIElementData> ret = {};
 		this->mousePosX = x;
 		this->mousePosY = y;
+		// std::cout << UI_DEBUG_STRING << " updating mouse status: " << x << " x " << y << " | mouseClick = " << mouseClick << " | holding = " << holding << std::endl;
 
-		return updateButtonStatus(clicked);
+		// After the cursor moves, checks every button to see if their status changed
+		for (auto &b : ButtonsList) {
+			bool inside = UIElementsMap[b.id].isPointInsideHitbox((float)mousePosX, (float)mousePosY, screenW, screenH);
+			// std::cout << UI_DEBUG_STRING << " hovered: " << b.hovered << "; inside: " << inside << std::endl;
+
+			if (b.hovered) {
+				if (!inside) {
+					// if the button was previously hovered and now the cursor is outside the hitbox
+					UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 0);
+					b.hovered = false;
+					commandBufferMustUpdate = true;
+				} else {
+					if (mouseClick && !b.clicked) {
+						// if the button was previously hovered and now the cursor clicks it
+						// std::cout << UI_DEBUG_STRING << " clicked a button" << std::endl;
+						b.clicked = true;
+						UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 2);
+						commandBufferMustUpdate = true;
+						ret.push_back({b.id});
+					} else if (b.clicked && !mouseClick) {
+						// if the button was previously clicked, restore its texture to hovered
+						b.clicked = false;
+						UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 1);
+						commandBufferMustUpdate = true;
+					}
+				}
+			} else if (!b.hovered && inside) {
+				// if the button was not previously hovered and now the button is inside the hitbox
+				UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 1);
+				b.hovered = true;
+				commandBufferMustUpdate = true;
+			}
+		}
+
+		for (auto &s : SlidersMap) {
+			// std::cout << UI_DEBUG_STRING << " slider #" << s.first << ": moving = " << s.second.moving << " | upper left corner = " << s.second.upperLeftCorner.x << " x " << s.second.upperLeftCorner.y << " | lower right corner = " << s.second.lowerRightCorner.x << " x " << s.second.lowerRightCorner.y << " | xscale = " << UIElementsMap[s.first].sx << std::endl;
+			if (holding && s.second.moving) {
+				// the user is moving the slider around (doesn't matter if the cursor is on the slider, as long as they keep pressing it)
+				if (x <= s.second.upperLeftCorner.x) {
+					// lower bound
+					if (UIElementsMap[s.first].sx != 0.0f) {
+						UIElementsMap[s.first].sx = 0.0f;
+						commandBufferMustUpdate = true;
+						ret.push_back({s.first, UIElementsMap[s.first].sx / s.second.currentMaxScale});
+					}
+				} else if (x >= s.second.lowerRightCorner.x) {
+					// upper bound
+					if (UIElementsMap[s.first].sx != s.second.currentMaxScale) {
+						UIElementsMap[s.first].sx = s.second.currentMaxScale;
+						commandBufferMustUpdate = true;
+						ret.push_back({s.first, UIElementsMap[s.first].sx / s.second.currentMaxScale});
+					}
+				} else {
+					// value in between
+					UIElementsMap[s.first].sx = (x - s.second.upperLeftCorner.x)/(s.second.lowerRightCorner.x - s.second.upperLeftCorner.x) * s.second.currentMaxScale;
+					commandBufferMustUpdate = true;
+					ret.push_back({s.first, UIElementsMap[s.first].sx / s.second.currentMaxScale});
+				}
+			} else if (mouseClick && isPointInsideRectangle(x, y, s.second.upperLeftCorner, s.second.lowerRightCorner)) {
+				// the user clicks inside the "hitbox" of the slider, setting the slider to that point and saving that the slider is moving
+				UIElementsMap[s.first].sx = (x - s.second.upperLeftCorner.x)/(s.second.lowerRightCorner.x - s.second.upperLeftCorner.x) * s.second.currentMaxScale;
+				s.second.moving = true;
+				commandBufferMustUpdate = true;
+				ret.push_back({s.first, UIElementsMap[s.first].sx / s.second.currentMaxScale});
+			} else if (s.second.moving) {
+				s.second.moving = false;
+			}
+		}
+
+		return ret;
 	}
 
 	void toggleVisibility(int id) {
@@ -546,6 +634,10 @@ public:
 
 		UIElementsMap[id].render(x, y, sx, sy, RegH, RegV);
 		commandBufferMustUpdate = true;
+
+		if (UIElementsMap[id].type == UI_SLIDER) {
+			setSliderHitbox(id);
+		}
 		
 		return id;
 	}
@@ -561,8 +653,12 @@ public:
 		UI_RP.height = sH;
 
 		for (auto &e : UIElementsMap) {
-			if (e.second.resize != NOT_RESIZABLE)
+			if (e.second.resize != NOT_RESIZABLE) {
 				e.second.scaleToScreen(sW, sH);
+				if (e.second.type == UI_SLIDER) {
+					updateSliderHitbox(e.first, sW, sH);
+				}
+			}
 		}
 
 		commandBufferMustUpdate = true;
@@ -775,6 +871,25 @@ public:
 			std::cout << "\tIsVisible: " << e.second.isVisible << std::endl;
 		}
 
+		std::cout << "Buttons list size: " << ButtonsList.size() << std::endl;
+		for (auto b : ButtonsList) {
+			std::cout << "[" << b.id << "]" << std::endl;
+
+			std::cout << "\tClicked:" << b.clicked << std::endl;
+			std::cout << "\tHovered:" << b.hovered << std::endl;
+		}
+
+		std::cout << "Sliders list size: " << SlidersMap.size() << std::endl;
+		for (auto s : SlidersMap) {
+			std::cout << "[" << s.first << "]" << std::endl;
+
+			std::cout << "\tMoving:" << s.second.moving << std::endl;
+			std::cout << "\tUpper left corner: " << s.second.upperLeftCorner.x << " x " << s.second.upperLeftCorner.y << std::endl;
+			std::cout << "\tLower right corner: " << s.second.lowerRightCorner.x << " x " << s.second.lowerRightCorner.y << std::endl;
+		}
+
 		std::cout << UI_DEBUG_STRING << " END DEBUG PRINTING ---------------------------" << std::endl;
 	}
 };
+
+#endif

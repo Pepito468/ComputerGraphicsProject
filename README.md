@@ -25,7 +25,7 @@
 | Model Rendering   |         0          |       40        |       0        |         0         |
 | Testing           |         3          |        0        |       16       |         6         |
 | Shaders           |         0          |       16        |       0        |         0         |
-| UI                |         38         |        0        |       0        |         0         |
+| UI                |         41         |        0        |       0        |         0         |
 | Game Nodes        |         0          |        0        |       13       |         0         |
 | Engine            |         0          |        0        |       0        |        24         |
 | Audio             |         0          |        0        |       0        |         5         |

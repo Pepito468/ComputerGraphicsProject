@@ -76,6 +76,8 @@ class Engine : public BaseProject {
 
         bool shutdownRequested = false;
 
+        bool leftMouseButtonDown = false;
+
         // Text
         TextMaker textEngine;
 
@@ -110,7 +112,15 @@ class Engine : public BaseProject {
         /** Returns true if the given key is being pressed */
         static bool isKeyBeingPressed(const int key, const bool onlyOnPress = false) {
             // glfwGetKey doesn't work with mouse buttons
-            if (glfwGetKey(MainEngine->window, key) || glfwGetMouseButton(MainEngine->window, key) == GLFW_PRESS) {
+            if (key == GLFW_MOUSE_BUTTON_LEFT) {
+                if (glfwGetMouseButton(MainEngine->window, key) == GLFW_PRESS && !MainEngine->leftMouseButtonDown) {
+                    MainEngine->leftMouseButtonDown = true;
+                    return true;
+                } else if (glfwGetMouseButton(MainEngine->window, key) == GLFW_RELEASE) {
+                    MainEngine->leftMouseButtonDown = false;
+                    return false;
+                }
+            } else if (glfwGetKey(MainEngine->window, key)) {
                 const bool wasPressed = MainEngine->currentlyPressedKeys.contains(key);
                 MainEngine->currentlyPressedKeys.insert(key);
                 return !onlyOnPress || !wasPressed;
@@ -178,6 +188,7 @@ class Engine : public BaseProject {
             MainEngine->ui.toggleVisibility(UI_ID_BUTTON_QUIT);
             MainEngine->ui.toggleVisibility(UI_ID_BUTTON_SCENE1);
             MainEngine->ui.toggleVisibility(UI_ID_BUTTON_SCENE2);
+            MainEngine->ui.toggleVisibility(UI_ID_SLIDER_VOLUME);
         }
 
         /** Maps a name to a global variable. */
@@ -230,27 +241,29 @@ class Engine : public BaseProject {
         }
 
         /** Communicates to the ui that something was clicked in the menu, and handles calling of engine functions */
-        static void handleMenuClick() {
-            double mouseX, mouseY; //TODO I didn't bother changing the global cursorPos[X/Y] since updateMouseStatus is gonna get called anyway. If other functions use the global variable, this probably should update them
-            glfwGetCursorPos(MainEngine->window, &mouseX, &mouseY);
-            InteractedUIElementData data = MainEngine->ui.updateMouseStatus(mouseX, mouseY, true);
-
-            switch (data.id) {	//TODO
-                case UI_ID_BUTTON_RESUME:
-                    Engine::setCursorMode(GLFW_CURSOR_DISABLED);
-                    Engine::togglePauseMenu();
-                    break;
-                case UI_ID_BUTTON_QUIT:
-                    Engine::MainEngine->requestEngineShutdown();
-                    break;
-                case UI_ID_BUTTON_SCENE1:
-                    Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene1")));
-                    break;
-                case UI_ID_BUTTON_SCENE2:
-                    Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene2")));
-                    break;
-                default:
-                    break;
+        static void handleMenuMouse(bool click, double mouseX, double mouseY) {
+            for (auto data : MainEngine->ui.updateMouseStatus(mouseX, mouseY, click, MainEngine->leftMouseButtonDown)) {
+                switch (data.id) {
+                    case UI_ID_BUTTON_RESUME:
+                        Engine::setCursorMode(GLFW_CURSOR_DISABLED);
+                        Engine::togglePauseMenu();
+                        break;
+                    case UI_ID_BUTTON_QUIT:
+                        Engine::MainEngine->requestEngineShutdown();
+                        break;
+                    case UI_ID_BUTTON_SCENE1:
+                        Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene1")));
+                        break;
+                    case UI_ID_BUTTON_SCENE2:
+                        Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene2")));
+                        break;
+                    case UI_ID_SLIDER_VOLUME:
+                        //TODO update volume;
+                    case UI_ID_SLIDER_SENSITIVITY:
+                        //TODO update mouse sensitivity;
+                    default:
+                        break;
+                }
             }
         }
 
@@ -589,13 +602,14 @@ class Engine : public BaseProject {
 
             // Pause game
             if (isKeyBeingPressed(GLFW_KEY_P, true)) {
+                if (Engine::isPauseMenuOpen()) {
+                    Engine::setCursorMode(GLFW_CURSOR_DISABLED);
+                } else {
+                    Engine::setCursorMode(GLFW_CURSOR_NORMAL);
+                }
+                
                 togglePauseMenu();
-                setCursorMode(isPauseMenuOpen() ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
             }
-
-            // Check for clicks in the menu
-            if (isKeyBeingPressed(GLFW_MOUSE_BUTTON_LEFT, true) && isPauseMenuOpen())
-                handleMenuClick();
 
             // Recompute hierarchy in case something changed
             this->recompute3DNodeHierarchy(this->scene, MAT4_I);
@@ -651,6 +665,7 @@ class Engine : public BaseProject {
             ui.initElement(UI_ID_BUTTON_QUIT, {{"assets/textures/ui/quit_button.png", "assets/textures/ui/quit_button_hover.png", "assets/textures/ui/quit_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
             ui.initElement(UI_ID_BUTTON_SCENE1, {{"assets/textures/ui/scene1_button.png", "assets/textures/ui/scene1_button_hover.png", "assets/textures/ui/scene1_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
             ui.initElement(UI_ID_BUTTON_SCENE2, {{"assets/textures/ui/scene2_button.png", "assets/textures/ui/scene2_button_hover.png", "assets/textures/ui/scene2_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
+            ui.initElement(UI_ID_SLIDER_VOLUME, {{ProceduralTextures::generateTexture(256, 24, 255, 0, 0)}, false, KEEP_ASPECT_RATIO, UI_SLIDER});
 
             ui.init(windowWidth, windowHeight);
 
@@ -662,6 +677,7 @@ class Engine : public BaseProject {
             ui.renderUI(0.0f, 0.1f, UI_ID_BUTTON_QUIT, UIO_CENTER, UIO_MIDDLE);
             ui.renderUI(-1.0f, 1.0f, UI_ID_BUTTON_SCENE1, UIO_LEFT, UIO_BOTTOM);
             ui.renderUI(-0.85f, 1.0f, UI_ID_BUTTON_SCENE2, UIO_LEFT, UIO_BOTTOM);
+            ui.renderUI(0.0f, -0.9f, UI_ID_SLIDER_VOLUME, UIO_LEFT, UIO_MIDDLE);
         }
 
         void pipelinesAndDescriptorSetsInit() override {
@@ -716,13 +732,19 @@ class Engine : public BaseProject {
 
         /** Engine method to update the uniforms (called every frame) */
         void updateUniformBuffer(uint32_t currentImage) override {
+            // checks for mouse inputs in the pause menu
             if (isPauseMenuOpen()) {
+                bool click = false, oldLeftMouseButtonDown = MainEngine->leftMouseButtonDown;
+                if (Engine::isKeyBeingPressed(GLFW_MOUSE_BUTTON_LEFT, true)) {
+                    click = true;
+                }
+
                 glfwGetCursorPos(MainEngine->window, &cursorPosX, &cursorPosY);
                 // updates the cursor in ui only if its position changed
-                if (cursorPosX != oldCursorPosX || cursorPosY != oldCursorPosY) {
+                if (click || cursorPosX != oldCursorPosX || cursorPosY != oldCursorPosY || oldLeftMouseButtonDown != MainEngine->leftMouseButtonDown) {
                     oldCursorPosX = cursorPosX;
                     oldCursorPosY = cursorPosY;
-                    ui.updateMouseStatus(cursorPosX, cursorPosY);   //if the mouse hovers something, no info needs to be sent (only on clicks)
+                    handleMenuMouse(click, cursorPosX, cursorPosY);
                 }
             }
 
