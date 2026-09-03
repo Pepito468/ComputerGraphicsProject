@@ -2,6 +2,8 @@
 #define ENGINE_PLAYER_NODE_HPP
 
 #include "BulletNode.hpp"
+#include "GLFW/glfw3.h"
+#include "Material.hpp"
 #include "SphereCollider.hpp"
 #include "UpdateNode3D.hpp"
 #include "Collider.hpp"
@@ -32,6 +34,7 @@ class PlayerNode : public UpdateNode3D
     AudioNode *quack = nullptr;
 
     ToonMaterial bulletMat = {glm::vec3(0.9f, 0.45f, 0.9f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
+    RainbowMaterial rMat = {0.2, 1, 1, 0.3};
 
     void shoot()
     {
@@ -42,7 +45,7 @@ class PlayerNode : public UpdateNode3D
         bulletColl->collidesWith = ENVIRONMENT;
         BulletNode* bullet = new BulletNode();
         bullet->name = "bullet";
-        Model3D *bulletMod = new Model3D("SuzanneUV.obj", {0, 0, 0}, {0, 0, 0}, {0.5f, 0.5f, 0.5f}, &bulletMat);
+        Model3D *bulletMod = new Model3D("SuzanneUV.obj", {0, 0, 0}, {0, 0, 0}, {0.5f, 0.5f, 0.5f}, &rMat);
         bulletMod->name = "bullMod";
         bulletColl->adopt(bullet);
         bulletColl->adopt(bulletMod);
@@ -56,7 +59,8 @@ class PlayerNode : public UpdateNode3D
 
         Engine::instantiate(bullet);
 
-        quack->playSound();
+        if (quack)
+            quack->playSound();
     }
 
     void select(InteractableNode* i)

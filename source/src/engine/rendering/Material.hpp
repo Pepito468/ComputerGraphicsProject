@@ -225,4 +225,67 @@ class RainbowMaterial : public Material {
             ubo.param1 = {params.cycleSpeed, params.saturation, params.brightness, params.heightInfluence};
         };
 };
+
+#define MAX_RINGS 7
+class SonarMaterial : public Material {
+    struct params {
+        float speed;
+        float ringWidth;
+        float maxRadius;
+    } params = {5, 0.5, 20};
+
+    struct ringEntry {
+        glm::vec3 emitterPosition;
+        float startTime;
+    } ringEntries[MAX_RINGS];
+    size_t currentRingEntry = 0;
+
+    public:
+        SonarMaterial(float speed = 5.0f, float ringWidth = 0.5f, float maxRadius = 20.0f, std::string textureName = "Default.png") {
+
+            this->diffuse = glm::vec3(1.0f);
+            this->specular = glm::vec4(0.0f);
+
+            // Params
+            this->params.speed = speed;
+            this->params.ringWidth = ringWidth;
+            this->params.maxRadius = maxRadius;
+
+            for (size_t i = 0; i < MAX_RINGS; i++) {
+                ringEntries[i] = {{0.0f, 0.0f, 0.0f}, -1e9}; // initialize at a very low time so that it is never fired unless triggered
+            }
+
+            this->textureName = textureName;
+
+            shaderType = ShaderType::SONAR;
+        };
+
+        ~SonarMaterial() override = default;
+
+        /** Trigger the sonar 
+         * @param pos emitter position
+         * @param currentTime time at the start of the propagation (total)
+         * */
+        void trigger(glm::vec3 pos, float currentTime) {
+            // Cycle the entries
+            ringEntries[currentRingEntry] = {pos, currentTime};
+            currentRingEntry = (currentRingEntry + 1) % MAX_RINGS;
+        }
+
+        void updateUBO(UniformBufferObject& ubo) override {
+            ubo.color = diffuse;
+            ubo.specular = specular;
+            ubo.param1 = {params.speed, params.ringWidth, params.maxRadius, 0.0f};
+
+            // Each ring has {POS, startTime} as entry
+            ubo.param2 = glm::vec4(ringEntries[0].emitterPosition, ringEntries[0].startTime);
+            ubo.param3 = glm::vec4(ringEntries[1].emitterPosition, ringEntries[1].startTime);
+            ubo.param4 = glm::vec4(ringEntries[2].emitterPosition, ringEntries[2].startTime);
+            ubo.param5 = glm::vec4(ringEntries[3].emitterPosition, ringEntries[3].startTime);
+            ubo.param6 = glm::vec4(ringEntries[4].emitterPosition, ringEntries[4].startTime);
+            ubo.param7 = glm::vec4(ringEntries[5].emitterPosition, ringEntries[5].startTime);
+            ubo.param8 = glm::vec4(ringEntries[6].emitterPosition, ringEntries[6].startTime);
+        };
+
+};
 #endif

@@ -1,3 +1,4 @@
+#include <any>
 #include <iostream>
 #include <ostream>
 
@@ -44,6 +45,13 @@ MagicCirleMaterial mat5 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f},
 CookTorranceAnimMaterial animMat = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}, "rock.png"};
 
 RainbowMaterial rMat = {0.2, 1, 1, 0.3};
+SonarMaterial sMat = {10, 4, 60};
+
+void freeNodeTree(Node *node) {
+    for (Node *child : node->children)
+        freeNodeTree(child);
+    delete node;
+}
 
 LambertTexMaterial cubeMat = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "cube.png"};
 LambertMaterial blankMat = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}};
@@ -90,6 +98,18 @@ Node* createScene1() {
     Model3D *statuer = new Model3D("Statue.gltf", {-1, -0.5, 0}, {0, 0, 0}, {4, 4, 4}, &rMat);
     statuer->name = "Statue";
     models->adopt(statuer);
+
+    // Sonar plane
+    Model3D *sonar = new Model3D("Water.gltf", {-3, 3, -10}, {std::numbers::pi/2, 0, 0}, {10, 10, 10}, &sMat);
+    sonar->name = "Sonar";
+    player->sonarMat = &sMat;
+    models->adopt(sonar);
+    Model3D *statues = new Model3D("Statue.gltf", {-5, 0, -7}, {0, 0, 0}, {5, 5, 5}, &sMat);
+    statues->name = "Statue";
+    models->adopt(statues);
+
+    // Sonar statue
+
 
     Model3D *plane = new Model3D("Water.gltf", {0, 0.1, 0}, {0, 0, 0}, {10, 10, 10}, &mat1);
     BoxCollider* planeColl = new BoxCollider(2.0f, 0.05f, 2.0f);
@@ -535,6 +555,130 @@ Node* createForestScene()
         10.0f, 7.0f, 3.0f
         );
     root->adopt(lightning);
+Node* createDarkScene() {
+
+    Node *root = new Node();
+    root->name = "root";
+
+    // Player
+    CapsuleCollider *playerCollider = new CapsuleCollider();
+    playerCollider->name = "PlayerCollider";
+    playerCollider->layer = PLAYER;
+    playerCollider->collidesWith = ENVIRONMENT;
+    root->adopt(playerCollider);
+    PlayerNode* player = new PlayerNode();
+    player->name = "Player";
+    playerCollider->adopt(player);
+    PerspectiveCamera *camera = new PerspectiveCamera(0.01, 100, glm::radians(90.0f), 4.0f/3.0f, true);
+    camera->name = "PerspectiveCamera";
+    player->adopt(camera);
+    player->localTranslate({0, 1.25f, 0});
+
+    // Assign Sonar
+    player->sonarMat = &sMat;
+
+    playerCollider->globalTranslate({0, 20, 0});
+
+
+    Node *staticObjects = new Node();
+    staticObjects->name = "StaticObjectsContainer";
+    root->adopt(staticObjects);
+
+#define LABSIZE 12
+    float cellSize = 8;
+    const char labyrinth[LABSIZE][LABSIZE] = {
+        {'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W'},
+        {'W', '.', '.', '.', 'W', '.', '.', '.', 'W', '.', '.', 'W'},
+        {'W', 'W', 'W', '.', 'W', '.', 'W', '.', 'W', '.', 'W', 'W'},
+        {'W', '.', '.', '.', '.', '.', 'W', '.', '.', '.', '.', 'W'},
+        {'W', '.', 'W', 'W', 'W', 'W', 'W', '.', 'W', 'W', '.', 'W'},
+        {'W', '.', '.', '.', 'W', '.', '.', '.', 'W', 'W', '.', 'W'},
+        {'W', 'W', 'W', '.', 'W', '.', 'W', 'W', '.', 'W', '.', 'W'},
+        {'W', 'S', 'W', '.', '.', '.', 'W', '.', '.', '.', '.', 'W'},
+        {'W', '.', 'W', 'W', 'W', '.', 'W', '.', 'W', '.', 'W', 'W'},
+        {'W', '.', '.', '.', '.', '.', '.', 'W', '.', '.', '.', 'W'},
+        {'W', '.', 'W', '.', 'W', 'W', '.', '.', 'W', 'W', '.', 'E'},
+        {'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W'},
+    };
+
+    glm::vec3 offset[4] = {
+        {0, 0, cellSize/2.0f},
+        {0, 0, -cellSize/2.0f},
+        {cellSize/2.0f, 0, 0},
+        {-cellSize/2.0f, 0, 0}
+    };
+
+    glm::vec3 rotations[4] = {
+        {std::numbers::pi/2, 0, 0},
+        {std::numbers::pi/2, 0, std::numbers::pi},
+        {std::numbers::pi/2, std::numbers::pi/2, 0},
+        {std::numbers::pi/2, -std::numbers::pi/2, 0}
+    };
+
+    // Floor
+    Model3D *floor = new Model3D("Water.gltf", {cellSize * LABSIZE/2, 0, cellSize * LABSIZE/2}, {0, 0, 0}, {cellSize * LABSIZE/2, 1, cellSize * LABSIZE/2}, &sMat);
+    floor->name = "Floor";
+    staticObjects->adopt(floor);
+    BoxCollider* floorCollider = new BoxCollider(5.0f, 0.05f, 5.0f);
+    floorCollider->name = "Floorcoll";
+    floorCollider->movementStatus = STATIC;
+    floorCollider->layer = ENVIRONMENT;
+    floor->adopt(floorCollider);
+
+    // Ceiling
+    Model3D *ceiling = new Model3D("Water.gltf", {cellSize * LABSIZE/2, cellSize, cellSize * LABSIZE/2}, {std::numbers::pi, 0, 0}, {cellSize * LABSIZE/2, 1, cellSize * LABSIZE/2}, &sMat);
+    ceiling->name = "Floor";
+    staticObjects->adopt(ceiling);
+
+    // Walls
+    for (int i = 0; i < LABSIZE; i++) {
+        for (int j = 0; j < LABSIZE; j++) {
+            switch(labyrinth[i][j]) {
+                case '.':
+                    break;
+                case 'W':
+                    for (int k = 0; k < 4; k++) {
+                        const glm::vec3 pos = glm::vec3(i*cellSize, cellSize/2, j*cellSize) + offset[k];
+                        Model3D *wall = new Model3D("Water.gltf", pos, rotations[k], {cellSize/2, 1, cellSize/2}, &sMat);
+                        wall->name = std::format("Wall {} {} {}", i, j, k);
+                        staticObjects->adopt(wall);
+
+                        // Colliders tank the FPS
+                        BoxCollider* wallCollider = new BoxCollider(pos, rotations[k], {cellSize/2, 0.05, cellSize/2});
+                        wall->name = std::format("WallColl {} {} {}", i, j, k);
+                        wallCollider->movementStatus = STATIC;
+                        wallCollider->layer = ENVIRONMENT;
+                        staticObjects->adopt(wallCollider);
+                        wall->adopt(wallCollider);
+                    }
+                    break;
+                case 'S':
+                    // Maybe add a room before the maze? (and after?)
+                    playerCollider->setGlobalPosition({i*cellSize, 30, j*cellSize});
+                    break;
+                case 'E':
+                    // Do something
+                    break;
+                default:
+                    error("What?");
+            }
+        }
+    }
+
+
+    // Lights
+    AmbientLight *ambientLight = new AmbientLight({0.08f, 0.14f, 0.20f},{0.035f, 0.04f, 0.045f}, {0.0f, 1.0f, 0.0f});
+    ambientLight->name = "AmbientLight";
+    root->adopt(ambientLight);
+
+    DirectionalLight *directionalLight = new DirectionalLight(0.5,glm::vec3(1.0f, 0.95f, 0.8f),glm::normalize(glm::vec3(0.8f, 0.25f, 0.4f)));
+    directionalLight->name = "DirectionalLight";
+    root->adopt(directionalLight);
+
+    // FPS
+    Text2D *text = new Text2D("", {-1, -1}, "SS", false, true, true, TAL_LEFT, TRH_LEFT, TRV_TOP);
+    root->adopt(text);
+    player->inputtxt = text;
 
     return root;
 }
@@ -547,8 +691,9 @@ int main() {
     Engine::mapScene("Scene2", createScene2());
     Engine::mapScene("Unit", createUnitScene());
     Engine::mapScene("Forest", createForestScene());
+    Engine::setGlobalVariable("SceneDark", createDarkScene());
 
-    Engine::requestSceneChange(Engine::getSceneFromNameMap("Forest"));
+    Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("SceneDark")));
 
     try {
         engine.run(false);
@@ -556,6 +701,13 @@ int main() {
         std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;
     }
+
+    // Free the scenes
+    freeNodeTree(std::any_cast<Node*>(Engine::getGlobalVariable("Scene1")));
+    freeNodeTree(std::any_cast<Node*>(Engine::getGlobalVariable("Scene2")));
+    freeNodeTree(std::any_cast<Node*>(Engine::getGlobalVariable("Unit")));
+    freeNodeTree(std::any_cast<Node*>(Engine::getGlobalVariable("Forest")));
+    freeNodeTree(std::any_cast<Node*>(Engine::getGlobalVariable("SceneDark")));
 
     return EXIT_SUCCESS;
 }
