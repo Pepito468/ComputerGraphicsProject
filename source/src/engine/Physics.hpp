@@ -151,6 +151,7 @@ public:
             return;
         }
 
+        coll->previousMatrix = coll->getGlobalMatrix();
         colliders.insert(coll);
         if (coll->movementStatus == STATIC)
             staticBounds.insert(Bounds(coll));

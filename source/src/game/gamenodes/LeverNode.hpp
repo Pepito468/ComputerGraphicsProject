@@ -1,9 +1,9 @@
 ﻿#ifndef ENGINE_LEVER_NODE
 #define ENGINE_LEVER_NODE
-#include "ColliderLib.hpp"
 #include "Engine.hpp"
 #include "InteractableNode.hpp"
-#include "GLMDebug.hpp"
+#include "AudioNode3D.hpp"
+#include "SphereCollider.hpp"
 
 // Initial and final rotations for the lever handle and bridge objects
 #define LEVER_UP_ROT glm::radians(50.0f)
@@ -23,6 +23,10 @@ class LeverNode : public InteractableNode
 
     Collider* coll = nullptr;
     float timer = 0.0f;
+
+    bool firstTimePull = true;
+    AudioNode3D *leverSound = nullptr;
+    AudioNode3D *bridgeSound = nullptr;
 
 public:
     void interact() override
@@ -47,11 +51,17 @@ public:
             return;
         }
 
+        if (firstTimePull && leverSound && bridgeSound) {
+            leverSound->playSound();
+            bridgeSound->playSound();
+            firstTimePull = false;
+        }
+
         handle->localRotateX(L_ROT_SPEED * Engine::getDeltaTime());
         bridge->localRotateX(B_ROT_SPEED * Engine::getDeltaTime());
     }
 
-    static Node3D* makeStandardLever(Node3D* bridge, Collider* bridgeWall)
+    static Node3D* makeStandardLever(Node3D* bridge, Collider* bridgeWall, AudioNode3D *leverSound, AudioNode3D *bridgeSound)
     {
         LeverNode* lever = new LeverNode();
         LambertTexMaterial* mat = new LambertTexMaterial(VEC3_ONE, {1, 1, 1, 100}, "wood-metal.png");
@@ -74,6 +84,10 @@ public:
         lever->bridge = bridge;
         bridge->localRotateX(BRIDGE_UP_ROT);
         lever->bridgeWall = bridgeWall;
+
+        lever->leverSound = leverSound;
+        lever->bridgeSound = bridgeSound;
+
         return lever;
     }
 };

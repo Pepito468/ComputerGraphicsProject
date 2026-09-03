@@ -390,7 +390,7 @@ Node* createForestScene()
 
     root->adopt(new FPSTextUpdater());
 
-    root->adopt(new AudioController(new AudioNode("heavy rain.wav", 0.1f), true));
+    root->adopt(new AudioController(new AudioNode("heavyRain.wav", 0.02f), true));
 
     // Models
     Node *models = new Node();
@@ -419,10 +419,14 @@ Node* createForestScene()
     root->adopt(bridgeWall);
 
     Model3D* bridge = new Model3D("Bridge.gltf", {0, 0, 91.5f}, {0, M_PI, 0}, VEC3_ONE * 1.6f, wood_metalMat);
+    AudioNode3D *bridgeSound = new AudioNode3D("loweringBridge.mp3", 4, 20, 2, INVERSE, 1);
+    bridge->adopt(bridgeSound);
     models->adopt(bridge);
 
-    Node3D* lever = LeverNode::makeStandardLever(bridge, bridgeWall);
+    AudioNode3D *leverSound = new AudioNode3D("leverPull.mp3", 1, 5, 2, INVERSE, 1);
+    Node3D* lever = LeverNode::makeStandardLever(bridge, bridgeWall, leverSound, bridgeSound);
     lever->setGlobalPosition({9, 0, 74});
+    lever->adopt(leverSound);
     lever->localRotateY(glm::radians(23.0f));
     root->adopt(lever);
 
@@ -535,11 +539,11 @@ Node* createForestScene()
     BoxCollider* endZone = new BoxCollider(true, {0, 2, 100}, VEC3_ZERO, {20, 4, 1});
     endZone->movementStatus = STATIC;
     endZone->layer = ENVIRONMENT;
-    endZone->onTriggerEnter = [](Collider* o)
+    endZone->onTriggerEnter = [](Collider* _)
     {
         info("You have reached the door to the castle, loading next scene...");
-        //TODO Load scene
-        //Engine::requestSceneChange(Engine::getSceneFromNameMap("Foyer"));
+        //TODO Load scene (set to Dark to test)
+        Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Dark")));
     };
     walls->adopt(endZone);
 
@@ -550,7 +554,7 @@ Node* createForestScene()
 
     LightningNode* lightning = new LightningNode(
         new DirectionalLight(10, {0, 0.698, 1}, glm::normalize(glm::vec3(0.3f, -0.8, -1))),
-        new AudioNode("lightning.wav", 0.4f),
+        new AudioNode("lightning.wav", 0.2f),
         10.0f, 7.0f, 3.0f
         );
     root->adopt(lightning);
