@@ -43,7 +43,7 @@ MagicCirleMaterial mat5 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f},
 CookTorranceAnimMaterial animMat = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}, "rock.png"};
 
 RainbowMaterial rMat = {0.2, 1, 1, 0.3};
-SonarMaterial sMat = {3, 2, 20};
+SonarMaterial sMat = {10, 4, 60};
 
 void freeNodeTree(Node *node) {
     for (Node *child : node->children)
@@ -347,7 +347,7 @@ Node* createDarkScene() {
     root->adopt(staticObjects);
 
 #define LABSIZE 12
-    float cellSize = 4;
+    float cellSize = 8;
     const char labyrinth[LABSIZE][LABSIZE] = {
         {'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W'},
         {'W', '.', '.', '.', 'W', '.', '.', '.', 'W', '.', '.', 'W'},
@@ -378,7 +378,7 @@ Node* createDarkScene() {
     };
 
     // Floor
-    Model3D *floor = new Model3D("Water.gltf", {cellSize * LABSIZE/2, 0, cellSize * LABSIZE/2}, {0, 0, 0}, {cellSize * LABSIZE, 1, cellSize * LABSIZE}, &sMat);
+    Model3D *floor = new Model3D("Water.gltf", {cellSize * LABSIZE/2, 0, cellSize * LABSIZE/2}, {0, 0, 0}, {cellSize * LABSIZE/2, 1, cellSize * LABSIZE/2}, &sMat);
     floor->name = "Floor";
     staticObjects->adopt(floor);
     BoxCollider* floorCollider = new BoxCollider(5.0f, 0.05f, 5.0f);
@@ -386,6 +386,11 @@ Node* createDarkScene() {
     floorCollider->movementStatus = STATIC;
     floorCollider->layer = ENVIRONMENT;
     floor->adopt(floorCollider);
+
+    // Ceiling
+    Model3D *ceiling = new Model3D("Water.gltf", {cellSize * LABSIZE/2, cellSize, cellSize * LABSIZE/2}, {std::numbers::pi, 0, 0}, {cellSize * LABSIZE/2, 1, cellSize * LABSIZE/2}, &sMat);
+    ceiling->name = "Floor";
+    staticObjects->adopt(ceiling);
 
     // Walls
     for (int i = 0; i < LABSIZE; i++) {

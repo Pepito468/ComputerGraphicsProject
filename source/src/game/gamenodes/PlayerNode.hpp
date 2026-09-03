@@ -2,6 +2,7 @@
 #define ENGINE_PLAYERNODE_HPP
 
 #include "BulletNode.hpp"
+#include "GLFW/glfw3.h"
 #include "Material.hpp"
 #include "SphereCollider.hpp"
 #include "Text2D.hpp"
@@ -204,7 +205,7 @@ public:
             count = 0;
         }
 
-        if (Engine::isKeyBeingPressed(GLFW_KEY_U, true) and sonarMat) {
+        if (Engine::isKeyBeingPressed(GLFW_MOUSE_BUTTON_2, true) and sonarMat) {
             log("SONAR");
             sonarMat->trigger(this->getGlobalPosition(), Engine::getCurrentTime());
         }
