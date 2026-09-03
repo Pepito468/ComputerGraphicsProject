@@ -10,6 +10,8 @@
 
 - Cloudy Skyboxes by Screaming Brain Studios via [Open Game Art](https://opengameart.org/content/cloudy-skyboxes-0)
 ### Audio
+- Heavy Rain by EricsSoundschmiede via [Free Sound](https://freesound.org/s/666624/) -- License: Creative Commons 0
+- Lightning by Pasha_Shishkov via [Free Sound](https://freesound.org/s/866347/) -- License: Attribution 4.0
 
 ### Fonts
 
@@ -24,10 +26,10 @@
 | Testing           |         3          |        0        |       16       |         6         |
 | Shaders           |         0          |       16        |       0        |         0         |
 | UI                |         38         |        0        |       0        |         0         |
-| Game Nodes        |         0          |        0        |       11       |         0         |
+| Game Nodes        |         0          |        0        |       13       |         0         |
 | Engine            |         0          |        0        |       0        |        24         |
 | Audio             |         0          |        0        |       0        |         5         |
-| Asset Procurement |         0          |        0        |       11       |         0         |
+| Asset Procurement |         0          |        0        |       13       |         0         |
 | Scene Layout      |         0          |        0        |       6        |         0         |
 
 ## External Libraries

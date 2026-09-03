@@ -22,6 +22,7 @@
 #include "gamenodes/CustomCameraUpdate.hpp"
 #include "gamenodes/FPSTextUpdater.hpp"
 #include "gamenodes/LeverNode.hpp"
+#include "gamenodes/LightningNode.hpp"
 #include "gamenodes/MovingPlanetUpdate.hpp"
 #include "gamenodes/MovingPlanetChildUpdate.hpp"
 #include "gamenodes/PlayerNode.hpp"
@@ -370,7 +371,7 @@ Node* createForestScene()
 
     root->adopt(new FPSTextUpdater());
 
-    root->adopt(new AudioController(new AudioNode("rocketJumpWaltz.mp3", 0.1f), true));
+    root->adopt(new AudioController(new AudioNode("heavy rain.wav", 0.2f), true));
 
     // Models
     Node *models = new Node();
@@ -524,15 +525,15 @@ Node* createForestScene()
     walls->adopt(endZone);
 
     // Lights
-    AmbientLight *ambientLight = new AmbientLight({0.18, 0.106, 0.341}, VEC3_ZERO, VEC3_Y);//new AmbientLight({0.08f, 0.14f, 0.20f},{0.035f, 0.04f, 0.045f}, {0.0f, 1.0f, 0.0f});
+    AmbientLight *ambientLight = new AmbientLight({0.18, 0.106, 0.341}, {0.025, 0, 0.1}, VEC3_Y);//new AmbientLight({0.08f, 0.14f, 0.20f},{0.035f, 0.04f, 0.045f}, {0.0f, 1.0f, 0.0f});
     ambientLight->name = "AmbientLight";
     root->adopt(ambientLight);
 
-    DirectionalLight* directionalLight = new DirectionalLight(0.3, {0.25, 0, 1}, -VEC3_Y);
-    root->adopt(directionalLight);
-
-    //TODO Lightning flashes
-    DirectionalLight *lightning = new DirectionalLight(3, {0, 0.698, 1}, glm::normalize(glm::vec3(0.8f, 0.25f, 0.4f)), false);
+    LightningNode* lightning = new LightningNode(
+        new DirectionalLight(10, {0, 0.698, 1}, glm::normalize(glm::vec3(0.3f, -0.8, -1))),
+        new AudioNode("lightning.wav", 1.0f),
+        10.0f, 7.0f, 3.0f
+        );
     root->adopt(lightning);
 
     return root;
