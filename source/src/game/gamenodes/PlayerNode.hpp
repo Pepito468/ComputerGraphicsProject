@@ -2,15 +2,15 @@
 #define ENGINE_PLAYER_NODE_HPP
 
 #include "BulletNode.hpp"
-#include "GLFW/glfw3.h"
+#include "CapsuleCollider.hpp"
 #include "Material.hpp"
+#include "PerspectiveCamera.hpp"
 #include "SphereCollider.hpp"
 #include "UpdateNode3D.hpp"
 #include "Collider.hpp"
 #include "Engine.hpp"
 #include "Physics.hpp"
 #include "InteractableNode.hpp"
-#include "glm/geometric.hpp"
 
 #define WALK_SPEED 10.0f
 #define JUMP_FORCE 5.0f
@@ -169,14 +169,26 @@ public:
         if (selectedInteraction && Engine::isKeyBeingPressed(GLFW_KEY_E, true))
             selectedInteraction->interact();
 
-        if (sonarMat && Engine::isKeyBeingPressed(GLFW_KEY_U, true)) {
+        if (sonarMat && Engine::isKeyBeingPressed(GLFW_MOUSE_BUTTON_2, true)) {
             log("SONAR");
             sonarMat->trigger(this->getGlobalPosition(), Engine::getCurrentTime());
+        }
+
+        if (Engine::isKeyBeingPressed(GLFW_KEY_1)) {
+            Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Forest")));
+        } else if (Engine::isKeyBeingPressed(GLFW_KEY_2)) {
+            Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Unit")));
+        } else if (Engine::isKeyBeingPressed(GLFW_KEY_3)) {
+            Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Dark")));
+        } else if (Engine::isKeyBeingPressed(GLFW_KEY_9)) {
+            Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene1")));
+        } else if (Engine::isKeyBeingPressed(GLFW_KEY_0)) {
+            Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene2")));
         }
     }
 
     /// Creates the standard node tree for the player.
-    static Node3D* makeStandardPlayer(SonarMaterial* sonarMat = nullptr)
+    static Node3D* makeStandardPlayer()
     {
         CapsuleCollider* rootCollider = new CapsuleCollider();
         rootCollider->name = "PlayerCollider";
@@ -186,7 +198,7 @@ public:
         PlayerNode* controls = new PlayerNode();
         controls->name = "Player";
         rootCollider->adopt(controls);
-        controls->sonarMat = sonarMat;
+        controls->sonarMat = std::any_cast<SonarMaterial*>(Engine::getGlobalVariable("SonarMaterialReference"));
         controls->localTranslate({0, 2.75f, 0});
 
         PerspectiveCamera *camera = new PerspectiveCamera(0.1f, 200, glm::radians(90.0f), 4.0f/3.0f, true);

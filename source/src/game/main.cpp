@@ -68,7 +68,7 @@ Node* createScene1() {
     Node *root = new Node();
     root->name = "root";
 
-    Node3D* player = PlayerNode::makeStandardPlayer(&sMat);
+    Node3D* player = PlayerNode::makeStandardPlayer();
     root->adopt(player);
 
     //CustomCameraUpdate *cameraContainer = new CustomCameraUpdate();
@@ -390,7 +390,7 @@ Node* createForestScene()
 
     root->adopt(new FPSTextUpdater());
 
-    root->adopt(new AudioController(new AudioNode("heavy rain.wav", 0.2f), true));
+    root->adopt(new AudioController(new AudioNode("heavy rain.wav", 0.1f), true));
 
     // Models
     Node *models = new Node();
@@ -550,7 +550,7 @@ Node* createForestScene()
 
     LightningNode* lightning = new LightningNode(
         new DirectionalLight(10, {0, 0.698, 1}, glm::normalize(glm::vec3(0.3f, -0.8, -1))),
-        new AudioNode("lightning.wav", 1.0f),
+        new AudioNode("lightning.wav", 0.4f),
         10.0f, 7.0f, 3.0f
         );
     root->adopt(lightning);
@@ -563,15 +563,17 @@ Node* createDarkScene() {
     root->name = "root";
 
     // Player
-    Node3D* player = PlayerNode::makeStandardPlayer(&sMat);
+    Node3D* player = PlayerNode::makeStandardPlayer();
+    static_cast<CapsuleCollider*>(player)->radius = 3;
     root->adopt(player);
 
     Node *staticObjects = new Node();
     staticObjects->name = "StaticObjectsContainer";
     root->adopt(staticObjects);
 
-#define LABSIZE 12
     float cellSize = 8;
+
+#define LABSIZE 12
     const char labyrinth[LABSIZE][LABSIZE] = {
         {'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W'},
         {'W', '.', '.', '.', 'W', '.', '.', '.', 'W', '.', '.', 'W'},
@@ -605,7 +607,7 @@ Node* createDarkScene() {
     Model3D *floor = new Model3D("Water.gltf", {cellSize * LABSIZE/2, 0, cellSize * LABSIZE/2}, {0, 0, 0}, {cellSize * LABSIZE/2, 1, cellSize * LABSIZE/2}, &sMat);
     floor->name = "Floor";
     staticObjects->adopt(floor);
-    BoxCollider* floorCollider = new BoxCollider(5.0f, 0.05f, 5.0f);
+    BoxCollider* floorCollider = new BoxCollider(5.0f, 0.2f, 5.0f);
     floorCollider->name = "Floorcoll";
     floorCollider->movementStatus = STATIC;
     floorCollider->layer = ENVIRONMENT;
@@ -620,33 +622,41 @@ Node* createDarkScene() {
     for (int i = 0; i < LABSIZE; i++) {
         for (int j = 0; j < LABSIZE; j++) {
             switch(labyrinth[i][j]) {
-                case '.':
+                case '.': {
                     break;
-                case 'W':
+                          }
+
+                case 'W': {
+                    const glm::vec3 pos = glm::vec3(i*cellSize, cellSize/2, j*cellSize);
+
                     for (int k = 0; k < 4; k++) {
-                        const glm::vec3 pos = glm::vec3(i*cellSize, cellSize/2, j*cellSize) + offset[k];
-                        Model3D *wall = new Model3D("Water.gltf", pos, rotations[k], {cellSize/2, 1, cellSize/2}, &sMat);
+                        Model3D *wall = new Model3D("Water.gltf", pos + offset[k], rotations[k], {cellSize/2, 1, cellSize/2}, &sMat);
                         wall->name = std::format("Wall {} {} {}", i, j, k);
                         staticObjects->adopt(wall);
-
-                        // Colliders tank the FPS
-                        BoxCollider* wallCollider = new BoxCollider(pos, rotations[k], {cellSize/2, 0.05, cellSize/2});
-                        wall->name = std::format("WallColl {} {} {}", i, j, k);
-                        wallCollider->movementStatus = STATIC;
-                        wallCollider->layer = ENVIRONMENT;
-                        staticObjects->adopt(wallCollider);
-                        wall->adopt(wallCollider);
                     }
+
+                    // Colliders tank the FPS
+                    BoxCollider* wallCollider = new BoxCollider(pos, {0, 0, 0}, {cellSize/2, cellSize/2, cellSize/2});
+                    wallCollider->name = std::format("WallColl {} {}", i, j);
+                    wallCollider->movementStatus = STATIC;
+                    wallCollider->layer = ENVIRONMENT;
+                    staticObjects->adopt(wallCollider);
                     break;
-                case 'S':
+                          }
+                case 'S':  {
                     // Maybe add a room before the maze? (and after?)
                     player->setGlobalPosition({i*cellSize, 10, j*cellSize});
                     break;
-                case 'E':
+                           }
+
+                case 'E': {
                     // Do something
                     break;
-                default:
+                          }
+
+                default: {
                     error("What?");
+                         }
             }
         }
     }
@@ -671,13 +681,17 @@ int main() {
 
     Engine engine;
 
+    // Globals
+    Engine::setGlobalVariable("SonarMaterialReference", &sMat);
+
+    // Scenes
     Engine::setGlobalVariable("Scene1", createScene1());
     Engine::setGlobalVariable("Scene2", createScene2());
     Engine::setGlobalVariable("Unit", createUnitScene());
     Engine::setGlobalVariable("Forest", createForestScene());
-    Engine::setGlobalVariable("SceneDark", createDarkScene());
+    Engine::setGlobalVariable("Dark", createDarkScene());
 
-    Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("SceneDark")));
+    Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Forest")));
 
     try {
         engine.run(false);
@@ -691,7 +705,7 @@ int main() {
     freeNodeTree(std::any_cast<Node*>(Engine::getGlobalVariable("Scene2")));
     freeNodeTree(std::any_cast<Node*>(Engine::getGlobalVariable("Unit")));
     freeNodeTree(std::any_cast<Node*>(Engine::getGlobalVariable("Forest")));
-    freeNodeTree(std::any_cast<Node*>(Engine::getGlobalVariable("SceneDark")));
+    freeNodeTree(std::any_cast<Node*>(Engine::getGlobalVariable("Dark")));
 
     return EXIT_SUCCESS;
 }
