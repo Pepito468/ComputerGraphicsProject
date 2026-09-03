@@ -68,7 +68,7 @@ Node* createScene1() {
     Node *root = new Node();
     root->name = "root";
 
-    Node3D* player = PlayerNode::makeStandardPlayer();
+    Node3D* player = PlayerNode::makeStandardPlayer(&sMat);
     root->adopt(player);
 
     //CustomCameraUpdate *cameraContainer = new CustomCameraUpdate();
@@ -95,14 +95,13 @@ Node* createScene1() {
     statue->name = "Statue";
     models->adopt(statue);
 
-    Model3D *statuer = new Model3D("Statue.gltf", {-1, -0.5, 0}, {0, 0, 0}, {4, 4, 4}, &rMat);
-    statuer->name = "Statue";
-    models->adopt(statuer);
+    Model3D *statueR = new Model3D("Statue.gltf", {-1, -0.5, 0}, {0, 0, 0}, {4, 4, 4}, &rMat);
+    statueR->name = "Statue";
+    models->adopt(statueR);
 
     // Sonar plane
     Model3D *sonar = new Model3D("Water.gltf", {-3, 3, -10}, {std::numbers::pi/2, 0, 0}, {10, 10, 10}, &sMat);
     sonar->name = "Sonar";
-    player->sonarMat = &sMat;
     models->adopt(sonar);
     Model3D *statues = new Model3D("Statue.gltf", {-5, 0, -7}, {0, 0, 0}, {5, 5, 5}, &sMat);
     statues->name = "Statue";
@@ -555,30 +554,17 @@ Node* createForestScene()
         10.0f, 7.0f, 3.0f
         );
     root->adopt(lightning);
+    return root;
+}
+
 Node* createDarkScene() {
 
     Node *root = new Node();
     root->name = "root";
 
     // Player
-    CapsuleCollider *playerCollider = new CapsuleCollider();
-    playerCollider->name = "PlayerCollider";
-    playerCollider->layer = PLAYER;
-    playerCollider->collidesWith = ENVIRONMENT;
-    root->adopt(playerCollider);
-    PlayerNode* player = new PlayerNode();
-    player->name = "Player";
-    playerCollider->adopt(player);
-    PerspectiveCamera *camera = new PerspectiveCamera(0.01, 100, glm::radians(90.0f), 4.0f/3.0f, true);
-    camera->name = "PerspectiveCamera";
-    player->adopt(camera);
-    player->localTranslate({0, 1.25f, 0});
-
-    // Assign Sonar
-    player->sonarMat = &sMat;
-
-    playerCollider->globalTranslate({0, 20, 0});
-
+    Node3D* player = PlayerNode::makeStandardPlayer(&sMat);
+    root->adopt(player);
 
     Node *staticObjects = new Node();
     staticObjects->name = "StaticObjectsContainer";
@@ -654,7 +640,7 @@ Node* createDarkScene() {
                     break;
                 case 'S':
                     // Maybe add a room before the maze? (and after?)
-                    playerCollider->setGlobalPosition({i*cellSize, 30, j*cellSize});
+                    player->setGlobalPosition({i*cellSize, 10, j*cellSize});
                     break;
                 case 'E':
                     // Do something
@@ -676,9 +662,7 @@ Node* createDarkScene() {
     root->adopt(directionalLight);
 
     // FPS
-    Text2D *text = new Text2D("", {-1, -1}, "SS", false, true, true, TAL_LEFT, TRH_LEFT, TRV_TOP);
-    root->adopt(text);
-    player->inputtxt = text;
+    root->adopt(new FPSTextUpdater());
 
     return root;
 }
@@ -687,10 +671,10 @@ int main() {
 
     Engine engine;
 
-    Engine::mapScene("Scene1", createScene1());
-    Engine::mapScene("Scene2", createScene2());
-    Engine::mapScene("Unit", createUnitScene());
-    Engine::mapScene("Forest", createForestScene());
+    Engine::setGlobalVariable("Scene1", createScene1());
+    Engine::setGlobalVariable("Scene2", createScene2());
+    Engine::setGlobalVariable("Unit", createUnitScene());
+    Engine::setGlobalVariable("Forest", createForestScene());
     Engine::setGlobalVariable("SceneDark", createDarkScene());
 
     Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("SceneDark")));

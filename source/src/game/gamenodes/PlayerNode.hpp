@@ -36,6 +36,8 @@ class PlayerNode : public UpdateNode3D
     ToonMaterial bulletMat = {glm::vec3(0.9f, 0.45f, 0.9f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
     RainbowMaterial rMat = {0.2, 1, 1, 0.3};
 
+    SonarMaterial *sonarMat = nullptr;
+
     void shoot()
     {
         //create bullet
@@ -166,10 +168,15 @@ public:
 
         if (selectedInteraction && Engine::isKeyBeingPressed(GLFW_KEY_E, true))
             selectedInteraction->interact();
+
+        if (sonarMat && Engine::isKeyBeingPressed(GLFW_KEY_U, true)) {
+            log("SONAR");
+            sonarMat->trigger(this->getGlobalPosition(), Engine::getCurrentTime());
+        }
     }
 
     /// Creates the standard node tree for the player.
-    static Node3D* makeStandardPlayer()
+    static Node3D* makeStandardPlayer(SonarMaterial* sonarMat = nullptr)
     {
         CapsuleCollider* rootCollider = new CapsuleCollider();
         rootCollider->name = "PlayerCollider";
@@ -179,6 +186,7 @@ public:
         PlayerNode* controls = new PlayerNode();
         controls->name = "Player";
         rootCollider->adopt(controls);
+        controls->sonarMat = sonarMat;
         controls->localTranslate({0, 2.75f, 0});
 
         PerspectiveCamera *camera = new PerspectiveCamera(0.1f, 200, glm::radians(90.0f), 4.0f/3.0f, true);
