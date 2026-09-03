@@ -1,21 +1,23 @@
-﻿#ifndef ENGINE_PLAYERNODE_HPP
-#define ENGINE_PLAYERNODE_HPP
+﻿#ifndef ENGINE_PLAYER_NODE_HPP
+#define ENGINE_PLAYER_NODE_HPP
 
 #include "BulletNode.hpp"
 #include "GLFW/glfw3.h"
 #include "Material.hpp"
 #include "SphereCollider.hpp"
-#include "Text2D.hpp"
 #include "UpdateNode3D.hpp"
 #include "Collider.hpp"
 #include "Engine.hpp"
-#include "audio/AudioNode3D.hpp"
+#include "Physics.hpp"
+#include "InteractableNode.hpp"
 #include "glm/geometric.hpp"
 
+#define WALK_SPEED 10.0f
 #define JUMP_FORCE 5.0f
 #define GRAVITY 9.81f
 #define X_ROT_MIN glm::radians(-70.0f)
 #define X_ROT_MAX glm::radians(80.0f)
+#define INTERACTION_DIST 7.0f
 
 /**
  * Node representing the player
@@ -26,7 +28,8 @@ class PlayerNode : public UpdateNode3D
     Collider* playerColl = nullptr;
     float vertSpeed = 0.0f;
     bool isGrounded = false;
-    float walk_speed = 4.0f;
+
+    InteractableNode* selectedInteraction = nullptr;
 
     AudioNode *quack = nullptr;
 
@@ -36,40 +39,23 @@ class PlayerNode : public UpdateNode3D
     void shoot()
     {
         //create bullet
-        // SphereCollider* bulletColl = new SphereCollider();
-        // bulletColl->name = "bullColl";
-        // bulletColl->layer = NONE;
-        // bulletColl->collidesWith = ALL;
-        // BulletNode* bullet = new BulletNode();
-        // bullet->name = "bullet";
-        // Model3D *bulletMod = new Model3D("SuzanneUV.obj", {0, 0, 0}, {0, 0, 0}, {0.5f, 0.5f, 0.5f}, &bulletMat);
-        // bulletMod->name = "bullMod";
-        // bulletColl->adopt(bullet);
-        // bulletColl->adopt(bulletMod);
-        //
-        // const glm::vec3 dir = -getZAxis();
-        // const glm::vec3 v = glm::cross(VEC3_Z, dir);
-        // const float angle = acos(glm::dot(VEC3_Z, dir));
-        // const glm::mat4 rotMat = glm::rotate(angle, v);
-        // bulletColl->setGlobalMatrix(rotMat);
-        // bulletColl->setGlobalPosition(getGlobalPosition());
-        //
-        // Engine::instantiate(bulletColl);
-        //
-        // quack->playSound();
-
+        SphereCollider* bulletColl = new SphereCollider();
+        bulletColl->name = "bullColl";
+        bulletColl->layer = BULLETS;
+        bulletColl->collidesWith = ENVIRONMENT;
         BulletNode* bullet = new BulletNode();
         bullet->name = "bullet";
         Model3D *bulletMod = new Model3D("SuzanneUV.obj", {0, 0, 0}, {0, 0, 0}, {0.5f, 0.5f, 0.5f}, &rMat);
         bulletMod->name = "bullMod";
-        bullet->adopt(bulletMod);
+        bulletColl->adopt(bullet);
+        bulletColl->adopt(bulletMod);
 
-        const glm::vec3 dir = -getZAxis();
+        const glm::vec3 dir = getLookingDirection();
         const glm::vec3 v = glm::cross(VEC3_Z, dir);
         const float angle = acos(glm::dot(VEC3_Z, dir));
         const glm::mat4 rotMat = glm::rotate(angle, v);
-        bullet->setGlobalMatrix(rotMat);
-        bullet->setGlobalPosition(getGlobalPosition());
+        bulletColl->setGlobalMatrix(rotMat);
+        bulletColl->setGlobalPosition(getGlobalPosition());
 
         Engine::instantiate(bullet);
 
@@ -77,18 +63,24 @@ class PlayerNode : public UpdateNode3D
             quack->playSound();
     }
 
-public:
+    void select(InteractableNode* i)
+    {
+        if (selectedInteraction == i) return;
 
-    AudioNode3D *music = nullptr;
-    Text2D *inputtxt = nullptr;
-    bool isMusicPlaying = false;
-    SonarMaterial *sonarMat = nullptr;
+        log("Selected interactable: " + (i ? i->name : "NULL"));
+
+        if (selectedInteraction)
+            selectedInteraction->deselect();
+
+        selectedInteraction = i;
+        if (selectedInteraction)
+            selectedInteraction->select();
+    }
+
+public:
 
     void onEnter() override
     {
-        // Set cursor mode
-        // Engine::setCursorMode(GLFW_CURSOR_DISABLED);
-
         if (Collider* c = dynamic_cast<Collider*>(this->parent))
         {
             playerColl = c;
@@ -113,37 +105,19 @@ public:
 
     void update() override
     {
-        // Check for escape
-        if (Engine::isKeyBeingPressed(GLFW_KEY_C)) {
-            Engine::MainEngine->requestEngineShutdown();
-        }
+        if (Engine::isPauseMenuOpen())
+            return; // Game is paused, don't do anything
 
-        // Give cursor back if needed
-        if (Engine::isKeyBeingPressed(GLFW_KEY_ESCAPE, true)) {
-            if (Engine::isPauseMenuOpen()) {
-                Engine::setCursorMode(GLFW_CURSOR_DISABLED);
-            } else {
-                Engine::setCursorMode(GLFW_CURSOR_NORMAL);
-            }
-
-            Engine::togglePauseMenu();
-        }
-
-        if (Engine::isKeyBeingPressed(GLFW_MOUSE_BUTTON_LEFT, true)) {
-            if (Engine::isPauseMenuOpen()) {
-                Engine::handleMenuClick();
-            } // else {} if the left mouse button does something outside of menus
-        }
-
-        // Change scene
-        if (Engine::isKeyBeingPressed(GLFW_KEY_K, true)) {
-            Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene2")));
-        } else if (Engine::isKeyBeingPressed(GLFW_KEY_L, true)) {
-            Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene1")));
+        //Testing for object placement TODO remove
+        if (Engine::isKeyBeingPressed(GLFW_KEY_L, true))
+        {
+            Model3D* tree = new Model3D("Spooky Tree.gltf", getGlobalPosition() * glm::vec3(1, 0, 1), VEC3_ZERO, VEC3_ONE, &bulletMat);
+            info(std::format("{}", tree->getGlobalPosition()));
+            Engine::instantiate(tree);
         }
 
         //Check grounded
-        isGrounded = Physics::raycast(playerColl->getGlobalPosition() - VEC3_Y * 1.35f, -VEC3_Y, {.maxDistance = 1.0f, .layer = ENVIRONMENT});
+        isGrounded = Physics::raycast(playerColl->getGlobalPosition() - VEC3_Y * 1.5f, -VEC3_Y, {.maxDistance = 0.2f, .layer = ENVIRONMENT});
         if (isGrounded)
         {
             vertSpeed = 0.0f;
@@ -153,10 +127,9 @@ public:
         else
             vertSpeed -= GRAVITY * Engine::getDeltaTime();
 
-        float speed = walk_speed;
+        float speed = WALK_SPEED;
         if (Engine::isKeyBeingPressed(GLFW_KEY_LEFT_SHIFT))
             speed *= 1.5;
-
 
         // update the camera position and direction with the inputs
         glm::vec3 delta = VEC3_ZERO;
@@ -168,47 +141,61 @@ public:
 
         playerColl->globalTranslate(delta);
 
-        /// When the pause menu is open, moving the mouse doesn't move the camera
-        //TODO when the pause menu is open, "freeze" the game (or we can keep it running, like Dark Souls)
-        if (!Engine::isPauseMenuOpen()) {
-            const float xRot = -Engine::getInputRotation().x * Engine::getDeltaTime();
-            if (X_ROT_MIN <= getGlobalRotation().x + xRot && getGlobalRotation().x + xRot <= X_ROT_MAX)
-                globalRotateX(xRot);
-            globalRotateY(-Engine::getInputRotation().y * Engine::getDeltaTime());
-        }
+        const float xRot = -Engine::getInputRotation().x * Engine::getDeltaTime();
+        if (X_ROT_MIN <= getGlobalRotation().x + xRot && getGlobalRotation().x + xRot <= X_ROT_MAX)
+            globalRotateX(xRot);
+        playerColl->globalRotateY(-Engine::getInputRotation().y * Engine::getDeltaTime());
 
         //Shoot
-        if (Engine::isKeyBeingPressed(GLFW_KEY_F))
+        if (Engine::isKeyBeingPressed(GLFW_KEY_F, true))
             shoot();
 
-        // Start music
-        if (Engine::isKeyBeingPressed(GLFW_KEY_M, true)) {
-            if (!isMusicPlaying) {
-                music->playSound();
-                music->enableLooping();
-                isMusicPlaying = true;
-            } else {
-                music->stopSound();
-                music->disableLooping();
-                isMusicPlaying = false;
+        //Check for interactable objects, assumes the collider is a child of the object
+        Physics::RaycastHit hit;
+        if (Physics::raycast(getGlobalPosition(), getLookingDirection(), &hit,  INTERACTION_DIST, INTERACTABLE))
+        {
+            if (InteractableNode* inter = dynamic_cast<InteractableNode*>(hit.collider->parent))
+            {
+                select(inter);
             }
+            else
+                warning(std::format("Collider {} is INTERACTABLE but has no interactable parent", hit.collider));
         }
+        else
+            select(nullptr);
 
-        static float elapsedT = 1.0f;
-        static float count = 0;
-        elapsedT += Engine::getDeltaTime();
-        count++;
-        if (elapsedT >= 1.0f) {
-            if (inputtxt)
-                inputtxt->text = std::format("FPS: {}", count / elapsedT);
-            elapsedT = 0.0f;
-            count = 0;
-        }
+        if (selectedInteraction && Engine::isKeyBeingPressed(GLFW_KEY_E, true))
+            selectedInteraction->interact();
+    }
 
-        if (Engine::isKeyBeingPressed(GLFW_MOUSE_BUTTON_2, true) and sonarMat) {
-            log("SONAR");
-            sonarMat->trigger(this->getGlobalPosition(), Engine::getCurrentTime());
-        }
+    /// Creates the standard node tree for the player.
+    static Node3D* makeStandardPlayer()
+    {
+        CapsuleCollider* rootCollider = new CapsuleCollider();
+        rootCollider->name = "PlayerCollider";
+        rootCollider->layer = PLAYER;
+        rootCollider->collidesWith = ENVIRONMENT;
+
+        PlayerNode* controls = new PlayerNode();
+        controls->name = "Player";
+        rootCollider->adopt(controls);
+        controls->localTranslate({0, 2.75f, 0});
+
+        PerspectiveCamera *camera = new PerspectiveCamera(0.1f, 200, glm::radians(90.0f), 4.0f/3.0f, true);
+        camera->name = "PerspectiveCamera";
+        controls->adopt(camera);
+
+        LambertTexMaterial* mat = new LambertTexMaterial(VEC3_ONE, {1, 1, 1, 100}, "mage.png");
+        Model3D* model = new Model3D("Mage.gltf", VEC3_ZERO, VEC3_ZERO, VEC3_ONE, mat, false);
+        rootCollider->adopt(model);
+
+        AudioNode *quack = new AudioNode("quack.mp3", 0.1f);
+        quack->name = "quack";
+        controls->adopt(quack);
+
+        rootCollider->globalTranslate({0, 5, 0});
+        rootCollider->localRotateY(M_PI);
+        return rootCollider;
     }
 };
 #endif

@@ -220,6 +220,7 @@ public:
             std::ranges::copy_if(sceneBounds, std::inserter(collisions, collisions.begin()),
             [bounds, checked](const Bounds& b)
             {
+                if (!b.collider->isActive) return false; //Skip inactive colliders
                 if (checked.contains(b.collider)) return false; //Skip checked colliders
                 if (b.collider->UUID == bounds.collider->UUID) return false; //Skip self
                 if (!(bounds.collider->collidesWith & b.collider->layer)) return false; //Skip mismatched layers
@@ -253,18 +254,20 @@ public:
      * @param layer Physics layer flags to check.
      * @return True if the ray hit something.
      */
-    static bool raycast(const glm::vec3 origin, glm::vec3 direction, RaycastHit* hit = nullptr, const float maxDistance = 100.0f, const float step = 10 * EPSILON, const PhysicsLayer layer = ALL)
+    static bool raycast(const glm::vec3 origin, glm::vec3 direction, RaycastHit* hit = nullptr, const float maxDistance = 100.0f, const PhysicsLayer layer = ALL, const float step = 10 * EPSILON)
     {
         const int stepNum = maxDistance / step;
         direction = glm::normalize(direction);
 
+        std::vector<Collider*> valid;
+        std::ranges::copy_if(colliders, std::inserter(valid, valid.begin()),
+            [layer](const Collider* c) { return (c->layer & layer) && c->isActive; });
+
         for (int i = 0; i < stepNum; i++)
         {
             const glm::vec3 p = origin + direction * (step * i);
-            for (Collider* coll : colliders)
+            for (Collider* coll : valid)
             {
-                if (!(coll->layer & layer)) continue;
-                if (!coll->isActive) continue;
                 if (coll->inBounds(p))
                 {
                     if (hit)
@@ -286,9 +289,9 @@ public:
         float step = 10 * EPSILON;
         PhysicsLayer layer = ALL;
     };
-    static bool raycast(const glm::vec3 origin, glm::vec3 direction, const RaycastOptions& opts)
+    static bool raycast(const glm::vec3 origin, const glm::vec3 direction, const RaycastOptions& opts)
     {
-        return raycast(origin, direction, opts.hit, opts.maxDistance, opts.step, opts.layer);
+        return raycast(origin, direction, opts.hit, opts.maxDistance, opts.layer, opts.step);
     }
 };
 #endif

@@ -201,6 +201,15 @@ class Renderer {
     //Lambda function taken from Engine
     std::function<void()> screenUpdate;
 
+    bool checkFileExists(const std::string& name) const
+    {
+        if (FILE *file = stbi__fopen(name.c_str(), "rb")) {
+            fclose(file);
+            return true;
+        }
+        return false;
+    }
+
     public:
 
     /**Call this inside Engine constructor, passing:
@@ -349,19 +358,22 @@ class Renderer {
         if ( albedoTexAssets.find(model3D->getMaterial()->getTextureName()) == albedoTexAssets.end()) {
             albedoTexAssets.insert({model3D->getMaterial()->getTextureName(),{}});
             Texture* t = &albedoTexAssets.at(model3D->getMaterial()->getTextureName());
-            t->init(bp,"assets/textures/albedo_" + model3D->getMaterial()->getTextureName());
+            const std::string name = checkFileExists("assets/textures/albedo/" + model3D->getMaterial()->getTextureName()) ? model->getMaterial()->getTextureName() : "Default.png";
+            t->init(bp,"assets/textures/albedo/" + name);
         }
 
         if ( armTexAssets.find(model3D->getMaterial()->getTextureName()) == armTexAssets.end()) {
             armTexAssets.insert({model3D->getMaterial()->getTextureName(),{}});
             Texture* t = &armTexAssets.at(model3D->getMaterial()->getTextureName());
-            t->init(bp,"assets/textures/arm_" + model3D->getMaterial()->getTextureName());
+            const std::string name = checkFileExists("assets/textures/arm/" + model3D->getMaterial()->getTextureName()) ? model->getMaterial()->getTextureName() : "Default.png";
+            t->init(bp,"assets/textures/arm/" + name);
         }
 
         if ( normalTexAssets.find(model3D->getMaterial()->getTextureName()) == normalTexAssets.end()) {
             normalTexAssets.insert({model3D->getMaterial()->getTextureName(),{}});
             Texture* t = &normalTexAssets.at(model3D->getMaterial()->getTextureName());
-            t->init(bp,"assets/textures/normal_" + model3D->getMaterial()->getTextureName());
+            const std::string name = checkFileExists("assets/textures/normal/" + model3D->getMaterial()->getTextureName()) ? model->getMaterial()->getTextureName() : "Default.png";
+            t->init(bp,"assets/textures/normal/" + name);
         }
 
 
@@ -661,12 +673,12 @@ class Renderer {
 
 
         TenvMap.initCubic(bp, {
-            "assets/textures/skybox/px.png",
-            "assets/textures/skybox/nx.png",
-            "assets/textures/skybox/py.png",
-            "assets/textures/skybox/ny.png",
-            "assets/textures/skybox/pz.png",
-            "assets/textures/skybox/nz.png"
+            "assets/textures/skybox_dark/px.png",
+            "assets/textures/skybox_dark/nx.png",
+            "assets/textures/skybox_dark/py.png",
+            "assets/textures/skybox_dark/ny.png",
+            "assets/textures/skybox_dark/pz.png",
+            "assets/textures/skybox_dark/nz.png"
         }, VK_FORMAT_R8G8B8A8_UNORM);
     }
 

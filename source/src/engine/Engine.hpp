@@ -388,7 +388,7 @@ class Engine : public BaseProject {
             } else if (Collider *coll = dynamic_cast<Collider*>(node)) {
                 Physics::removeCollider(coll);
             } else if (Camera *camera = dynamic_cast<Camera*>(node)) {
-                if (camera == this->mainCamera) 
+                if (camera == this->mainCamera)
                     this->mainCamera = nullptr;
             } else if (AudioNode *audio = dynamic_cast<AudioNode*>(node)) {
                 audio->stopSound();
@@ -582,6 +582,21 @@ class Engine : public BaseProject {
             // Call update() on all UpdateNodes
             this->updateUpdate3DNodes(this->scene);
 
+            // Check for escape
+            if (isKeyBeingPressed(GLFW_KEY_ESCAPE)) {
+                requestEngineShutdown();
+            }
+
+            // Pause game
+            if (isKeyBeingPressed(GLFW_KEY_P, true)) {
+                togglePauseMenu();
+                setCursorMode(isPauseMenuOpen() ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+            }
+
+            // Check for clicks in the menu
+            if (isKeyBeingPressed(GLFW_MOUSE_BUTTON_LEFT, true) && isPauseMenuOpen())
+                handleMenuClick();
+
             // Recompute hierarchy in case something changed
             this->recompute3DNodeHierarchy(this->scene, MAT4_I);
             this->recompute2DNodeHierarchy(this->scene, MAT4_I);
@@ -636,7 +651,7 @@ class Engine : public BaseProject {
             ui.initElement(UI_ID_BUTTON_QUIT, {{"assets/textures/ui/quit_button.png", "assets/textures/ui/quit_button_hover.png", "assets/textures/ui/quit_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
             ui.initElement(UI_ID_BUTTON_SCENE1, {{"assets/textures/ui/scene1_button.png", "assets/textures/ui/scene1_button_hover.png", "assets/textures/ui/scene1_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
             ui.initElement(UI_ID_BUTTON_SCENE2, {{"assets/textures/ui/scene2_button.png", "assets/textures/ui/scene2_button_hover.png", "assets/textures/ui/scene2_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
-            
+
             ui.init(windowWidth, windowHeight);
 
             // submits the main command buffer

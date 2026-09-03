@@ -86,20 +86,12 @@ class AudioNode : public virtual Node {
             log(std::format("Stopped [{}] from [{}]", this->soundFileName, this->UUID));
         }
 
-        /** Enables sound looping */
-        void enableLooping() {
+        void setLooping(const bool looping)
+        {
             if (!this->isInitialized)
                 return;
 
-            ma_sound_set_looping(&this->sound, MA_TRUE);
-        }
-
-        /** Disables sound looping */
-        void disableLooping() {
-            if (!this->isInitialized)
-                return;
-
-            ma_sound_set_looping(&this->sound, MA_FALSE);
+            ma_sound_set_looping(&this->sound, looping ? MA_TRUE : MA_FALSE);
         }
 
         void setVolume(const float volume) {
