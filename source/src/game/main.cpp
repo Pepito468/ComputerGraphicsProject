@@ -405,12 +405,13 @@ Node* createDarkScene() {
                         wall->name = std::format("Wall {} {} {}", i, j, k);
                         staticObjects->adopt(wall);
 
-                        // Colliders tank the FPS and idk where they are when spawned
-                        BoxCollider* wallCollider = new BoxCollider(0.5f, 0.5f, 0.5f);
+                        // Colliders tank the FPS
+                        BoxCollider* wallCollider = new BoxCollider(pos, rotations[k], {cellSize/2, 0.05, cellSize/2});
                         wall->name = std::format("WallColl {} {} {}", i, j, k);
                         wallCollider->movementStatus = STATIC;
                         wallCollider->layer = ENVIRONMENT;
-                        // wall->adopt(wallCollider);
+                        staticObjects->adopt(wallCollider);
+                        wall->adopt(wallCollider);
                     }
                     break;
                 case 'S':
