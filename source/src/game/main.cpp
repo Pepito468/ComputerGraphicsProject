@@ -578,7 +578,7 @@ Node* createForestScene() {
 
 
     // TutorialText
-    Text2D *cameraTutorial = new Text2D("Press 'M' to change camera", {-0.5, -1}, "SS", false, false, false, TAL_LEFT, TRH_LEFT, TRV_TOP);
+    Text2D *cameraTutorial = new Text2D("Press M to change camera", {-0.2, -1}, "SS", false, false, false, TAL_LEFT, TRH_LEFT, TRV_TOP);
     root->adopt(cameraTutorial);
 
     return root;
