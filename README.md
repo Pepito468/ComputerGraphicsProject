@@ -10,7 +10,7 @@
 | Model Rendering   |         0          |        40       |       0        |         0         |
 | Testing           |         3          |        0        |       16       |         6         |
 | Shaders           |         0          |        16       |       0        |         3         |
-| UI                |         44         |        0        |       0        |         0         |
+| UI                |         47         |        0        |       0        |         0         |
 | Game Nodes        |         0          |        0        |       13       |         2         |
 | Engine            |         0          |        0        |       0        |         24        |
 | Audio             |         0          |        0        |       0        |         5         |
@@ -34,6 +34,9 @@
 - Lightning by Pasha_Shishkov via [Free Sound](https://freesound.org/s/866347/) -- License: Attribution 4.0
 
 ### Fonts
+
+- Pelagiad via [GitHub](https://isaskar.github.io/Pelagiad/) -- License: SIL Open Font License, v1.1
+- Libertinus Keyboard via [GitHub](https://github.com/alerque/libertinus) -- License: SIL Open Font License, v1.1
 
 ## External Libraries
 

@@ -311,8 +311,7 @@ Node* createScene2() {
     return root;
 }
 
-Node* createUnitScene()
-{
+Node* createUnitScene() {
     Node *root = new Node();
     root->name = "root";
 
@@ -323,7 +322,6 @@ Node* createUnitScene()
     models->name = "ModelContainer";
     root->adopt(models);
 
-
     Model3D *plane = new Model3D("Unit Plane.gltf", {0, 0, 0}, {0, 0, 0}, {20, 1, 200}, &mat1);
     BoxCollider* planeColl = new BoxCollider(1.0f, 0.05f, 1.0f);
     planeColl->name = "PlaneHB";
@@ -333,8 +331,7 @@ Node* createUnitScene()
     plane->adopt(planeColl);
     models->adopt(plane);
 
-    for (int i = 0; i < 5; i++)
-    {
+    for (int i = 0; i < 5; i++) {
         Model3D* cube = new Model3D("Unit Cube.gltf", {i, 2, 0}, {0, 0, 0}, {1, 1, 1}, TEX_MAT("cube.png"));
         models->adopt(cube);
         BoxCollider* box = new BoxCollider();
@@ -384,8 +381,7 @@ Node* createUnitScene()
     return root;
 }
 
-Node* createForestScene()
-{
+Node* createForestScene() {
     Node *root = new Node();
     root->name = "root";
 
@@ -587,7 +583,7 @@ Node* createDarkScene() {
     staticObjects->name = "StaticObjectsContainer";
     root->adopt(staticObjects);
 
-    float cellSize = 16;
+    float cellSize = 8;
 
 #define LABSIZE 12
     const char labyrinth[LABSIZE][LABSIZE] = {
@@ -693,6 +689,41 @@ Node* createDarkScene() {
     return root;
 }
 
+Node* createMainMenu() {
+    Node *root = new Node();
+    root->name = "root";
+
+    PerspectiveCamera *camera = new PerspectiveCamera(0.1f, 200, glm::radians(90.0f), 4.0f/3.0f, true);
+    camera->name = "PerspectiveCamera";
+    root->adopt(camera);
+
+    root->adopt(new FPSTextUpdater());
+
+    root->adopt(new AudioController(new AudioNode("heavyRain.wav", 0.02f), true));
+
+    // Models
+    Node *models = new Node();
+    models->name = "ModelContainer";
+    root->adopt(models);
+
+    Model3D *plane = new Model3D("Unit Plane.gltf", {0, 0, 26.25f}, {0, 0, 0}, {100, 1, 100}, pathMat);
+    models->adopt(plane);
+
+    Model3D* castle = new Model3D("Castle.gltf", {0, 0, 105.0f}, {0, M_PI, 0}, VEC3_ONE, TEX_MAT("Diffuse_palette.jpg"));
+    models->adopt(castle);
+
+    // Lights
+    AmbientLight *ambientLight = new AmbientLight({0.08f, 0.14f, 0.20f},{0.035f, 0.04f, 0.045f}, {0.0f, 1.0f, 0.0f});
+    ambientLight->name = "AmbientLight";
+    root->adopt(ambientLight);
+
+    DirectionalLight *directionalLight = new DirectionalLight(0.5,glm::vec3(1.0f, 0.95f, 0.8f),glm::normalize(glm::vec3(0.8f, 0.25f, 0.4f)));
+    directionalLight->name = "DirectionalLight";
+    root->adopt(directionalLight);
+
+    return root;
+}
+
 int main() {
 
     Engine engine;
@@ -706,6 +737,7 @@ int main() {
     Engine::setGlobalVariable("Unit", createUnitScene());
     Engine::setGlobalVariable("Forest", createForestScene());
     Engine::setGlobalVariable("Dark", createDarkScene());
+    Engine::setGlobalVariable("MainMenu", createMainMenu());
 
     Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Forest")));
 
@@ -717,6 +749,7 @@ int main() {
     }
 
     // Free the scenes
+    freeNodeTree(std::any_cast<Node*>(Engine::getGlobalVariable("MainMenu")));
     freeNodeTree(std::any_cast<Node*>(Engine::getGlobalVariable("Scene1")));
     freeNodeTree(std::any_cast<Node*>(Engine::getGlobalVariable("Scene2")));
     freeNodeTree(std::any_cast<Node*>(Engine::getGlobalVariable("Unit")));

@@ -18,17 +18,11 @@
 /*
 	TODO list:
 	- Add a forceModelUpdate flag to UIMaker and a needsUpdating flag to UIElements (maybe)
-	- Constraints for uielements initialization:
-		- Buttons should have 3 textures
-		- Sliders should have sx = s1 = 1.0f
-		- Sliders should have REGH = UIO_LEFT
 	- Checkboxes (equiv 2-stage buttons) (maybe)
 	- N-stage buttons (A -> click -> B -> click -> C -> click -> A -> ...) (maybe)
 	- Main menu
 	- Pause menu
 		- Commands (maybe)
-		- Volume
-		- Mouse sensitivity
 */
 
 #define DEFAULT_SUBMIT_ORDER				9999
@@ -36,12 +30,14 @@
 #define DEFAULT_WINDOW_HEIGHT				720
 
 #define UI_ID_NULL							-1
-#define UI_ID_PAUSE_MENU_BACKGROUND			20
-#define UI_ID_COMMANDS						50
-#define UI_ID_SLIDER_VOLUME_PLAQUE			51
-#define UI_ID_SLIDER_VOLUME_BACKGROUND		52
-#define UI_ID_SLIDER_SENSITIVITY_PLAQUE		53
-#define UI_ID_SLIDER_SENSITIVITY_BACKGROUND	54
+#define UI_ID_MENU_BACKGROUND				20
+#define UI_ID_TITLE							21
+#define UI_ID_COMMANDS						75
+#define UI_ID_SLIDER_VOLUME_PLAQUE			50
+#define UI_ID_SLIDER_VOLUME_BACKGROUND		51
+#define UI_ID_SLIDER_SENSITIVITY_PLAQUE		52
+#define UI_ID_SLIDER_SENSITIVITY_BACKGROUND	53
+#define UI_ID_BUTTON_START					99
 #define UI_ID_BUTTON_RESUME					100
 #define UI_ID_BUTTON_QUIT					101
 #define UI_ID_SLIDER_VOLUME					150
@@ -355,6 +351,10 @@ class UIMaker {
 
 		switch(type) {
 		case UI_BUTTON:
+			if (UIElementsMap[id].T.textureVec.size() < 3) {
+				error("button " + std::to_string(id) + "has less than 3 textures\nButtons need a minimum of 3 textures to work");
+			}
+
 			ButtonsList.push_back({id, false, false});
 			break;
 		case UI_SLIDER:
@@ -377,7 +377,6 @@ class UIMaker {
 
 	/**
 	 * Updates the slider hitbox in case of window resize
-	 (int screenW, int screenH, float x, float y, float sx, float sy, UIOriginH RegH, UIOriginV RegV, int width, int height) 
 	 */
 	void updateSliderHitbox(int id, int sW, int sH) {
 		UIElement temp = UIElementsMap[id];
@@ -536,6 +535,8 @@ public:
 		UI_RP.end(commandBuffer);
 	}
 
+	//--------------------------------------------
+
 	std::list<InteractedUIElementData> updateMouseStatus(double x, double y, bool mouseClick = false, bool holding = false) {
 		std::list<InteractedUIElementData> ret = {};
 		this->mousePosX = x;
@@ -545,7 +546,7 @@ public:
 		// After the cursor moves, checks every button to see if their status changed
 		for (auto &b : ButtonsList) {
 			bool inside = UIElementsMap[b.id].isPointInsideHitbox((float)mousePosX, (float)mousePosY, screenW, screenH);
-			// std::cout << UI_DEBUG_STRING << " hovered: " << b.hovered << "; inside: " << inside << std::endl;
+			// std::cout << UI_DEBUG_STRING << " " << b.id << " hovered: " << b.hovered << "; inside: " << inside << std::endl;
 
 			if (b.hovered) {
 				if (!inside) {
@@ -585,14 +586,14 @@ public:
 					if (UIElementsMap[s.first].sx != 0.0f) {
 						UIElementsMap[s.first].sx = 0.0f;
 						commandBufferMustUpdate = true;
-						ret.push_back({s.first, UIElementsMap[s.first].sx / s.second.currentMaxScale});
+						ret.push_back({s.first, 0.0f});
 					}
 				} else if (x >= s.second.lowerRightCorner.x) {
 					// upper bound
 					if (UIElementsMap[s.first].sx != s.second.currentMaxScale) {
 						UIElementsMap[s.first].sx = s.second.currentMaxScale;
 						commandBufferMustUpdate = true;
-						ret.push_back({s.first, UIElementsMap[s.first].sx / s.second.currentMaxScale});
+						ret.push_back({s.first, 1.0f});
 					}
 				} else {
 					// value in between
@@ -649,14 +650,12 @@ public:
 		elem->second.isVisible = !elem->second.isVisible;
 		commandBufferMustUpdate = true;
 	}
-	
-	//--------------------------------------------
 
 	/**
 	* Notifies that the UI element with the given id needs to be updated
 	* Throws an error if the id isn't present in UIElementsMap, and a warning if either sx or sy are 0
 	*/
-	int renderUI(float x, float y, int id, UIOriginH RegH = UIO_LEFT, UIOriginV RegV = UIO_TOP, float sx = 1.0f, float sy = 1.0f) {
+	void renderUI(float x, float y, int id, UIOriginH RegH = UIO_LEFT, UIOriginV RegV = UIO_TOP, float sx = 1.0f, float sy = 1.0f) {
 		// std::cout << UI_DEBUG_STRING << " renderUI id = " << id << std::endl;
 		if (sx == 0 || sy == 0)
 			warning("1-dimensional UI element: id = " + std::to_string(id) + ", sx = " + std::to_string(sx) + ", sy = " + std::to_string(sy));
@@ -671,8 +670,6 @@ public:
 		if (UIElementsMap[id].type == UI_SLIDER) {
 			setSliderHitbox(id);
 		}
-		
-		return id;
 	}
 
 	/**
@@ -740,6 +737,58 @@ public:
 			error("Invalid UI id: " + std::to_string(id));
 
 		UIElementsMap[id].recreateDescriptorSet(&UI_DSL, BP, idTexture);
+	}
+
+	void renderMainMenu() {
+		renderUI(0.0f, 0.0f, UI_ID_MENU_BACKGROUND, UIO_CENTER, UIO_MIDDLE);
+
+		renderUI(0.0f, -1.0f, UI_ID_TITLE, UIO_CENTER, UIO_TOP);
+
+		renderUI(0.0f, -0.085f, UI_ID_BUTTON_START, UIO_CENTER, UIO_MIDDLE);
+		renderUI(0.0f, 0.085f, UI_ID_BUTTON_QUIT, UIO_CENTER, UIO_MIDDLE);
+	}
+
+	void toggleMainMenu() {
+		toggleVisibility(UI_ID_TITLE);
+		toggleVisibility(UI_ID_BUTTON_START);
+	}
+
+	void renderPauseMenu() {
+		renderUI(0.0f, 0.0f, UI_ID_MENU_BACKGROUND, UIO_CENTER, UIO_MIDDLE);
+
+		renderUI(0.0f, -0.085f, UI_ID_BUTTON_RESUME, UIO_CENTER, UIO_MIDDLE);
+		renderUI(0.0f, 0.085f, UI_ID_BUTTON_QUIT, UIO_CENTER, UIO_MIDDLE);
+
+		renderUI(-1.0f, 1.0f, UI_ID_BUTTON_SCENE1, UIO_LEFT, UIO_BOTTOM);
+		renderUI(-0.85f, 1.0f, UI_ID_BUTTON_SCENE2, UIO_LEFT, UIO_BOTTOM);
+
+		renderUI(-1.0f, -0.06, UI_ID_SLIDER_VOLUME, UIO_LEFT, UIO_MIDDLE);
+		renderUI(-1.0f, -0.06, UI_ID_SLIDER_VOLUME_BACKGROUND, UIO_LEFT, UIO_MIDDLE);
+		renderUI(-1.0f, -0.06, UI_ID_SLIDER_VOLUME_PLAQUE, UIO_LEFT, UIO_BOTTOM);
+		
+		renderUI(-1.0f, 0.06, UI_ID_SLIDER_SENSITIVITY, UIO_LEFT, UIO_MIDDLE);
+		renderUI(-1.0f, 0.06, UI_ID_SLIDER_SENSITIVITY_BACKGROUND, UIO_LEFT, UIO_MIDDLE);
+		renderUI(-1.0f, 0.06, UI_ID_SLIDER_SENSITIVITY_PLAQUE, UIO_LEFT, UIO_TOP);
+
+		renderUI(1.0f, -1.0f, UI_ID_COMMANDS, UIO_RIGHT, UIO_TOP);
+	}
+
+	/** 
+	* Toggles visibility of the pause menu
+	*/
+	void togglePauseMenu() {
+		toggleVisibility(UI_ID_MENU_BACKGROUND);
+		toggleVisibility(UI_ID_BUTTON_RESUME);
+		toggleVisibility(UI_ID_BUTTON_QUIT);
+		toggleVisibility(UI_ID_BUTTON_SCENE1);
+		toggleVisibility(UI_ID_BUTTON_SCENE2);
+		toggleVisibility(UI_ID_SLIDER_VOLUME);
+		toggleVisibility(UI_ID_SLIDER_VOLUME_BACKGROUND);
+		toggleVisibility(UI_ID_SLIDER_VOLUME_PLAQUE);
+		toggleVisibility(UI_ID_SLIDER_SENSITIVITY);
+		toggleVisibility(UI_ID_SLIDER_SENSITIVITY_BACKGROUND);
+		toggleVisibility(UI_ID_SLIDER_SENSITIVITY_PLAQUE);
+		toggleVisibility(UI_ID_COMMANDS);
 	}
 
 	//--------------------------------------------
@@ -815,6 +864,11 @@ public:
 		delete(M);
 		
 		free(Params);
+	}
+
+	void deleteMainMenu() {
+		removeUIElement(UI_ID_TITLE);
+		removeUIElement(UI_ID_BUTTON_START);
 	}
 
 	//--------------------------------------------

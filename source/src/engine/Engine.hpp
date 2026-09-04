@@ -29,12 +29,13 @@
 
 #include "common.h"
 
-#define POOL_SIZE 5000
+#define POOL_SIZE 50000
 #define LIGHT_RENDER_DISTANCE 20.0f
 #define DEFAULT_CURSOR GLFW_CURSOR_NORMAL
 #define AUDIO_LISTENER 0
 #define TEXT2D_SAFE_INDEX -2
 #define TEXT2D_UPDATE_INTERVAL 1.0f
+#define MAX_MOUSE_RES 10.0f
 
 class Engine : public BaseProject {
 
@@ -83,7 +84,7 @@ class Engine : public BaseProject {
 
         float globalVolume = 1.0f;
 
-        float mouseRes = 10.0f;
+        float mouseRes = MAX_MOUSE_RES;
 
     public:
 
@@ -196,21 +197,6 @@ class Engine : public BaseProject {
             log(std::format("Scene change request accepted [to {}, ID: {}]", newRoot->name, newRoot->UUID));
         }
 
-        /** Toggles visibility of the pause menu */
-        static void togglePauseMenu() {
-            MainEngine->ui.toggleVisibility(UI_ID_PAUSE_MENU_BACKGROUND);
-            MainEngine->ui.toggleVisibility(UI_ID_BUTTON_RESUME);
-            MainEngine->ui.toggleVisibility(UI_ID_BUTTON_QUIT);
-            MainEngine->ui.toggleVisibility(UI_ID_BUTTON_SCENE1);
-            MainEngine->ui.toggleVisibility(UI_ID_BUTTON_SCENE2);
-            MainEngine->ui.toggleVisibility(UI_ID_SLIDER_VOLUME);
-            MainEngine->ui.toggleVisibility(UI_ID_SLIDER_VOLUME_BACKGROUND);
-            MainEngine->ui.toggleVisibility(UI_ID_SLIDER_VOLUME_PLAQUE);
-            MainEngine->ui.toggleVisibility(UI_ID_SLIDER_SENSITIVITY);
-            MainEngine->ui.toggleVisibility(UI_ID_SLIDER_SENSITIVITY_BACKGROUND);
-            MainEngine->ui.toggleVisibility(UI_ID_SLIDER_SENSITIVITY_PLAQUE);
-        }
-
         /** Maps a name to a global variable. */
         static void setGlobalVariable(const std::string& name, std::any value) {
             MainEngine->globalVariables[name] = value;
@@ -266,7 +252,7 @@ class Engine : public BaseProject {
                 switch (data.id) {
                     case UI_ID_BUTTON_RESUME:
                         Engine::setCursorMode(GLFW_CURSOR_DISABLED);
-                        Engine::togglePauseMenu();
+                        MainEngine->ui.togglePauseMenu();
                         break;
                     case UI_ID_BUTTON_QUIT:
                         Engine::MainEngine->requestEngineShutdown();
@@ -278,9 +264,14 @@ class Engine : public BaseProject {
                         Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene2")));
                         break;
                     case UI_ID_SLIDER_VOLUME:
-                        //TODO update volume;
+                        setMasterVolume(data.data);
+                        break;
                     case UI_ID_SLIDER_SENSITIVITY:
-                        //TODO update mouse sensitivity;
+                        if (data.data == 0.0f)
+                            data.data = 0.01f;
+
+                        setMouseRes(MAX_MOUSE_RES/data.data);
+                        break;
                     default:
                         break;
                 }
@@ -627,7 +618,7 @@ class Engine : public BaseProject {
                     Engine::setCursorMode(GLFW_CURSOR_NORMAL);
                 }
                 
-                togglePauseMenu();
+                MainEngine->ui.togglePauseMenu();
             }
 
             // Recompute hierarchy in case something changed
@@ -678,38 +669,30 @@ class Engine : public BaseProject {
 
             textEngine.init(this, windowWidth, windowHeight);
 
-            ui.initElement(UI_ID_PAUSE_MENU_BACKGROUND, {{ProceduralTextures::generateMenuBackgroundTint(windowWidth, windowHeight)}, true, FULL_RESIZABLE});
-            ui.initElement(UI_ID_BUTTON_RESUME, {{"assets/textures/ui/resume_button.png", "assets/textures/ui/resume_button_hover.png", "assets/textures/ui/resume_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
+            // UIElements for the main menu
+            ui.initElement(UI_ID_MENU_BACKGROUND, {{ProceduralTextures::generateMenuBackgroundTint(windowWidth, windowHeight)}, true, FULL_RESIZABLE}); //TODO fix bacground still showing up even if no call to renderUI ever happened
+            ui.initElement(UI_ID_TITLE, {{ProceduralTextures::generateTexture(100, 100)}, true, KEEP_ASPECT_RATIO}); //TODO add title texture
+            ui.initElement(UI_ID_BUTTON_START, {{"assets/textures/ui/start_button.png", "assets/textures/ui/start_button_hover.png", "assets/textures/ui/start_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
             ui.initElement(UI_ID_BUTTON_QUIT, {{"assets/textures/ui/quit_button.png", "assets/textures/ui/quit_button_hover.png", "assets/textures/ui/quit_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
+
+            // UIElements for the pause menu
+            ui.initElement(UI_ID_BUTTON_RESUME, {{"assets/textures/ui/resume_button.png", "assets/textures/ui/resume_button_hover.png", "assets/textures/ui/resume_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
             ui.initElement(UI_ID_BUTTON_SCENE1, {{"assets/textures/ui/scene1_button.png", "assets/textures/ui/scene1_button_hover.png", "assets/textures/ui/scene1_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
             ui.initElement(UI_ID_BUTTON_SCENE2, {{"assets/textures/ui/scene2_button.png", "assets/textures/ui/scene2_button_hover.png", "assets/textures/ui/scene2_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
             ui.initElement(UI_ID_SLIDER_VOLUME, {{"assets/textures/ui/slider_juice.png"}, false, KEEP_ASPECT_RATIO, UI_SLIDER});
-            ui.initElement(UI_ID_SLIDER_VOLUME_BACKGROUND, {{"assets/textures/ui/slider_border_compromise.png"}, false, KEEP_ASPECT_RATIO, UI_NORMAL});
+            ui.initElement(UI_ID_SLIDER_VOLUME_BACKGROUND, {{"assets/textures/ui/slider_border_appeasement.png"}, true, KEEP_ASPECT_RATIO, UI_NORMAL});
             ui.initElement(UI_ID_SLIDER_VOLUME_PLAQUE, {{"assets/textures/ui/volume_high.png", "assets/textures/ui/volume.png", "assets/textures/ui/volume_low.png"}, true, KEEP_ASPECT_RATIO, UI_NORMAL});
             ui.initElement(UI_ID_SLIDER_SENSITIVITY, {{"assets/textures/ui/slider_juice_alt.png"}, false, KEEP_ASPECT_RATIO, UI_SLIDER});
-            ui.initElement(UI_ID_SLIDER_SENSITIVITY_BACKGROUND, {{"assets/textures/ui/slider_border_compromise.png"}, false, KEEP_ASPECT_RATIO, UI_NORMAL});
+            ui.initElement(UI_ID_SLIDER_SENSITIVITY_BACKGROUND, {{"assets/textures/ui/slider_border_appeasement.png"}, true, KEEP_ASPECT_RATIO, UI_NORMAL});
             ui.initElement(UI_ID_SLIDER_SENSITIVITY_PLAQUE, {{"assets/textures/ui/sensitivity.png"}, true, KEEP_ASPECT_RATIO, UI_NORMAL});
+            ui.initElement(UI_ID_COMMANDS, {{"assets/textures/ui/commands.png"}, true, KEEP_ASPECT_RATIO, UI_NORMAL});
 
             ui.init(windowWidth, windowHeight);
 
             // submits the main command buffer
             submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
 
-            ui.renderUI(0.0f, 0.0f, UI_ID_PAUSE_MENU_BACKGROUND, UIO_CENTER, UIO_MIDDLE);
-
-            ui.renderUI(0.0f, -0.085f, UI_ID_BUTTON_RESUME, UIO_CENTER, UIO_MIDDLE);
-            ui.renderUI(0.0f, 0.085f, UI_ID_BUTTON_QUIT, UIO_CENTER, UIO_MIDDLE);
-
-            ui.renderUI(-1.0f, 1.0f, UI_ID_BUTTON_SCENE1, UIO_LEFT, UIO_BOTTOM);
-            ui.renderUI(-0.85f, 1.0f, UI_ID_BUTTON_SCENE2, UIO_LEFT, UIO_BOTTOM);
-
-            ui.renderUI(-1.0f, -0.06, UI_ID_SLIDER_VOLUME, UIO_LEFT, UIO_MIDDLE);
-            ui.renderUI(-1.0f, -0.06, UI_ID_SLIDER_VOLUME_BACKGROUND, UIO_LEFT, UIO_MIDDLE);
-            ui.renderUI(-1.0f, -0.06, UI_ID_SLIDER_VOLUME_PLAQUE, UIO_LEFT, UIO_BOTTOM);
-            
-            ui.renderUI(-1.0f, 0.06, UI_ID_SLIDER_SENSITIVITY, UIO_LEFT, UIO_MIDDLE);
-            ui.renderUI(-1.0f, 0.06, UI_ID_SLIDER_SENSITIVITY_BACKGROUND, UIO_LEFT, UIO_MIDDLE);
-            ui.renderUI(-1.0f, 0.06, UI_ID_SLIDER_SENSITIVITY_PLAQUE, UIO_LEFT, UIO_TOP);
+            ui.renderPauseMenu();
         }
 
 
