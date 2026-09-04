@@ -81,6 +81,10 @@ class Engine : public BaseProject {
         // Text
         TextMaker textEngine;
 
+        float globalVolume = 1.0f;
+
+        float mouseRes = 10.0f;
+
     public:
 
         Engine() : renderer(this,
@@ -161,6 +165,17 @@ class Engine : public BaseProject {
         /** Returns the scene's root */
         static Node* getSceneRoot() {
             return MainEngine->scene;
+        }
+
+        /** Sets the master volume */
+        static void setMasterVolume(const float volume) {
+            ma_engine_set_volume(&MainEngine->audioEngine, volume);
+            MainEngine->globalVolume = volume;
+        }
+
+        /** Sets the mouse res */
+        static void setMouseRes(const float mouseRes) {
+            MainEngine->mouseRes = mouseRes;
         }
 
         /** Changes the loaded scene to the new one (given the root).
@@ -524,10 +539,9 @@ class Engine : public BaseProject {
             const double m_dx = xpos - old_xpos;
             const double m_dy = ypos - old_ypos;
             old_xpos = xpos; old_ypos = ypos;
-            constexpr float MOUSE_RES = 10.0f;
             glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, GLFW_TRUE);
-            this->inputRotation.y = m_dx / MOUSE_RES;
-            this->inputRotation.x = m_dy / MOUSE_RES;
+            this->inputRotation.y = m_dx / this->mouseRes;
+            this->inputRotation.x = m_dy / this->mouseRes;
 
         }
 

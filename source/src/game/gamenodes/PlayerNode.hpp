@@ -169,7 +169,7 @@ public:
         if (selectedInteraction && Engine::isKeyBeingPressed(GLFW_KEY_E, true))
             selectedInteraction->interact();
 
-        if (sonarMat && Engine::isKeyBeingPressed(GLFW_MOUSE_BUTTON_2, true)) {
+        if (sonarMat && Engine::isKeyBeingPressed(GLFW_MOUSE_BUTTON_LEFT, true)) {
             log("SONAR");
             sonarMat->trigger(this->getGlobalPosition(), Engine::getCurrentTime());
         }
