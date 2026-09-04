@@ -31,7 +31,8 @@ set(MODULES_DIR ${INCLUDE_DIR}/modules)
 file(GLOB SRC_FILES CONFIGURE_DEPENDS "${SRC_DIR}/*.cpp")
 
 
-add_executable(${PROJECT_NAME} ${SRC_FILES})
+add_executable(${PROJECT_NAME} ${SRC_FILES}
+        source/src/engine/rendering/Particles.hpp)
 target_include_directories(${PROJECT_NAME} PRIVATE 
     "${INCLUDE_DIR}"
     "${MODULES_DIR}"

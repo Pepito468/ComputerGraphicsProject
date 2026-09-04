@@ -19,6 +19,7 @@
 #include "audio/AudioNode3D.hpp"
 
 #include "common.h"
+#include "Particles.hpp"
 #include "gamenodes/AudioController.hpp"
 #include "gamenodes/CustomCameraUpdate.hpp"
 #include "gamenodes/FPSTextUpdater.hpp"
@@ -62,6 +63,7 @@ LambertTexMaterial* pathMat = TEX_MAT("path.png");
 LambertTexMaterial* wood_metalMat = TEX_MAT("wood-metal.png");
 LambertTexMaterial* rockMat = TEX_MAT("rock.png");
 WaterMaterial waterMat = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "water.png"};
+LambertMaterial rainMat = {glm::vec3(0.0f, 0.0f, .9f), {1.0f,1.0f,1.0f,100.0f}};
 
 Node* createScene1() {
 
@@ -321,6 +323,7 @@ Node* createUnitScene()
     models->name = "ModelContainer";
     root->adopt(models);
 
+
     Model3D *plane = new Model3D("Unit Plane.gltf", {0, 0, 0}, {0, 0, 0}, {20, 1, 200}, &mat1);
     BoxCollider* planeColl = new BoxCollider(1.0f, 0.05f, 1.0f);
     planeColl->name = "PlaneHB";
@@ -386,7 +389,8 @@ Node* createForestScene()
     Node *root = new Node();
     root->name = "root";
 
-    root->adopt(PlayerNode::makeStandardPlayer());
+    Node3D *player = PlayerNode::makeStandardPlayer();
+    root->adopt(player);
 
     root->adopt(new FPSTextUpdater());
 
@@ -396,6 +400,14 @@ Node* createForestScene()
     Node *models = new Node();
     models->name = "ModelContainer";
     root->adopt(models);
+
+    Particles* rain = new Particles({0.0f,10.0f,0.0f}, {0.0f, 0.0f, 0.0f}, "", &rainMat);
+    rain->setMaxParticles(25);
+    rain->setBounds({10.0f, 5.0f, 10.0f});
+    rain->setMaxLifeTime({0.5f, 1.0f});
+    rain->setLinearVelocity({0.0f, -15.0f, 0.0f});
+    rain->setTarget(player);
+    models->adopt(rain);
 
     Model3D *plane = new Model3D("Unit Plane.gltf", {0, 0, 26.25f}, {0, 0, 0}, {100, 1, 100}, pathMat);
     BoxCollider* planeColl = new BoxCollider(1.0f, 0.05f, 1.0f);

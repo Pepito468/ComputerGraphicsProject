@@ -10,6 +10,12 @@ public:
     /// If the node is to be updated every frame
     bool isActive = true;
 
+    UpdateNode3D(){}
+    UpdateNode3D(const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale) :
+        Node3D(position, rotation, scale){
+
+    }
+
     /// This method will be called every frame by the Engine if the node is active
     virtual void update() {
         warning(std::format("Update Method for UpdateNode3D [{}] has not been changed from default", this->UUID), true);
