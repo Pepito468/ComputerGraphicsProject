@@ -9,6 +9,7 @@
 #include "Node3D.hpp"
 #include "Relations.hpp"
 #include "Types.hpp"
+#include "GLMDebug.hpp"
 
 struct Vec3Compare {
     bool operator()(const glm::vec3& a, const glm::vec3& b) const {
@@ -168,7 +169,11 @@ public:
     virtual AABBExtents getAABBExtents() const = 0;
 
     void onTransformUpdate() override {
-        if (movementStatus == STATIC) warning(std::format("Collider {} has moved, even though it was marked static!", name));
+        if (movementStatus == STATIC)
+        {
+            warning(std::format("Collider {} has moved, even though it was marked static!", name), true);
+            return;
+        };
 
         movementStatus = MOBILE_HAS_MOVED;
     }

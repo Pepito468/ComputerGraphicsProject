@@ -18,6 +18,15 @@ inline bool epsilonEqual(const float a, const float b)
     return glm::epsilonEqual(a, b, EPSILON);
 }
 
+inline bool epsilonEqual(const glm::mat4& a, const glm::mat4& b)
+{
+    for (int i = 0; i < 4; ++i)
+    {
+        if (!epsilonEqual(a[i], b[i])) return false;
+    }
+    return true;
+}
+
 /// Returns true if for each component A >= B (epsilon-equality)
 template<glm::length_t L, typename T, glm::qualifier Q>
 bool epsilonGreaterThanEqual(const glm::vec<L, T, Q>& a, const glm::vec<L, T, Q>& b)

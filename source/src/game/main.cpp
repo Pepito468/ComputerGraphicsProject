@@ -535,6 +535,7 @@ Node* createForestScene() {
     for (auto w : wallDefs)
     {
         BoxCollider* coll = new BoxCollider(w[0], w[1], w[2] * 2.0f);
+        coll->name = std::format("Wall @ {}", w[0]);
         coll->movementStatus = STATIC;
         coll->layer = ENVIRONMENT;
         walls->adopt(coll);

@@ -93,32 +93,30 @@ class Physics
             receiver->onTriggerStay(moving);
     }
 
-    static void processCollisions(Collider* coll, const std::set<Bounds>& collisions, const std::set<Bounds>& sceneBounds)
+    static void processCollisions(Collider* coll, const std::set<Collider*>& collisions)
     {
         const bool hasHardCollision = std::ranges::any_of(collisions,
-        [](const Bounds& b) { return !b.collider->isTrigger; });
+        [](const Collider* c) { return !c->isTrigger; });
         if (!coll->isTrigger && hasHardCollision)
         {
             //Reverse collider's movements
             coll->setGlobalMatrix(coll->previousMatrix);
         }
 
-        for (const Bounds b : collisions)
+        for (Collider* c : collisions)
         {
             //log(std::format("{} collided with {}", coll->name, b.collider->name));
-            Collider* bColl = b.collider;
-            collisionCallbacks(coll, bColl);
+            collisionCallbacks(coll, c);
         }
 
         //Check for trigger exits
-        for (Bounds b : sceneBounds)
+        for (Collider* c : colliders)
         {
-            Collider* bColl = b.collider;
             //log(std::format("Exit check {}-{}: {} {} {}", bColl->name, coll->name,  bColl->isTrigger, bColl->collidersInTrigger.contains(coll), !collisions.contains(b)));
-            if (bColl->isTrigger && bColl->collidersInTrigger.contains(coll) && !collisions.contains(b))
+            if (c->isActive && c->isTrigger && c->collidersInTrigger.contains(coll) && !collisions.contains(c))
             {
-                bColl->collidersInTrigger.erase(coll);
-                bColl->onTriggerExit(coll);
+                c->collidersInTrigger.erase(coll);
+                c->onTriggerExit(coll);
             }
         }
     }
@@ -189,54 +187,62 @@ public:
     /// Checks if there have been any collisions since the last call of this method
     static void checkCollisions()
     {
-        std::set<Bounds> sceneBounds;
-        std::ranges::transform(dynamicColliders, std::inserter(sceneBounds, sceneBounds.begin()),
+        auto activeDynamic {
+            dynamicColliders |
+            std::views::filter([](const Collider* c) { return c->isActive; })
+        };
+        std::set<Bounds> dynamicBounds;
+        std::ranges::transform(activeDynamic, std::inserter(dynamicBounds, dynamicBounds.begin()),
         [](Collider* c) { return Bounds(c); });
-        std::ranges::copy(staticBounds, std::inserter(sceneBounds, sceneBounds.begin()));
 
-        std::set<Collider*> toCheck; //Cols that have moved since last check
-        std::ranges::copy_if(dynamicColliders, std::inserter(toCheck, toCheck.begin()),
-        [](Collider* c)
-        {
-            bool isInTrigger = false;
-            for (const Collider* coll : colliders)
+        //Cols that have moved since last check
+        auto toCheck {
+            activeDynamic |
+            std::views::filter([](Collider* c)
             {
-                if (coll->isActive && coll->isTrigger && coll->collidersInTrigger.contains(c))
+                bool isInTrigger = false;
+                for (const Collider* coll : colliders)
                 {
-                    isInTrigger = true;
-                    break;
+                    if (coll->isActive && coll->isTrigger && coll->collidersInTrigger.contains(c))
+                    {
+                        isInTrigger = true;
+                        break;
+                    }
                 }
-            }
 
-            return c->isActive && (c->movementStatus == MOBILE_HAS_MOVED || isInTrigger);
-        });
+                return c->movementStatus == MOBILE_HAS_MOVED || isInTrigger;
+            })
+        };
 
         std::set<Collider*> checked;
-        for (Collider* coll : toCheck)
+        std::ranges::for_each(toCheck, [&checked, dynamicBounds](Collider* coll)
         {
             Bounds bounds = Bounds(coll);
 
             //Find collisions
-            std::set<Bounds> collisions;
-            std::ranges::copy_if(sceneBounds, std::inserter(collisions, collisions.begin()),
-            [bounds, checked](const Bounds& b)
+            std::set<Collider*> collisions;
+            auto filter = [bounds, &checked](const Bounds& b)
             {
                 if (!b.collider->isActive) return false; //Skip inactive colliders
                 if (checked.contains(b.collider)) return false; //Skip checked colliders
                 if (b.collider->UUID == bounds.collider->UUID) return false; //Skip self
                 if (!(bounds.collider->collidesWith & b.collider->layer)) return false; //Skip mismatched layers
                 return hasCollision(bounds, b);
-            });
+            };
+            auto dynamicCollisions = dynamicBounds | std::views::filter(filter);
+            std::ranges::transform(dynamicCollisions, std::inserter(collisions, collisions.begin()), [](const Bounds& b) { return b.collider; });
+            auto staticCollisions = staticBounds | std::views::filter(filter);
+            std::ranges::transform(staticCollisions, std::inserter(collisions, collisions.begin()), [](const Bounds& b) { return b.collider; });
 
             //Process collisions
-            processCollisions(coll, collisions, sceneBounds);
+            processCollisions(coll, collisions);
 
             //Reset flag values
             coll->movementStatus = MOBILE_UNMOVED;
             coll->previousMatrix = coll->getGlobalMatrix();
 
             checked.insert(coll);
-        }
+        });
     }
 
     struct RaycastHit
