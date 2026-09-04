@@ -189,6 +189,11 @@ class Engine : public BaseProject {
             MainEngine->ui.toggleVisibility(UI_ID_BUTTON_SCENE1);
             MainEngine->ui.toggleVisibility(UI_ID_BUTTON_SCENE2);
             MainEngine->ui.toggleVisibility(UI_ID_SLIDER_VOLUME);
+            MainEngine->ui.toggleVisibility(UI_ID_SLIDER_VOLUME_BACKGROUND);
+            MainEngine->ui.toggleVisibility(UI_ID_SLIDER_VOLUME_PLAQUE);
+            MainEngine->ui.toggleVisibility(UI_ID_SLIDER_SENSITIVITY);
+            MainEngine->ui.toggleVisibility(UI_ID_SLIDER_SENSITIVITY_BACKGROUND);
+            MainEngine->ui.toggleVisibility(UI_ID_SLIDER_SENSITIVITY_PLAQUE);
         }
 
         /** Maps a name to a global variable. */
@@ -637,7 +642,6 @@ class Engine : public BaseProject {
 
 
     protected:
-
         Renderer renderer;
         RenderPass RP;
 
@@ -665,7 +669,12 @@ class Engine : public BaseProject {
             ui.initElement(UI_ID_BUTTON_QUIT, {{"assets/textures/ui/quit_button.png", "assets/textures/ui/quit_button_hover.png", "assets/textures/ui/quit_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
             ui.initElement(UI_ID_BUTTON_SCENE1, {{"assets/textures/ui/scene1_button.png", "assets/textures/ui/scene1_button_hover.png", "assets/textures/ui/scene1_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
             ui.initElement(UI_ID_BUTTON_SCENE2, {{"assets/textures/ui/scene2_button.png", "assets/textures/ui/scene2_button_hover.png", "assets/textures/ui/scene2_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
-            ui.initElement(UI_ID_SLIDER_VOLUME, {{ProceduralTextures::generateTexture(256, 24, 255, 0, 0)}, false, KEEP_ASPECT_RATIO, UI_SLIDER});
+            ui.initElement(UI_ID_SLIDER_VOLUME, {{"assets/textures/ui/slider_juice.png"}, false, KEEP_ASPECT_RATIO, UI_SLIDER});
+            ui.initElement(UI_ID_SLIDER_VOLUME_BACKGROUND, {{"assets/textures/ui/slider_border_compromise.png"}, false, KEEP_ASPECT_RATIO, UI_NORMAL});
+            ui.initElement(UI_ID_SLIDER_VOLUME_PLAQUE, {{"assets/textures/ui/volume_high.png", "assets/textures/ui/volume.png", "assets/textures/ui/volume_low.png"}, true, KEEP_ASPECT_RATIO, UI_NORMAL});
+            ui.initElement(UI_ID_SLIDER_SENSITIVITY, {{"assets/textures/ui/slider_juice_alt.png"}, false, KEEP_ASPECT_RATIO, UI_SLIDER});
+            ui.initElement(UI_ID_SLIDER_SENSITIVITY_BACKGROUND, {{"assets/textures/ui/slider_border_compromise.png"}, false, KEEP_ASPECT_RATIO, UI_NORMAL});
+            ui.initElement(UI_ID_SLIDER_SENSITIVITY_PLAQUE, {{"assets/textures/ui/sensitivity.png"}, true, KEEP_ASPECT_RATIO, UI_NORMAL});
 
             ui.init(windowWidth, windowHeight);
 
@@ -673,12 +682,22 @@ class Engine : public BaseProject {
             submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
 
             ui.renderUI(0.0f, 0.0f, UI_ID_PAUSE_MENU_BACKGROUND, UIO_CENTER, UIO_MIDDLE);
-            ui.renderUI(0.0f, -0.1f, UI_ID_BUTTON_RESUME, UIO_CENTER, UIO_MIDDLE);
-            ui.renderUI(0.0f, 0.1f, UI_ID_BUTTON_QUIT, UIO_CENTER, UIO_MIDDLE);
+
+            ui.renderUI(0.0f, -0.085f, UI_ID_BUTTON_RESUME, UIO_CENTER, UIO_MIDDLE);
+            ui.renderUI(0.0f, 0.085f, UI_ID_BUTTON_QUIT, UIO_CENTER, UIO_MIDDLE);
+
             ui.renderUI(-1.0f, 1.0f, UI_ID_BUTTON_SCENE1, UIO_LEFT, UIO_BOTTOM);
             ui.renderUI(-0.85f, 1.0f, UI_ID_BUTTON_SCENE2, UIO_LEFT, UIO_BOTTOM);
-            ui.renderUI(0.0f, -0.9f, UI_ID_SLIDER_VOLUME, UIO_LEFT, UIO_MIDDLE);
+
+            ui.renderUI(-1.0f, -0.06, UI_ID_SLIDER_VOLUME, UIO_LEFT, UIO_MIDDLE);
+            ui.renderUI(-1.0f, -0.06, UI_ID_SLIDER_VOLUME_BACKGROUND, UIO_LEFT, UIO_MIDDLE);
+            ui.renderUI(-1.0f, -0.06, UI_ID_SLIDER_VOLUME_PLAQUE, UIO_LEFT, UIO_BOTTOM);
+            
+            ui.renderUI(-1.0f, 0.06, UI_ID_SLIDER_SENSITIVITY, UIO_LEFT, UIO_MIDDLE);
+            ui.renderUI(-1.0f, 0.06, UI_ID_SLIDER_SENSITIVITY_BACKGROUND, UIO_LEFT, UIO_MIDDLE);
+            ui.renderUI(-1.0f, 0.06, UI_ID_SLIDER_SENSITIVITY_PLAQUE, UIO_LEFT, UIO_TOP);
         }
+
 
         void pipelinesAndDescriptorSetsInit() override {
             // Update window properties in case it was resized
