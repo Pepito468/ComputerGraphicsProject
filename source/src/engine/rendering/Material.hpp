@@ -228,6 +228,11 @@ class RainbowMaterial : public Material {
 
 #define MAX_RINGS 7
 class SonarMaterial : public Material {
+
+    public:
+    enum SONAR_COLORID {WHITE, RED, YELLOW, GREEN, BLUE} colorID;
+    private:
+
     struct params {
         float speed;
         float ringWidth;
@@ -237,6 +242,7 @@ class SonarMaterial : public Material {
     struct ringEntry {
         glm::vec3 emitterPosition;
         float startTime;
+        SONAR_COLORID colorID;
     } ringEntries[MAX_RINGS];
     size_t currentRingEntry = 0;
 
@@ -252,7 +258,7 @@ class SonarMaterial : public Material {
             this->params.maxRadius = maxRadius;
 
             for (size_t i = 0; i < MAX_RINGS; i++) {
-                ringEntries[i] = {{0.0f, 0.0f, 0.0f}, -1e9}; // initialize at a very low time so that it is never fired unless triggered
+                ringEntries[i] = {{0.0f, 0.0f, 0.0f}, -1e9, WHITE}; // initialize at a very low time so that it is never fired unless triggered
             }
 
             this->textureName = textureName;
@@ -266,15 +272,13 @@ class SonarMaterial : public Material {
          * @param pos emitter position
          * @param currentTime time at the start of the propagation (total)
          * */
-        void trigger(glm::vec3 pos, float currentTime) {
+        void trigger(glm::vec3 pos, float currentTime, enum SONAR_COLORID colorID) {
             // Cycle the entries
-            ringEntries[currentRingEntry] = {pos, currentTime};
+            ringEntries[currentRingEntry] = {pos, currentTime, colorID};
             currentRingEntry = (currentRingEntry + 1) % MAX_RINGS;
         }
 
         void updateUBO(UniformBufferObject& ubo) override {
-            ubo.color = diffuse;
-            ubo.specular = specular;
             ubo.param1 = {params.speed, params.ringWidth, params.maxRadius, 0.0f};
 
             // Each ring has {POS, startTime} as entry
@@ -285,6 +289,10 @@ class SonarMaterial : public Material {
             ubo.param6 = glm::vec4(ringEntries[4].emitterPosition, ringEntries[4].startTime);
             ubo.param7 = glm::vec4(ringEntries[5].emitterPosition, ringEntries[5].startTime);
             ubo.param8 = glm::vec4(ringEntries[6].emitterPosition, ringEntries[6].startTime);
+
+            // Assign color ring. I was lacking space so I packed them here
+            ubo.color = glm::vec3(ringEntries[0].colorID, ringEntries[1].colorID, ringEntries[2].colorID);
+            ubo.specular = glm::vec4(ringEntries[3].colorID, ringEntries[4].colorID, ringEntries[5].colorID, ringEntries[6].colorID);
         };
 
 };

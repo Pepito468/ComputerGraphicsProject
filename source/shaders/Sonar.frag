@@ -79,6 +79,7 @@ void main() {
     float ringWidth = ubo.param1.y;
     float maxRadius = ubo.param1.z;
     vec4 rings[MAX_RINGS];
+    float ringColors[MAX_RINGS];
     rings[0] = ubo.param2;
     rings[1] = ubo.param3;
     rings[2] = ubo.param4;
@@ -86,9 +87,18 @@ void main() {
     rings[4] = ubo.param6;
     rings[5] = ubo.param7;
     rings[6] = ubo.param8;
+    ringColors[0] = ubo.diffuse[0];
+    ringColors[1] = ubo.diffuse[1];
+    ringColors[2] = ubo.diffuse[2];
+    ringColors[3] = ubo.specular[0];
+    ringColors[4] = ubo.specular[1];
+    ringColors[5] = ubo.specular[2];
+    ringColors[6] = ubo.specular[3];
 
+        //    enum SONAR_COLORID {WHITE, RED, YELLOW, GREEN, BLUE} colorID;
+    vec3 colors[5] = {{1, 1, 1}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0}, {0, 0, 1}};
 
-    float intensity = 0.0;
+    vec3 intensity = {0.0, 0.0, 0.0};
 
     // For every ring
     for (int i = 0; i < MAX_RINGS; i++) {
@@ -116,8 +126,10 @@ void main() {
         // do not expand forever
         float lifeFade = clamp(1.0 - front/maxRadius, 0.0, 1.0);
 
-        intensity = max(intensity, band * lifeFade);
+        // Get contribution
+        vec3 ringColor = colors[int(ringColors[i])] * (band * lifeFade);
+        intensity = max(intensity, ringColor);
     }
 
-    outColor = vec4(vec3(intensity), 1.0);
+    outColor = vec4(intensity, 1.0);
 }

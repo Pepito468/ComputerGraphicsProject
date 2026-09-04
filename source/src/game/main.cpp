@@ -46,7 +46,7 @@ MagicCirleMaterial mat5 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f},
 CookTorranceAnimMaterial animMat = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}, "rock.png"};
 
 RainbowMaterial rMat = {0.2, 1, 1, 0.3};
-SonarMaterial sMat = {10, 4, 60};
+SonarMaterial sMat = {20, 10, 75};
 
 void freeNodeTree(Node *node) {
     for (Node *child : node->children)
@@ -587,7 +587,7 @@ Node* createDarkScene() {
     staticObjects->name = "StaticObjectsContainer";
     root->adopt(staticObjects);
 
-    float cellSize = 8;
+    float cellSize = 16;
 
 #define LABSIZE 12
     const char labyrinth[LABSIZE][LABSIZE] = {

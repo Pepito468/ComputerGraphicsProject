@@ -2,6 +2,7 @@
 #define ENGINE_PLAYER_NODE_HPP
 
 #include "BulletNode.hpp"
+#include "Material.hpp"
 #include "CapsuleCollider.hpp"
 #include "Material.hpp"
 #include "PerspectiveCamera.hpp"
@@ -171,7 +172,19 @@ public:
 
         if (sonarMat && Engine::isKeyBeingPressed(GLFW_MOUSE_BUTTON_LEFT, true)) {
             log("SONAR");
-            sonarMat->trigger(this->getGlobalPosition(), Engine::getCurrentTime());
+            sonarMat->trigger(this->getGlobalPosition(), Engine::getCurrentTime(), SonarMaterial::WHITE);
+        } else if (sonarMat && Engine::isKeyBeingPressed(GLFW_KEY_T, true)) {
+            log("SONAR");
+            sonarMat->trigger(this->getGlobalPosition(), Engine::getCurrentTime(), SonarMaterial::RED);
+        } else if (sonarMat && Engine::isKeyBeingPressed(GLFW_KEY_U, true)) {
+            log("SONAR");
+            sonarMat->trigger(this->getGlobalPosition(), Engine::getCurrentTime(), SonarMaterial::GREEN);
+        } else if (sonarMat && Engine::isKeyBeingPressed(GLFW_KEY_Y, true)) {
+            log("SONAR");
+            sonarMat->trigger(this->getGlobalPosition(), Engine::getCurrentTime(), SonarMaterial::YELLOW);
+        } else if (sonarMat && Engine::isKeyBeingPressed(GLFW_KEY_R, true)) {
+            log("SONAR");
+            sonarMat->trigger(this->getGlobalPosition(), Engine::getCurrentTime(), SonarMaterial::BLUE);
         }
 
         if (Engine::isKeyBeingPressed(GLFW_KEY_1)) {

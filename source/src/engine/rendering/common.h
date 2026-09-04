@@ -71,6 +71,7 @@ struct UniformBufferObject {
     alignas(16) glm::vec4 param6;
     alignas(16) glm::vec4 param7;
     alignas(16) glm::vec4 param8;
+    alignas(16) glm::vec4 param9;
 };
 
 enum ShaderType {LAMBERT_BLINN, LAMBERT_TEX, WATER, TOON, MAGIC_CIRCLE, FIRE, COOK_TORRANCE_ANIM, RAINBOW, SONAR};
