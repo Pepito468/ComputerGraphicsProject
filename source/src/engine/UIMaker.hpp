@@ -22,30 +22,32 @@
 		- Buttons should have 3 textures
 		- Sliders should have sx = s1 = 1.0f
 		- Sliders should have REGH = UIO_LEFT
-	- Sliders
 	- Checkboxes (equiv 2-stage buttons) (maybe)
 	- N-stage buttons (A -> click -> B -> click -> C -> click -> A -> ...) (maybe)
 	- Main menu
 	- Pause menu
 		- Commands (maybe)
-	- Settings
 		- Volume
 		- Mouse sensitivity
 */
 
-#define DEFAULT_SUBMIT_ORDER 9999
-#define DEFAULT_WINDOW_WIDTH 1080
-#define DEFAULT_WINDOW_HEIGHT 720
+#define DEFAULT_SUBMIT_ORDER				9999
+#define DEFAULT_WINDOW_WIDTH				1080
+#define DEFAULT_WINDOW_HEIGHT				720
 
-#define UI_ID_NULL					-1
-#define UI_ID_PAUSE_MENU_BACKGROUND	20
-#define UI_ID_COMMANDS				99
-#define UI_ID_BUTTON_RESUME			100
-#define UI_ID_BUTTON_QUIT			101
-#define UI_ID_SLIDER_VOLUME			150
-#define UI_ID_SLIDER_SENSITIVITY	151
-#define UI_ID_BUTTON_SCENE1			200
-#define UI_ID_BUTTON_SCENE2			201
+#define UI_ID_NULL							-1
+#define UI_ID_PAUSE_MENU_BACKGROUND			20
+#define UI_ID_COMMANDS						50
+#define UI_ID_SLIDER_VOLUME_PLAQUE			51
+#define UI_ID_SLIDER_VOLUME_BACKGROUND		52
+#define UI_ID_SLIDER_SENSITIVITY_PLAQUE		53
+#define UI_ID_SLIDER_SENSITIVITY_BACKGROUND	54
+#define UI_ID_BUTTON_RESUME					100
+#define UI_ID_BUTTON_QUIT					101
+#define UI_ID_SLIDER_VOLUME					150
+#define UI_ID_SLIDER_SENSITIVITY			151
+#define UI_ID_BUTTON_SCENE1					200
+#define UI_ID_BUTTON_SCENE2					201
 
 #define UI_DEBUG_STRING COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT
 
@@ -317,6 +319,10 @@ class UIMaker {
 		glm::vec2 upperLeftCorner;
 		glm::vec2 lowerRightCorner;
 	};
+
+	enum VOLUME_STATUS {VOLUME_LOW, VOLUME_MEDIUM, VOLUME_HIGH};
+
+	VOLUME_STATUS volume_status = VOLUME_HIGH;
 
 	VertexDescriptor UI_VD;
 	BaseProject* BP;
@@ -602,6 +608,33 @@ public:
 				ret.push_back({s.first, UIElementsMap[s.first].sx / s.second.currentMaxScale});
 			} else if (s.second.moving) {
 				s.second.moving = false;
+			}
+
+			// if the modified slider was the volume, check to see if the plaque needs updating
+			if (s.first == UI_ID_SLIDER_VOLUME && commandBufferMustUpdate) {
+				VOLUME_STATUS old_volume_status = volume_status;
+
+				if (UIElementsMap[s.first].sx == 0.0f) {
+					volume_status = VOLUME_LOW;
+				} else if (UIElementsMap[s.first].sx == s.second.currentMaxScale) {
+					volume_status = VOLUME_HIGH;
+				} else {
+					volume_status = VOLUME_MEDIUM;
+				}
+
+				if (old_volume_status != volume_status) {
+					switch(volume_status) {
+					case VOLUME_LOW:
+						UIElementsMap[UI_ID_SLIDER_VOLUME_PLAQUE].recreateDescriptorSet(&UI_DSL, BP, 2);
+						break;
+					case VOLUME_MEDIUM:
+						UIElementsMap[UI_ID_SLIDER_VOLUME_PLAQUE].recreateDescriptorSet(&UI_DSL, BP, 1);
+						break;
+					case VOLUME_HIGH:
+						UIElementsMap[UI_ID_SLIDER_VOLUME_PLAQUE].recreateDescriptorSet(&UI_DSL, BP, 0);
+						break;
+					}
+				}
 			}
 		}
 
