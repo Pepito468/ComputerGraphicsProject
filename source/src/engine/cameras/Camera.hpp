@@ -3,7 +3,6 @@
 #define ENGINE_CAMERA_H
 
 #include "Node3D.hpp"
-#include "Types.hpp"
 
 /// A camera in the scene
 class Camera : public Node3D
@@ -12,10 +11,10 @@ class Camera : public Node3D
     protected:
 
         /// The distance of the near plane
-        BoundFloat nearPlane = PositiveFloat(0.0f);
+        float nearPlane = 0.0f;
 
         /// The distance of the far plane
-        BoundFloat farPlane = PositiveFloat(0.0f);
+        float farPlane = 0.0f;
 
         /// Hints the Engine that this camera wants to be main
         bool isMain;

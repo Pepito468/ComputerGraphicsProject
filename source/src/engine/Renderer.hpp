@@ -931,7 +931,7 @@ class Renderer {
 
         SkyboxUniformBufferObject skyboxUBO{};
 
-        skyboxUBO.mvpMat = Projection * glm::mat4(glm::mat3(View)) * glm::scale(glm::mat4(1), glm::vec3(50.0f));
+        skyboxUBO.mvpMat = Projection * glm::mat4(glm::mat3(View)) * glm::scale(glm::mat4(1), glm::vec3(200.0f));
 
         skybox.map(currentImage, &skyboxUBO, 0);
 

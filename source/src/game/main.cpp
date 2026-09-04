@@ -1,5 +1,6 @@
 #include <any>
 #include <iostream>
+#include <numbers>
 #include <ostream>
 
 #include "Engine.hpp"
@@ -15,6 +16,7 @@
 #include "AmbientLight.hpp"
 #include "ColliderLib.hpp"
 
+#include "Text2D.hpp"
 #include "audio/AudioNode.hpp"
 #include "audio/AudioNode3D.hpp"
 
@@ -385,7 +387,13 @@ Node* createForestScene() {
     Node *root = new Node();
     root->name = "root";
 
-    Node3D *player = PlayerNode::makeStandardPlayer();
+    // Map
+    OrthoCamera *mapCam = new OrthoCamera(-64, 64, -32, 32, -10, 200);
+    mapCam->setGlobalPosition({0, 20, 0});
+    // root->adopt(mapCam);
+
+    Node3D *player = PlayerNode::makeStandardPlayer(mapCam);
+    player->adopt(mapCam);
     root->adopt(player);
 
     root->adopt(new FPSTextUpdater());
@@ -567,6 +575,12 @@ Node* createForestScene() {
         10.0f, 7.0f, 3.0f
         );
     root->adopt(lightning);
+
+
+    // TutorialText
+    Text2D *cameraTutorial = new Text2D("Press 'M' to change camera", {-0.5, -1}, "SS", false, false, false, TAL_LEFT, TRH_LEFT, TRV_TOP);
+    root->adopt(cameraTutorial);
+
     return root;
 }
 

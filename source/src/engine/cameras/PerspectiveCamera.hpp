@@ -10,7 +10,7 @@ class PerspectiveCamera : public Camera {
     protected:
 
         BoundFloat fov = BoundFloat(0.0f, glm::radians(130.0f), glm::radians(10.0f)); // TODO: maybe constraints can be put into the user-made logic instead of here
-        BoundFloat aspectRatio = PositiveFloat(0.0f);
+        float aspectRatio = 0.0f;
 
     public:
 
@@ -51,7 +51,7 @@ class PerspectiveCamera : public Camera {
         }
 
         virtual const glm::mat4 getProjectionMatrix() override {
-            glm::mat4 p = glm::perspective((float)this->fov, (float)this->aspectRatio, (float)this->nearPlane, (float)this->farPlane);
+            glm::mat4 p = glm::perspective((float)this->fov, this->aspectRatio, this->nearPlane, this->farPlane);
             // Apply manual reflection because the perspective function was made for OpenGL
             p[1][1] *= -1;
             return p;

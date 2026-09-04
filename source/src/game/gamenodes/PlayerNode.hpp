@@ -5,6 +5,7 @@
 #include "Material.hpp"
 #include "CapsuleCollider.hpp"
 #include "Material.hpp"
+#include "OrthoCamera.hpp"
 #include "PerspectiveCamera.hpp"
 #include "SphereCollider.hpp"
 #include "UpdateNode3D.hpp"
@@ -38,6 +39,10 @@ class PlayerNode : public UpdateNode3D
     RainbowMaterial rMat = {0.2, 1, 1, 0.3};
 
     SonarMaterial *sonarMat = nullptr;
+
+    bool isCamPersp = true;
+    OrthoCamera *mapCam = nullptr;
+    PerspectiveCamera *pCam = nullptr;
 
     void shoot()
     {
@@ -198,10 +203,20 @@ public:
         } else if (Engine::isKeyBeingPressed(GLFW_KEY_0)) {
             Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene2")));
         }
+
+        if (this->mapCam && Engine::isKeyBeingPressed(GLFW_KEY_M, true)) {
+            if (isCamPersp)
+                Engine::setMainCamera(this->mapCam);
+            else
+                Engine::setMainCamera(this->pCam);
+            isCamPersp = !isCamPersp;
+        }
+        if (this->mapCam)
+            mapCam->setGlobalRotation({-std::numbers::pi/4, -5*std::numbers::pi/4, 0.0f});
     }
 
     /// Creates the standard node tree for the player.
-    static Node3D* makeStandardPlayer()
+    static Node3D* makeStandardPlayer(OrthoCamera *extraCamera = nullptr)
     {
         CapsuleCollider* rootCollider = new CapsuleCollider();
         rootCollider->name = "PlayerCollider";
@@ -214,12 +229,15 @@ public:
         controls->sonarMat = std::any_cast<SonarMaterial*>(Engine::getGlobalVariable("SonarMaterialReference"));
         controls->localTranslate({0, 2.75f, 0});
 
-        PerspectiveCamera *camera = new PerspectiveCamera(0.1f, 200, glm::radians(90.0f), 4.0f/3.0f, true);
+        controls->mapCam = extraCamera;
+
+        PerspectiveCamera *camera = new PerspectiveCamera(0.1f, 400, glm::radians(90.0f), 4.0f/3.0f, true);
         camera->name = "PerspectiveCamera";
+        controls->pCam = camera;
         controls->adopt(camera);
 
         LambertTexMaterial* mat = new LambertTexMaterial(VEC3_ONE, {1, 1, 1, 100}, "mage.png");
-        Model3D* model = new Model3D("Mage.gltf", VEC3_ZERO, VEC3_ZERO, VEC3_ONE, mat, false);
+        Model3D* model = new Model3D("Mage.gltf", VEC3_ZERO, VEC3_ZERO, VEC3_ONE, mat, true);
         rootCollider->adopt(model);
 
         AudioNode *quack = new AudioNode("quack.mp3", 0.1f);

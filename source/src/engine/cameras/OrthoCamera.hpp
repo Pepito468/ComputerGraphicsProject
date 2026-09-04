@@ -2,7 +2,6 @@
 #define ENGINE_ORTHOCAMERA_H
 
 #include "Camera.hpp"
-#include "Types.hpp"
 #include "glm/ext/matrix_clip_space.hpp"
 
 class OrthoCamera : public Camera {
@@ -10,16 +9,16 @@ class OrthoCamera : public Camera {
     protected:
 
         /// Camera lower bound
-        BoundFloat bottomBound = NegativeFloat(0.0f);
+        float bottomBound = 0.0f;
 
         /// Camera higher bound
-        BoundFloat topBound = PositiveFloat(0.0f);
+        float topBound = 0.0f;
 
         /// Camera leftmost bound
-        BoundFloat leftBound = NegativeFloat(0.0f);
+        float leftBound = 0.0f;
 
         /// Camera rightmost bound
-        BoundFloat rightBound = PositiveFloat(0.0f);
+        float rightBound = 0.0f;
 
     public:
 
@@ -75,7 +74,7 @@ class OrthoCamera : public Camera {
             // Apply reflection because the ortho function was made for OpenGL
             return
                 glm::scale(MAT4_I, glm::vec3(1, -1, 1)) *
-                glm::ortho((float)this->leftBound, (float)this->rightBound, (float)this->bottomBound, (float)this->topBound, (float)this->nearPlane, (float)this->farPlane);
+                glm::ortho(this->leftBound, this->rightBound, this->bottomBound, this->topBound, this->nearPlane, this->farPlane);
         }
 
 

@@ -37,7 +37,7 @@ public:
             isPlaying = true;
         }
 
-        if (Engine::isKeyBeingPressed(GLFW_KEY_M, true)) {
+        if (Engine::isKeyBeingPressed(GLFW_KEY_R, true)) {
             if (!isPlaying)
                 audio->playSound();
             else
