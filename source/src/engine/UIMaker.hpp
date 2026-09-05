@@ -128,11 +128,6 @@ inline std::array<glm::vec2, 2> getPixelCoordinates(int screenW, int screenH, fl
 }
 
 class UIMaker {
-	struct UIMakerAndModel {
-		UIMaker* ui;
-		Model* M;
-	};
-
 	class UIElement {
 	public:
 		/// Position
@@ -294,6 +289,12 @@ class UIMaker {
 
 			return isPointInsideRectangle(_x, _y, x1, y1, x2, y2);
 		}
+	};
+
+	struct UIMakerAndElement {
+		UIMaker* ui;
+		UIElement* elem;
+		Model* m;
 	};
 
 	/**
@@ -515,28 +516,6 @@ public:
 		}
 	}
 
-	static void populateCommandBufferAccess(VkCommandBuffer commandBuffer, int currentImage, void *Params) {
-		// std::cout << UI_DEBUG_STRING << " populate command buffer access" << std::endl;
-		UIMaker *T = ((UIMakerAndModel *)Params)->ui;
-		T->populateCommandBuffer(commandBuffer, currentImage);
-	}
-
-	void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
-		// std::cout << UI_DEBUG_STRING << " populate command buffer" << std::endl;
-		UI_RP.begin(commandBuffer, currentImage);
-
-		for (auto& e : UIElementsMap) {
-			if (e.second.isVisible) {
-				e.second.P.bind(commandBuffer);
-				e.second.M->bind(commandBuffer);
-				e.second.DS.bind(commandBuffer, e.second.P, 0, currentImage);
-				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(e.second.M->indices.size()), 1, 0, 0, 0);
-			}
-		}
-		
-		UI_RP.end(commandBuffer);
-	}
-
 	//--------------------------------------------
 
 	std::list<InteractedUIElementData> updateMouseStatus(double x, double y, bool mouseClick = false, bool holding = false) {
@@ -697,29 +676,6 @@ public:
 	}
 
 	/**
-	 * If at least a UIElement was changed (commandBufferMustUpdate = true), redraws every UIElement.
-	 * Also, updates mousePos[X, Y] if the cursor isn't locked
-	 */
-	void updateCommandBuffer() {
-		// std::cout << UI_DEBUG_STRING << " UI update command buffer" << std::endl;
-		// debugPrint();
-
-		if (commandBufferMustUpdate) {
-			//could add an update field to each UIElement to avoid updating unchanged elements, but doesn't seem worth it
-			for (auto& e : UIElementsMap) {
-				createUIMesh(e.first);	// creates the new mesh
-				
-				UIMakerAndModel *uim = (UIMakerAndModel *)malloc(sizeof(UIMakerAndModel));
-				uim->ui = this;
-				uim->M = e.second.M;
-				BP->submitCommandBuffer("ui" + std::to_string(e.first), e.second.submitOrder, UIMaker::populateCommandBufferAccess, uim, UIMaker::freeCommandBuffer);
-			}
-
-			commandBufferMustUpdate = false;
-		}
-	}
-
-	/**
 	* Creates the mesh for the given UI element
 	*/
 	void createUIMesh(int id) {
@@ -795,6 +751,60 @@ public:
 
 	//--------------------------------------------
 
+	static void populateCommandBufferAccess(VkCommandBuffer commandBuffer, int currentImage, void *Params) {
+		// std::cout << UI_DEBUG_STRING << " populate command buffer access" << std::endl;
+		UIMakerAndElement *uim_e = ((UIMakerAndElement *)Params);
+		uim_e->ui->populateCommandBuffer(commandBuffer, currentImage, uim_e->elem);
+	}
+
+
+	void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage, UIMaker::UIElement *e) {
+		// std::cout << UI_DEBUG_STRING << " populate command buffer" << std::endl;
+		UI_RP.begin(commandBuffer, currentImage);
+
+		if (e->isVisible) {
+			e->P.bind(commandBuffer);
+			e->M->bind(commandBuffer);
+			e->DS.bind(commandBuffer, e->P, 0, currentImage);
+			vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(e->M->indices.size()), 1, 0, 0, 0);
+		}
+		
+		UI_RP.end(commandBuffer);
+	}
+
+	void updateCommandBuffer() {
+		// std::cout << UI_DEBUG_STRING << " UI update command buffer" << std::endl;
+		// debugPrint();
+
+		if (commandBufferMustUpdate) {
+			//could add an update field to each UIElement to avoid updating unchanged elements, but doesn't seem worth it
+			for (auto& e : UIElementsMap) {
+				// if (e.second.isVisible) {
+					createUIMesh(e.first);	// creates the new mesh
+					UIMakerAndElement *uim_e = (UIMakerAndElement *)malloc(sizeof(UIMakerAndElement));
+					uim_e->ui = this;
+					uim_e->elem = &e.second;
+					uim_e->m = e.second.M;
+					BP->submitCommandBuffer("ui" + std::to_string(e.first), e.second.submitOrder, UIMaker::populateCommandBufferAccess, uim_e, UIMaker::freeCommandBuffer);
+				// }
+			}
+
+			commandBufferMustUpdate = false;
+		}
+	}
+
+	static void freeCommandBuffer(void *Params) {
+		// std::cout << UI_DEBUG_STRING << " free command buffer" << std::endl;
+		UIMakerAndElement *uim_e = ((UIMakerAndElement *)Params);
+
+		uim_e->m->cleanup();
+		delete(uim_e->m);
+		
+		delete(uim_e);
+	}
+
+	//--------------------------------------------
+
 	/**
 	* Removes a single UI element, given its id
 	*/
@@ -857,15 +867,6 @@ public:
 
 		// std::cout << UI_DEBUG_STRING << "\tDestroying render pass" << std::endl;
 		UI_RP.destroy();
-	}
-
-	static void freeCommandBuffer(void *Params) {
-		// std::cout << UI_DEBUG_STRING << " free command buffer" << std::endl;
-		Model *M = ((UIMakerAndModel *)Params)->M;
-		M->cleanup();
-		delete(M);
-		
-		free(Params);
 	}
 
 	void deleteMainMenu() {
