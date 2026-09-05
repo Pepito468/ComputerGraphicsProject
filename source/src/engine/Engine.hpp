@@ -683,7 +683,7 @@ class Engine : public BaseProject {
             // UIElements for the main menu
             ui.initElement(UI_ID_MENU_BACKGROUND, {{ProceduralTextures::generateMenuBackgroundTint(windowWidth, windowHeight)}, true, FULL_RESIZABLE});
             // ui.initElement(UI_ID_MENU_BACKGROUND, {{"assets/textures/ui/background.png"}, true, FULL_RESIZABLE});
-            ui.initElement(UI_ID_TITLE, {{ProceduralTextures::generateTexture(100, 100)}, true, KEEP_ASPECT_RATIO}); //TODO add title texture 
+            ui.initElement(UI_ID_TITLE, {{"assets/textures/ui/title.png"}, true, KEEP_ASPECT_RATIO});   //TODO make the tile bigger (i dont know why scale doesn't work) 
             ui.initElement(UI_ID_BUTTON_START, {{"assets/textures/ui/start_button.png", "assets/textures/ui/start_button_hover.png", "assets/textures/ui/start_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
             ui.initElement(UI_ID_BUTTON_QUIT, {{"assets/textures/ui/quit_button.png", "assets/textures/ui/quit_button_hover.png", "assets/textures/ui/quit_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
 

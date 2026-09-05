@@ -20,7 +20,6 @@
 	- Add a forceModelUpdate flag to UIMaker and a needsUpdating flag to UIElements (maybe)
 	- Checkboxes (equiv 2-stage buttons) (maybe)
 	- N-stage buttons (A -> click -> B -> click -> C -> click -> A -> ...) (maybe)
-	- Main menu
 */
 
 #define DEFAULT_SUBMIT_ORDER				9999
@@ -369,7 +368,7 @@ class UIMaker {
 	 * Initializes the slider hitbox, using DEFAULT_WINDOW_* as the window dimension
 	 */
 	void setSliderHitbox(int id) {
-		std::array<glm::vec2, 2> coordinates = UIElementsMap[id].getPixelCoordinates(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT);
+		std::array<glm::vec2, 2> coordinates = UIElementsMap[id].getPixelCoordinates(screenW, screenH);
 		SlidersMap[id].currentMaxScale = 1.0f;
 		SlidersMap[id].upperLeftCorner = coordinates[0];
 		SlidersMap[id].lowerRightCorner = coordinates[1];
@@ -701,7 +700,7 @@ public:
 	void renderMainMenu() {
 		renderUI(0.0f, 0.0f, UI_ID_MENU_BACKGROUND, UIO_CENTER, UIO_MIDDLE);
 
-		renderUI(-0.9f, -0.9f, UI_ID_TITLE, UIO_LEFT, UIO_TOP);
+		renderUI(-0.9f, -0.9f, UI_ID_TITLE, UIO_LEFT, UIO_TOP, 5.0f, 5.0f);
 
 		renderUI(-0.9f, 0.7f, UI_ID_BUTTON_START, UIO_LEFT, UIO_BOTTOM);
 		renderUI(-0.9f, 0.9f, UI_ID_BUTTON_QUIT, UIO_LEFT, UIO_BOTTOM);
