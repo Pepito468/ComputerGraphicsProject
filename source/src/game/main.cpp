@@ -388,8 +388,8 @@ Node* createForestScene() {
     root->name = "root";
 
     // Map
-    OrthoCamera *mapCam = new OrthoCamera(-64, 64, -32, 32, -10, 200);
-    mapCam->setGlobalPosition({0, 20, 0});
+    OrthoCamera *mapCam = new OrthoCamera(-32, 32, -16, 16, -10, 200);
+    mapCam->setGlobalPosition({0, 10, 0});
     // root->adopt(mapCam);
 
     Node3D *player = PlayerNode::makeStandardPlayer(mapCam);
