@@ -394,6 +394,7 @@ Node* createForestScene() {
 
     Node3D *player = PlayerNode::makeStandardPlayer(mapCam);
     player->adopt(mapCam);
+    player->globalTranslate({0.0f, 15.0f, 0.0f});
     root->adopt(player);
 
     root->adopt(new FPSTextUpdater());
@@ -758,7 +759,7 @@ int main() {
     Engine::setGlobalVariable("Dark", createDarkScene());
     Engine::setGlobalVariable("MainMenu", createMainMenu());
 
-    Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Forest")));
+    Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("MainMenu")));
 
     try {
         engine.run(false);

@@ -701,19 +701,14 @@ public:
 	void renderMainMenu() {
 		renderUI(0.0f, 0.0f, UI_ID_MENU_BACKGROUND, UIO_CENTER, UIO_MIDDLE);
 
-		renderUI(0.0f, -1.0f, UI_ID_TITLE, UIO_CENTER, UIO_TOP);
+		renderUI(-0.9f, -0.9f, UI_ID_TITLE, UIO_LEFT, UIO_TOP);
 
-		renderUI(0.0f, -0.085f, UI_ID_BUTTON_START, UIO_CENTER, UIO_MIDDLE);
-		renderUI(0.0f, 0.085f, UI_ID_BUTTON_QUIT, UIO_CENTER, UIO_MIDDLE);
-	}
-
-	void toggleMainMenu() {
-		toggleVisibility(UI_ID_TITLE);
-		toggleVisibility(UI_ID_BUTTON_START);
+		renderUI(-0.9f, 0.7f, UI_ID_BUTTON_START, UIO_LEFT, UIO_BOTTOM);
+		renderUI(-0.9f, 0.9f, UI_ID_BUTTON_QUIT, UIO_LEFT, UIO_BOTTOM);
 	}
 
 	void renderPauseMenu() {
-		renderUI(0.0f, 0.0f, UI_ID_MENU_BACKGROUND, UIO_CENTER, UIO_MIDDLE);
+		// renderUI(0.0f, 0.0f, UI_ID_MENU_BACKGROUND, UIO_CENTER, UIO_MIDDLE);	already loaded from the main menu
 
 		renderUI(0.0f, -0.085f, UI_ID_BUTTON_RESUME, UIO_CENTER, UIO_MIDDLE);
 		renderUI(0.0f, 0.085f, UI_ID_BUTTON_QUIT, UIO_CENTER, UIO_MIDDLE);
@@ -729,7 +724,7 @@ public:
 		renderUI(-1.0f, 0.06, UI_ID_SLIDER_SENSITIVITY_BACKGROUND, UIO_LEFT, UIO_MIDDLE);
 		renderUI(-1.0f, 0.06, UI_ID_SLIDER_SENSITIVITY_PLAQUE, UIO_LEFT, UIO_TOP);
 
-		renderUI(1.0f, -1.0f, UI_ID_COMMANDS, UIO_RIGHT, UIO_TOP, 1.25f, 1.25f);
+		renderUI(0.95f, -.95f, UI_ID_COMMANDS, UIO_RIGHT, UIO_TOP, 1.25f, 1.25f);
 	}
 
 	/** 

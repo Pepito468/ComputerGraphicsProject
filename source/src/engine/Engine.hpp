@@ -79,6 +79,8 @@ class Engine : public BaseProject {
 
         bool leftMouseButtonDown = false;
 
+        bool canPause = false;
+
         // Text
         TextMaker textEngine;
 
@@ -250,30 +252,39 @@ class Engine : public BaseProject {
         static void handleMenuMouse(bool click, double mouseX, double mouseY) {
             for (auto data : MainEngine->ui.updateMouseStatus(mouseX, mouseY, click, MainEngine->leftMouseButtonDown)) {
                 switch (data.id) {
-                    case UI_ID_BUTTON_RESUME:
-                        Engine::setCursorMode(GLFW_CURSOR_DISABLED);
-                        MainEngine->ui.togglePauseMenu();
-                        break;
-                    case UI_ID_BUTTON_QUIT:
-                        Engine::MainEngine->requestEngineShutdown();
-                        break;
-                    case UI_ID_BUTTON_SCENE1:
-                        Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene1")));
-                        break;
-                    case UI_ID_BUTTON_SCENE2:
-                        Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene2")));
-                        break;
-                    case UI_ID_SLIDER_VOLUME:
-                        setMasterVolume(data.data);
-                        break;
-                    case UI_ID_SLIDER_SENSITIVITY:
-                        if (data.data == 0.0f)
-                            data.data = 0.01f;
+                case UI_ID_BUTTON_RESUME:
+                    Engine::setCursorMode(GLFW_CURSOR_DISABLED);
+                    MainEngine->ui.togglePauseMenu();
+                    break;
+                case UI_ID_BUTTON_QUIT:
+                    Engine::MainEngine->requestEngineShutdown();
+                    break;
+                case UI_ID_BUTTON_SCENE1:
+                    Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene1")));
+                    break;
+                case UI_ID_BUTTON_SCENE2:
+                    Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene2")));
+                    break;
+                case UI_ID_SLIDER_VOLUME:
+                    setMasterVolume(data.data);
+                    break;
+                case UI_ID_SLIDER_SENSITIVITY:
+                    if (data.data <= 0.01f)
+                        data.data = 0.01f;
 
-                        setMouseRes(MAX_MOUSE_RES/data.data);
-                        break;
-                    default:
-                        break;
+                    setMouseRes(MAX_MOUSE_RES/data.data);
+                    break;
+                case UI_ID_BUTTON_START:
+                    MainEngine->ui.toggleVisibility(UI_ID_BUTTON_START);
+                    MainEngine->ui.toggleVisibility(UI_ID_TITLE);
+                    Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Forest")));
+                    MainEngine->ui.renderPauseMenu();
+                    Engine::setCursorMode(GLFW_CURSOR_DISABLED);
+                    MainEngine->ui.togglePauseMenu();
+                    MainEngine->canPause = true;
+                    break;
+                default:
+                    break;
                 }
             }
         }
@@ -611,7 +622,7 @@ class Engine : public BaseProject {
             }
 
             // Pause game
-            if (isKeyBeingPressed(GLFW_KEY_ESCAPE, true)) {
+            if (canPause && isKeyBeingPressed(GLFW_KEY_ESCAPE, true)) {
                 if (Engine::isPauseMenuOpen()) {
                     Engine::setCursorMode(GLFW_CURSOR_DISABLED);
                 } else {
@@ -693,7 +704,7 @@ class Engine : public BaseProject {
             // submits the main command buffer
             submitCommandBuffer("main", 0, populateCommandBufferAccess, this);
 
-            ui.renderPauseMenu();
+            ui.renderMainMenu();
         }
 
 
