@@ -541,7 +541,8 @@ public:
 						// std::cout << UI_DEBUG_STRING << " clicked a button" << std::endl;
 						b.clicked = true;
 						UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 2);
-						commandBufferMustUpdate = true;
+						if (b.id != UI_ID_BUTTON_QUIT)
+							commandBufferMustUpdate = true;
 						ret.push_back({b.id});
 					} else if (b.clicked && !mouseClick) {
 						// if the button was previously clicked, restore its texture to hovered
