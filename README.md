@@ -15,7 +15,7 @@
 | Engine            |         0          |        0        |       0        |         24        |
 | Audio             |         0          |        0        |       0        |         5         |
 | Asset Procurement |         0          |        0        |       16       |         0         |
-| Scene Layout      |         0          |        0        |       6        |         3         |
+| Scene Layout      |         1          |        0        |       6        |         3         |
 
 ## Asset Sources
 
@@ -34,7 +34,6 @@
 - Chest by Quaternius via [Poly Pizza](https://poly.pizza/m/O72u4Drp8k)
 - Perfume bottle by Poly by Google [CC-BY](https://creativecommons.org/licenses/by/3.0/) via [Poly Pizza](https://poly.pizza/m/aJbcT0Vrldz)
 - Elven Bed by Nick Slough [CC-BY](https://creativecommons.org/licenses/by/3.0/) via [Poly Pizza](https://poly.pizza/m/8_e2sYzz8gg)
-
 - Cloudy Skyboxes by Screaming Brain Studios via [Open Game Art](https://opengameart.org/content/cloudy-skyboxes-0)
 
 ### Audio

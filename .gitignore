@@ -7,5 +7,7 @@ build/*
 # Temp files
 *.txt
 !*CMakeLists.txt
+# Textures
 *~
 *.kra
+*.svg

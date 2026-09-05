@@ -21,8 +21,6 @@
 	- Checkboxes (equiv 2-stage buttons) (maybe)
 	- N-stage buttons (A -> click -> B -> click -> C -> click -> A -> ...) (maybe)
 	- Main menu
-	- Pause menu
-		- Commands (maybe)
 */
 
 #define DEFAULT_SUBMIT_ORDER				9999
@@ -164,7 +162,7 @@ class UIMaker {
 		UIElement() {}
 		~UIElement() = default;
 
-		bool isVisible = true;
+		bool isVisible = false;
 		bool isTransparent = false;
 		UIElementType type = UI_NORMAL;
 		ResizableType resize = NOT_RESIZABLE;
@@ -175,13 +173,14 @@ class UIMaker {
 			T.textureVec.push_back(t);
 		}
 
-		void render(float x, float y, float sx, float sy, UIOriginH RegH, UIOriginV RegV) {
+		void render(float x, float y, float sx, float sy, UIOriginH RegH, UIOriginV RegV, bool isVisible) {
 			this->x = x;
 			this->y = y;
 			this->sx = sx;
 			this->sy = sy;
 			this->RegH = RegH;
 			this->RegV = RegV;
+			this->isVisible = isVisible;
 		}
 
 		/**
@@ -400,6 +399,7 @@ public:
 	/**
 	 * Initialises a UIElement with the given id and parameters
 	 * Prints a warning if the id is already in use and skips execution
+	 * NOTE: the element is initialized as not visible, you need a call to renderUI with proper parameters to see it
 	 */
 	void initElement(int id, TextureFilesWithParams textureFile) {
 		if (UIElementsMap.find(id) != UIElementsMap.end()) {
@@ -426,6 +426,7 @@ public:
 	/**
 	 * Initialises a UIElement with the given id and parameters
 	 * Prints a warning if the id is already in use and skips execution
+	 * NOTE: the element is initialized as not visible, you need a call to renderUI with proper parameters to see it
 	 */
 	void initElement(int id, TextureDataWithParams textureData) {
 		if (UIElementsMap.find(id) != UIElementsMap.end()) {
@@ -451,6 +452,7 @@ public:
 	* Finalizes the UIMaker initialization, setting global parameters and (eventually) adding a UIElement for all given textures
 	* To be called after all other initElements
 	* NOTE: the id of the UIElement depends on the position in the lists TextureFiles and TextureDataList (in order)
+	* NOTE: the elements are initialized as not visible, you need a call to renderUI with proper parameters to see them
 	*/
 	void init(int sW, int sH, std::list<TextureFilesWithParams> TextureFilesList = {}, std::list<TextureDataWithParams> TextureDataList = {}, int so = DEFAULT_SUBMIT_ORDER)  {
 		// std::cout << UI_DEBUG_STRING << " UI init" << std::endl;
@@ -655,7 +657,7 @@ public:
 	* Notifies that the UI element with the given id needs to be updated
 	* Throws an error if the id isn't present in UIElementsMap, and a warning if either sx or sy are 0
 	*/
-	void renderUI(float x, float y, int id, UIOriginH RegH = UIO_LEFT, UIOriginV RegV = UIO_TOP, float sx = 1.0f, float sy = 1.0f) {
+	void renderUI(float x, float y, int id, UIOriginH RegH = UIO_LEFT, UIOriginV RegV = UIO_TOP, float sx = 1.0f, float sy = 1.0f, bool isVisible = true) {
 		// std::cout << UI_DEBUG_STRING << " renderUI id = " << id << std::endl;
 		if (sx == 0 || sy == 0)
 			warning("1-dimensional UI element: id = " + std::to_string(id) + ", sx = " + std::to_string(sx) + ", sy = " + std::to_string(sy));
@@ -664,7 +666,7 @@ public:
 		if (elem == UIElementsMap.end())
 			error("Invalid UI id: " + std::to_string(id));
 
-		UIElementsMap[id].render(x, y, sx, sy, RegH, RegV);
+		UIElementsMap[id].render(x, y, sx, sy, RegH, RegV, isVisible);
 		commandBufferMustUpdate = true;
 
 		if (UIElementsMap[id].type == UI_SLIDER) {
@@ -770,7 +772,7 @@ public:
 		renderUI(-1.0f, 0.06, UI_ID_SLIDER_SENSITIVITY_BACKGROUND, UIO_LEFT, UIO_MIDDLE);
 		renderUI(-1.0f, 0.06, UI_ID_SLIDER_SENSITIVITY_PLAQUE, UIO_LEFT, UIO_TOP);
 
-		renderUI(1.0f, -1.0f, UI_ID_COMMANDS, UIO_RIGHT, UIO_TOP);
+		renderUI(1.0f, -1.0f, UI_ID_COMMANDS, UIO_RIGHT, UIO_TOP, 1.25f, 1.25f);
 	}
 
 	/** 
