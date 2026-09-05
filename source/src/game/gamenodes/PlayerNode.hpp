@@ -147,6 +147,11 @@ public:
         delta += normalizedZAxis * speed * Engine::getDeltaTime() * Engine::getInputTranslation().z;
         delta.y = vertSpeed * Engine::getDeltaTime();
 
+        //Clamp delta to avoid phasing through walls
+#define MAX_MOVEMENT 0.5f
+        delta.x = std::clamp(delta.x, -MAX_MOVEMENT, MAX_MOVEMENT);
+        delta.y = std::clamp(delta.y, -MAX_MOVEMENT, MAX_MOVEMENT);
+        delta.z = std::clamp(delta.z, -MAX_MOVEMENT, MAX_MOVEMENT);
         playerColl->globalTranslate(delta);
 
         const float xRot = -Engine::getInputRotation().x * Engine::getDeltaTime();
@@ -237,7 +242,7 @@ public:
         controls->adopt(camera);
 
         LambertTexMaterial* mat = new LambertTexMaterial(VEC3_ONE, {1, 1, 1, 100}, "mage.png");
-        Model3D* model = new Model3D("Mage.gltf", VEC3_ZERO, VEC3_ZERO, VEC3_ONE, mat, true);
+        Model3D* model = new Model3D("Mage.gltf", VEC3_ZERO, {0, M_PI, 0}, VEC3_ONE, mat, true);
         rootCollider->adopt(model);
 
         AudioNode *quack = new AudioNode("quack.mp3", 0.1f);
