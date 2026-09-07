@@ -45,7 +45,7 @@ WaterMaterial mat4 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "wat
 FireMaterial flame1 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "smallFlame.png"};
 FireMaterial flame2 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "bigFlame.png"};
 FireMaterial flame3 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "fire.png"};
-MagicCirleMaterial mat5 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "magicCircle.png"};
+MagicCirleMaterial magicMat = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "magicCircle.png"};
 
 CookTorranceAnimMaterial animMat = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}, "rock.png"};
 
@@ -138,7 +138,7 @@ Node* createScene1() {
                                                 &animMat);
     models->adopt(man);
 
-    Model3D *magicCircle = new Model3D("Water.gltf", {0, 0.5, 0}, {0, 0, 0}, {2, 2, 2}, &mat5);
+    Model3D *magicCircle = new Model3D("Water.gltf", {0, 0.5, 0}, {0, 0, 0}, {2, 2, 2}, &magicMat);
     models->adopt(magicCircle);
 
     Model3D *bigFire = new Model3D("Water.gltf", {0, 4, 0}, {glm::radians(90.0f), 0, glm::radians(90.0f)}, glm::vec3(1.0), &flame2);
@@ -578,14 +578,13 @@ Node* createForestScene() {
 
 
     // TutorialText
-    Text2D *cameraTutorial = new Text2D("Press M to change camera", {-0.2, -1}, "SS", false, false, false, TAL_LEFT, TRH_LEFT, TRV_TOP);
+    Text2D *cameraTutorial = new Text2D("Press M to change camera", {-1, 1}, "SS", false, false, false, TAL_LEFT, TRH_LEFT, TRV_BOTTOM);
     root->adopt(cameraTutorial);
 
     return root;
 }
 
 Node* createDarkScene() {
-
     Node *root = new Node();
     root->name = "root";
 
@@ -600,7 +599,7 @@ Node* createDarkScene() {
 
     float cellSize = 8;
 
-#define LABSIZE 12
+    #define LABSIZE 12
     const char labyrinth[LABSIZE][LABSIZE] = {
         {'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W'},
         {'W', '.', '.', '.', 'W', '.', '.', '.', 'W', '.', '.', 'W'},
@@ -649,45 +648,80 @@ Node* createDarkScene() {
     for (int i = 0; i < LABSIZE; i++) {
         for (int j = 0; j < LABSIZE; j++) {
             switch(labyrinth[i][j]) {
-                case '.': {
-                    break;
-                          }
+            case '.': {
+                break;
+            }
+            case 'W': {
+                const glm::vec3 pos = glm::vec3(i*cellSize, cellSize/2, j*cellSize);
 
-                case 'W': {
-                    const glm::vec3 pos = glm::vec3(i*cellSize, cellSize/2, j*cellSize);
+                for (int k = 0; k < 4; k++) {
+                    Model3D *wall = new Model3D("Water.gltf", pos + offset[k], rotations[k], {cellSize/2, 1, cellSize/2}, &sMat);
+                    wall->name = std::format("Wall {} {} {}", i, j, k);
+                    staticObjects->adopt(wall);
+                }
 
-                    for (int k = 0; k < 4; k++) {
-                        Model3D *wall = new Model3D("Water.gltf", pos + offset[k], rotations[k], {cellSize/2, 1, cellSize/2}, &sMat);
-                        wall->name = std::format("Wall {} {} {}", i, j, k);
-                        staticObjects->adopt(wall);
-                    }
+                // Colliders tank the FPS
+                BoxCollider* wallCollider = new BoxCollider(pos, {0, 0, 0}, {cellSize/2, cellSize/2, cellSize/2});
+                wallCollider->name = std::format("WallColl {} {}", i, j);
+                wallCollider->movementStatus = STATIC;
+                wallCollider->layer = ENVIRONMENT;
+                staticObjects->adopt(wallCollider);
+                break;
+            }
+            case 'S':  {
+                // Maybe add a room before the maze? (and after?)
+                player->setGlobalPosition({i*cellSize, 5, j*cellSize});
+                break;
+            }
+            case 'E': {
+                // end room
+                Node* endRoom = new Node();
 
-                    // Colliders tank the FPS
-                    BoxCollider* wallCollider = new BoxCollider(pos, {0, 0, 0}, {cellSize/2, cellSize/2, cellSize/2});
-                    wallCollider->name = std::format("WallColl {} {}", i, j);
-                    wallCollider->movementStatus = STATIC;
-                    wallCollider->layer = ENVIRONMENT;
-                    staticObjects->adopt(wallCollider);
-                    break;
-                          }
-                case 'S':  {
-                    // Maybe add a room before the maze? (and after?)
-                    player->setGlobalPosition({i*cellSize, 10, j*cellSize});
-                    break;
-                           }
+                Model3D *endFloor = new Model3D("Unit Plane.gltf", {i*cellSize, 0, j*cellSize + 20.5}, {0, 0, 0}, {25, 1, 25}, &mat1);
+                BoxCollider* endFloorColl = new BoxCollider(1.0f, 0.05f, 1.0f);
+                endFloorColl->name = "endFloorColl";
+                endFloorColl->movementStatus = STATIC;
+                endFloorColl->layer = ENVIRONMENT;
+                endFloor->adopt(endFloorColl);
+                endRoom->adopt(endFloor);
 
-                case 'E': {
-                    // Do something
-                    break;
-                          }
+                Model3D *endWall1 = new Model3D("Unit Plane.gltf", {i*cellSize, 5, j*cellSize + 30}, {std::numbers::pi / 2, 0, std::numbers::pi}, {25, 1, 25}, &mat1);
+                BoxCollider* endWall1Coll = new BoxCollider({i*cellSize, 5, j*cellSize + 30}, VEC3_ZERO, {25.0f, 25.0f, 1.0f});
+                endWall1Coll->name = "endWall1Coll";
+                endWall1Coll->movementStatus = STATIC;
+                endWall1Coll->layer = ENVIRONMENT;
+                endWall1->adopt(endWall1Coll);
+                endRoom->adopt(endWall1);
+                Model3D *endWall2 = new Model3D("Unit Plane.gltf", {i*cellSize - 9.5, 5, j*cellSize + 17.5}, {std::numbers::pi / 2, std::numbers::pi / 2, 0}, {27, 1, 27}, &mat1);
+                BoxCollider* endWall2Coll = new BoxCollider({i*cellSize - 9.5, 5, j*cellSize + 17.5}, VEC3_ZERO, {1.0f, 25.0f, 25.0f});
+                endWall2Coll->name = "endWall2Coll";
+                endWall2Coll->movementStatus = STATIC;
+                endWall2Coll->layer = ENVIRONMENT;
+                endWall2->adopt(endWall2Coll);
+                endRoom->adopt(endWall2);
+                Model3D *endWall3 = new Model3D("Unit Plane.gltf", {i*cellSize + 9.5, 5, j*cellSize + 17.5}, {std::numbers::pi / 2, -std::numbers::pi / 2, 0}, {27, 1, 27}, &mat1);
+                BoxCollider* endWall3Coll = new BoxCollider({i*cellSize + 9.5, 5, j*cellSize + 17.5}, VEC3_ZERO, {1.0f, 25.0f, 25.0f});
+                endWall3Coll->name = "endWall3Coll";
+                endWall3Coll->movementStatus = STATIC;
+                endWall3Coll->layer = ENVIRONMENT;
+                endWall3->adopt(endWall3Coll);
+                endRoom->adopt(endWall3);
 
-                default: {
-                    error("What?");
-                         }
+                Model3D *endCeiling = new Model3D("Unit Plane.gltf", {i*cellSize, cellSize, j*cellSize + 20.5}, {M_PI, 0, 0}, {25, 1, 25}, &rMat);
+                endRoom->adopt(endCeiling);
+    
+                Model3D *magicCircle = new Model3D("Water.gltf", {i*cellSize, 0.1f, j*cellSize + 20.5}, {0, 0, 0}, {3, 1, 3}, &magicMat);
+                endRoom->adopt(magicCircle);
+
+                root->adopt(endRoom);
+                break;
+            }
+            default: {
+                error("What?");
+            }
             }
         }
     }
-
 
     // Lights
     AmbientLight *ambientLight = new AmbientLight({0.08f, 0.14f, 0.20f},{0.035f, 0.04f, 0.045f}, {0.0f, 1.0f, 0.0f});
@@ -700,6 +734,10 @@ Node* createDarkScene() {
 
     // FPS
     root->adopt(new FPSTextUpdater());
+
+    // TutorialText
+    Text2D *cameraTutorial = new Text2D("Press left mouse to cast spell", {-1, 1}, "SS", false, false, false, TAL_LEFT, TRH_LEFT, TRV_BOTTOM);
+    root->adopt(cameraTutorial);
 
     return root;
 }

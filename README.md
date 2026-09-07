@@ -15,7 +15,7 @@
 | Engine            |         0          |        0        |       0        |         24        |
 | Audio             |         0          |        0        |       0        |         5         |
 | Asset Procurement |         0          |        0        |       16       |         0         |
-| Scene Layout      |         4          |        0        |       6        |         3         |
+| Scene Layout      |         7          |        0        |       6        |         3         |
 
 ## Asset Sources
 

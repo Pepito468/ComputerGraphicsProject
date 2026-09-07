@@ -126,7 +126,7 @@ public:
         // }
 
         if (Engine::isKeyBeingPressed(GLFW_KEY_PERIOD, true)) {
-            playerColl->globalTranslate({0.0f, 1.0f, 0.0f});
+            playerColl->globalTranslate({0.0f, 3.0f, 0.0f});
         }
 
         //Check grounded
