@@ -1,6 +1,6 @@
 {
 	"asset":{
-		"generator":"Khronos glTF Blender I/O v5.2.40",
+		"generator":"Khronos glTF Blender I/O v5.1.19",
 		"version":"2.0"
 	},
 	"scene":0,
@@ -15,12 +15,7 @@
 	"nodes":[
 		{
 			"mesh":0,
-			"name":"Sphere",
-			"translation":[
-				0,
-				0,
-				2.214237928390503
-			]
+			"name":"Sphere"
 		}
 	],
 	"meshes":[
@@ -43,7 +38,7 @@
 		{
 			"bufferView":0,
 			"componentType":5126,
-			"count":1984,
+			"count":559,
 			"max":[
 				0.9999997019767761,
 				1,
@@ -59,19 +54,19 @@
 		{
 			"bufferView":1,
 			"componentType":5126,
-			"count":1984,
+			"count":559,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":2,
 			"componentType":5126,
-			"count":1984,
+			"count":559,
 			"type":"VEC2"
 		},
 		{
 			"bufferView":3,
 			"componentType":5126,
-			"count":1984,
+			"count":559,
 			"type":"VEC4"
 		},
 		{
@@ -84,38 +79,38 @@
 	"bufferViews":[
 		{
 			"buffer":0,
-			"byteLength":23808,
+			"byteLength":6708,
 			"byteOffset":0,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":23808,
-			"byteOffset":23808,
+			"byteLength":6708,
+			"byteOffset":6708,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":15872,
-			"byteOffset":47616,
+			"byteLength":4472,
+			"byteOffset":13416,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":31744,
-			"byteOffset":63488,
+			"byteLength":8944,
+			"byteOffset":17888,
 			"target":34962
 		},
 		{
 			"buffer":0,
 			"byteLength":5760,
-			"byteOffset":95232,
+			"byteOffset":26832,
 			"target":34963
 		}
 	],
 	"buffers":[
 		{
-			"byteLength":100992,
+			"byteLength":32592,
 			"uri":"Unit%20Sphere.bin"
 		}
 	]

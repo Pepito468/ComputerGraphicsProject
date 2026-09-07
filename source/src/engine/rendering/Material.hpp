@@ -296,4 +296,62 @@ class SonarMaterial : public Material {
         };
 
 };
+
+class OutlineMaterial : public Material
+{
+    glm::vec3 color;
+    float thickness;
+    bool isActive;
+
+public:
+    OutlineMaterial(const glm::vec3 color, const float thickness)
+    {
+        this->diffuse = VEC3_ONE;
+        this->specular = glm::vec4(0.0f);
+        this->textureName = "Default.png";
+
+        this->color = color;
+        this->thickness = thickness;
+        this->isActive = false;
+
+        shaderType = ShaderType::OUTLINE;
+    }
+    ~OutlineMaterial() override = default;
+
+    void toggle()
+    {
+        isActive = !isActive;
+    }
+
+    void updateUBO(UniformBufferObject& ubo) override
+    {
+        ubo.color = color;
+        ubo.param1 = glm::vec4(thickness, isActive ? 1.0f : 0.0f, 0, 0);
+    }
+};
+
+class WindMaterial : public LambertTexMaterial
+{
+    glm::vec2 windDirection;
+    float windStrength;
+    float period;
+
+public:
+    WindMaterial(glm::vec2 windDirection, float windStrength, float period, glm::vec3 diffuse, glm::vec4 specular, std::string textureName = "Default.png") : LambertTexMaterial(diffuse, specular, textureName)
+    {
+        this->windDirection = windDirection;
+        this->windStrength = windStrength;
+        this->period = period;
+
+        shaderType = ShaderType::WIND;
+    }
+
+    ~WindMaterial() override = default;
+
+    void updateUBO(UniformBufferObject& ubo) override
+    {
+        LambertTexMaterial::updateUBO(ubo);
+        ubo.param1 = glm::vec4(windDirection, windStrength, period);
+    }
+};
 #endif

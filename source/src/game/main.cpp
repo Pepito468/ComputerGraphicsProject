@@ -62,13 +62,14 @@ LambertTexMaterial cubeMat = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0
 LambertMaterial blankMat = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}};
 LambertTexMaterial* mageMat = TEX_MAT("mage.png");
 LambertMaterial treeMat = {{0.095f, 0.009f, 0.0f}, {1.0f,1.0f,1.0f,100.0f}};
-LambertTexMaterial* grassMat = TEX_MAT("grass.png");
+WindMaterial* grassMat = new WindMaterial({-0.6f, 1}, 1.5f, 3, VEC3_ONE, {1, 1, 1, 100}, "grass.png");
 LambertTexMaterial* pathMat = TEX_MAT("path.png");
 LambertTexMaterial* lowGrassMat = TEX_MAT("low_grass.png");
 LambertTexMaterial* wood_metalMat = TEX_MAT("wood-metal.png");
 LambertTexMaterial* rockMat = TEX_MAT("rock.png");
 WaterMaterial waterMat = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "water.png"};
 LambertMaterial rainMat = {glm::vec3(0.0f, 0.0f, .9f), {1.0f,1.0f,1.0f,100.0f}};
+OutlineMaterial outlineMat = OutlineMaterial({1, 0, 1}, 4.0f);
 
 Node* createScene1() {
 
@@ -343,7 +344,8 @@ Node* createUnitScene() {
         cube->adopt(box);
         box->setLocalPosition(VEC3_ZERO);
    }
-    Model3D* sphere = new Model3D("Unit Sphere.gltf", {0, 2, 3}, {0, 0, 0}, {1, 1, 1}, &blankMat);
+    Model3D* sphere = new Model3D("Unit Sphere.gltf", {0, 2, 3}, {0, 0, 0}, {1, 1, 1}, &outlineMat);
+    outlineMat.toggle();
     models->adopt(sphere);
     SphereCollider* sColl = new SphereCollider();
     sphere->adopt(sColl);
