@@ -116,12 +116,17 @@ public:
         if (Engine::isPauseMenuOpen())
             return; // Game is paused, don't do anything
 
-        //Testing for object placement TODO remove
-        if (Engine::isKeyBeingPressed(GLFW_KEY_L, true))
-        {
-            Model3D* tree = new Model3D("Spooky Tree.gltf", getGlobalPosition() * glm::vec3(1, 0, 1), VEC3_ZERO, VEC3_ONE, &bulletMat);
-            info(std::format("{}", tree->getGlobalPosition()));
-            Engine::instantiate(tree);
+        //Testing for object placement 
+        // TODO remove
+        // if (Engine::isKeyBeingPressed(GLFW_KEY_L, true))
+        // {
+        //     Model3D* tree = new Model3D("Spooky Tree.gltf", getGlobalPosition() * glm::vec3(1, 0, 1), VEC3_ZERO, VEC3_ONE, &bulletMat);
+        //     info(std::format("{}", tree->getGlobalPosition()));
+        //     Engine::instantiate(tree);
+        // }
+
+        if (Engine::isKeyBeingPressed(GLFW_KEY_PERIOD, true)) {
+            playerColl->globalTranslate({0.0f, 1.0f, 0.0f});
         }
 
         //Check grounded

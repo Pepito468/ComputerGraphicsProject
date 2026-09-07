@@ -712,8 +712,8 @@ public:
 		renderUI(0.0f, -0.085f, UI_ID_BUTTON_RESUME, UIO_CENTER, UIO_MIDDLE);
 		renderUI(0.0f, 0.085f, UI_ID_BUTTON_QUIT, UIO_CENTER, UIO_MIDDLE);
 
-		renderUI(-1.0f, 1.0f, UI_ID_BUTTON_SCENE1, UIO_LEFT, UIO_BOTTOM);
-		renderUI(-0.85f, 1.0f, UI_ID_BUTTON_SCENE2, UIO_LEFT, UIO_BOTTOM);
+		// renderUI(-1.0f, 1.0f, UI_ID_BUTTON_SCENE1, UIO_LEFT, UIO_BOTTOM);
+		// renderUI(-0.85f, 1.0f, UI_ID_BUTTON_SCENE2, UIO_LEFT, UIO_BOTTOM);
 
 		renderUI(-1.0f, -0.06, UI_ID_SLIDER_VOLUME, UIO_LEFT, UIO_MIDDLE);
 		renderUI(-1.0f, -0.06, UI_ID_SLIDER_VOLUME_BACKGROUND, UIO_LEFT, UIO_MIDDLE);
@@ -733,8 +733,8 @@ public:
 		toggleVisibility(UI_ID_MENU_BACKGROUND);
 		toggleVisibility(UI_ID_BUTTON_RESUME);
 		toggleVisibility(UI_ID_BUTTON_QUIT);
-		toggleVisibility(UI_ID_BUTTON_SCENE1);
-		toggleVisibility(UI_ID_BUTTON_SCENE2);
+		// toggleVisibility(UI_ID_BUTTON_SCENE1);
+		// toggleVisibility(UI_ID_BUTTON_SCENE2);
 		toggleVisibility(UI_ID_SLIDER_VOLUME);
 		toggleVisibility(UI_ID_SLIDER_VOLUME_BACKGROUND);
 		toggleVisibility(UI_ID_SLIDER_VOLUME_PLAQUE);
@@ -803,22 +803,22 @@ public:
 	/**
 	* Removes a single UI element, given its id
 	*/
-	void removeUIElement(int id) {
-		// std::cout << UI_DEBUG_STRING << " removeUIElement id = " << id << std::endl;
-		//TODO implement proper deconstructor
-		UIElementsMap.erase(id);
-		commandBufferMustUpdate = true;
-	}
+	// void removeUIElement(int id) {
+	// 	// std::cout << UI_DEBUG_STRING << " removeUIElement id = " << id << std::endl;
+	// 	//TODO implement proper deconstructor
+	// 	UIElementsMap.erase(id);
+	// 	commandBufferMustUpdate = true;
+	// }
 
 	/**
 	* Removes all UI elements
 	*/
-	void removeUI() {
-		// std::cout << UI_DEBUG_STRING << " removeUI" << std::endl;
-		//TODO implement proper deconstructor
-		UIElementsMap.clear();
-		commandBufferMustUpdate = true;
-	}
+	// void removeUI() {
+	// 	// std::cout << UI_DEBUG_STRING << " removeUI" << std::endl;
+	// 	//TODO implement proper deconstructor
+	// 	UIElementsMap.clear();
+	// 	commandBufferMustUpdate = true;
+	// }
 
 	void pipelinesAndDescriptorSetsCleanup() {
 		// std::cout << UI_DEBUG_STRING << " UI pipelines and descript sets cleanup" << std::endl;
@@ -864,10 +864,10 @@ public:
 		UI_RP.destroy();
 	}
 
-	void deleteMainMenu() {
-		removeUIElement(UI_ID_TITLE);
-		removeUIElement(UI_ID_BUTTON_START);
-	}
+	// void deleteMainMenu() {
+	// 	removeUIElement(UI_ID_TITLE);
+	// 	removeUIElement(UI_ID_BUTTON_START);
+	// }
 
 	//--------------------------------------------
 

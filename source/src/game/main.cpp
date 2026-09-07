@@ -6,6 +6,7 @@
 #include "Engine.hpp"
 
 #include "Material.hpp"
+#include "Node3D.hpp"
 #include "PerspectiveCamera.hpp"
 #include "OrthoCamera.hpp"
 
@@ -30,6 +31,7 @@
 #include "gamenodes/MovingPlanetUpdate.hpp"
 #include "gamenodes/MovingPlanetChildUpdate.hpp"
 #include "gamenodes/PlayerNode.hpp"
+#include "glm/ext/vector_float3.hpp"
 
 #define TEX_MAT(texName) new LambertTexMaterial(VEC3_ONE, {1, 1, 1, 100}, texName)
 
@@ -62,6 +64,7 @@ LambertTexMaterial* mageMat = TEX_MAT("mage.png");
 LambertMaterial treeMat = {{0.095f, 0.009f, 0.0f}, {1.0f,1.0f,1.0f,100.0f}};
 LambertTexMaterial* grassMat = TEX_MAT("grass.png");
 LambertTexMaterial* pathMat = TEX_MAT("path.png");
+LambertTexMaterial* lowGrassMat = TEX_MAT("low_grass.png");
 LambertTexMaterial* wood_metalMat = TEX_MAT("wood-metal.png");
 LambertTexMaterial* rockMat = TEX_MAT("rock.png");
 WaterMaterial waterMat = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "water.png"};
@@ -394,7 +397,6 @@ Node* createForestScene() {
 
     Node3D *player = PlayerNode::makeStandardPlayer(mapCam);
     player->adopt(mapCam);
-    player->globalTranslate({0.0f, 15.0f, 0.0f});
     root->adopt(player);
 
     root->adopt(new FPSTextUpdater());
@@ -722,15 +724,67 @@ Node* createMainMenu() {
 
     Model3D *plane = new Model3D("Unit Plane.gltf", VEC3_ZERO, VEC3_ZERO, {100, 1, 100}, pathMat);
     castle->adopt(plane);
+    Model3D *plane2 = new Model3D("Unit Plane.gltf", {-70.0f, 0, 0}, VEC3_ZERO, {40, 1, 100}, lowGrassMat);
+    castle->adopt(plane2);
+    Model3D *plane3 = new Model3D("Unit Plane.gltf", {0.0f, 0, -75.0f}, VEC3_ZERO, {180, 1, 50}, lowGrassMat);
+    castle->adopt(plane3);
+
+    Model3D *rootTree = new Model3D("Spooky Tree.gltf", {-10.0f, 0.0f, 20.0f}, {0.0f, M_PI, 0.0f}, VEC3_ONE, &treeMat);
+    castle->adopt(rootTree);
+
+    std::list<std::array<glm::vec3, 3>> treesVec = {
+        {glm::vec3(0.25f, 0.0f,10.0f), {0.0f, 5.12f, 0.0f}, VEC3_ONE * 1.5f},
+        {glm::vec3(-1.0f, 0.0f,-11.0f), {0.0f, 4.77f, 0.0f}, VEC3_ONE * 1.1f},
+        {glm::vec3(3.0f, 0.0f,-23.0f), {0.0f, 0.45f, 0.0f}, VEC3_ONE * 0.9f},
+        {glm::vec3(5.0f, 0.0f,-16.0f), {0.0f, 0.2f, 0.0f}, VEC3_ONE * 1.15f},
+        {glm::vec3(15.09f, 0.0f,5.2f), {0.0f, 4.33f, 0.0f}, VEC3_ONE * 2.47f},
+        {glm::vec3(6.99f, 0.0f,-2.50f), {0.0f, 6.05f, 0.0f}, VEC3_ONE * 1.99f},
+        {glm::vec3(11.01f, 0.0f,-12.41f), {0.0f, 2.48f, 0.0f}, VEC3_ONE * 1.68f},
+        {glm::vec3(13.55f, 0.0f,-21.05f), {0.0f, 2.14f, 0.0f}, VEC3_ONE * 1.05f},
+        {glm::vec3(24.0f, 0.0f,-10.0f), {0.0f, 6.05f, 0.0f}, VEC3_ONE * 2.5f},
+        {glm::vec3(15.0f, 0.0f,22.0f), {0.0f, 3.05f, 0.0f}, VEC3_ONE * 3.3f},
+        {glm::vec3(29.0f, 0.0f,55.0f), {0.0f, 1.05f, 0.0f}, VEC3_ONE * 4.5f},
+        
+        {glm::vec3(40.0f, 0.0f,0.0f), {0.0f, 5.86f, 0.0f}, VEC3_ONE * 3.2f},
+        {glm::vec3(56.0f, 0.0f,-17.8f), {0.0f, 2.0f, 0.0f}, VEC3_ONE * 3.5f},
+        {glm::vec3(33.2f, 0.0f,-24.3f), {0.0f, 0.39f, 0.0f}, VEC3_ONE * 2.43f},
+        {glm::vec3(44.7f, 0.0f,20.0f), {0.0f, 2.79f, 0.0f}, VEC3_ONE * 2.7f},
+        {glm::vec3(46.9f, 0.0f,45.0f), {0.0f, 2.62f, 0.0f}, VEC3_ONE * 2.2f},
+        {glm::vec3(22.0f, 0.0f,87.0f), {0.0f, 1.77f, 0.0f}, VEC3_ONE * 2.8f},
+        {glm::vec3(0.0f, 0.0f,102.0f), {0.0f, 1.49f, 0.0f}, VEC3_ONE * 3.2f},
+
+        {glm::vec3(-55.0f, 10.0f,20.0f), {1.0f, 1.0f, 0.0f}, VEC3_ONE * 3.5f},
+        {glm::vec3(-35.0f, 15.0f,-15.0f), {0.5f, 3.0f, 1.0f}, VEC3_ONE * 3.5f},
+
+        {glm::vec3(-30.0f, 0.0f,12.0f), {0.0f, 1.41f, 0.0f}, VEC3_ONE * 1.5f},
+        {glm::vec3(-22.0f, 0.0f,37.0f), {0.0f, 4.52f, 0.0f}, VEC3_ONE * 1.9f},
+        {glm::vec3(-37.0f, 0.0f,66.0f), {0.0f, 5.56f, 0.0f}, VEC3_ONE * 2.4f},
+        {glm::vec3(-34.0f, 0.0f,25.0f), {0.0f, 1.05f, 0.0f}, VEC3_ONE * 2.1f},
+        {glm::vec3(-43.0f, 0.0f,20.0f), {0.0f, 0.01f, 0.0f}, VEC3_ONE * 2.1f},
+        {glm::vec3(-32.0f, 0.0f,0.0f), {0.0f, 3.68f, 0.0f}, VEC3_ONE * 2.6f},
+        {glm::vec3(-38.0f, 0.0f,8.0f), {0.0f, 2.18, 0.0f}, VEC3_ONE * 1.3f},
+    };
+    for (auto t : treesVec) {
+        Model3D *newTree = new Model3D("Spooky Tree.gltf", t[0], t[1], t[2], &treeMat);
+        rootTree->adopt(newTree);
+    }
 
     LambertTexMaterial* mat = new LambertTexMaterial(VEC3_ONE, {1, 1, 1, 100}, "mage.png");
     Model3D* mage = new Model3D("Mage.gltf", {0.0f, 0.0f, 10.0f}, {0.0f, M_PI, 0.0f}, VEC3_ONE, mat);
-    castle->adopt(mage);
+    castle->adopt(mage);    //TODO maybe add spotlight or light around mage
 
     PerspectiveCamera *camera = new PerspectiveCamera(0.1f, 200, glm::radians(90.0f), 4.0f/3.0f, true);
     camera->name = "PerspectiveCamera";
     camera->lookAt({castle->getGlobalPosition()});
     root->adopt(camera);
+
+    Particles* rain = new Particles({0.0f,10.0f,0.0f}, {0.0f, 0.0f, 0.0f}, "", &rainMat);
+    rain->setMaxParticles(20);
+    rain->setBounds({10.0f, 10.0f, 10.0f});
+    rain->setMaxLifeTime({0.5f, 1.0f});
+    rain->setLinearVelocity({0.0f, -15.0f, 0.0f});
+    rain->setTarget(camera);
+    models->adopt(rain);
 
     // Lights
     AmbientLight *ambientLight = new AmbientLight({0.08f, 0.14f, 0.20f},{0.035f, 0.04f, 0.045f}, {0.0f, 1.0f, 0.0f});
