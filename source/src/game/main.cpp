@@ -31,6 +31,7 @@
 #include "gamenodes/MovingPlanetUpdate.hpp"
 #include "gamenodes/MovingPlanetChildUpdate.hpp"
 #include "gamenodes/PlayerNode.hpp"
+#include "gamenodes/SpinningMageUpdate.hpp"
 #include "glm/ext/vector_float3.hpp"
 
 #define TEX_MAT(texName) new LambertTexMaterial(VEC3_ONE, {1, 1, 1, 100}, texName)
@@ -590,7 +591,6 @@ Node* createDarkScene() {
     Node *root = new Node();
     root->name = "root";
 
-
     // Player
     Node3D* player = PlayerNode::makeStandardPlayer();
     static_cast<CapsuleCollider*>(player)->radius = 3;
@@ -721,6 +721,15 @@ Node* createDarkScene() {
                 Model3D *magicCircle = new Model3D("Water.gltf", {i*cellSize, 0.1f, j*cellSize + 20.5}, {0, 0, 0}, {3, 1, 3}, &magicMat);
                 endRoom->adopt(magicCircle);
 
+                BoxCollider* endZone = new BoxCollider(true, {i*cellSize, 0.1f, j*cellSize + 20.5}, VEC3_ZERO, {3, 3, 3});
+                endZone->movementStatus = STATIC;
+                endZone->layer = ENVIRONMENT;
+                endZone->onTriggerEnter = [](Collider* _)
+                {
+                    Engine::endGame();
+                };
+                endRoom->adopt(endZone);
+
                 root->adopt(endRoom);
                 break;
             }
@@ -817,7 +826,10 @@ Node* createMainMenu() {
 
     LambertTexMaterial* mat = new LambertTexMaterial(VEC3_ONE, {1, 1, 1, 100}, "mage.png");
     Model3D* mage = new Model3D("Mage.gltf", {0.0f, 0.0f, 10.0f}, {0.0f, M_PI, 0.0f}, VEC3_ONE, mat);
-    castle->adopt(mage);    //TODO maybe add spotlight or light around mage
+    castle->adopt(mage);
+
+    PointLight *mageLight = new PointLight({0.0f, 2.5f, 0.5f}, 1.0f, {1.0f, 0.0f, 1.0f}, 4, 2);
+    mage->adopt(mageLight);
 
     PerspectiveCamera *camera = new PerspectiveCamera(0.1f, 200, glm::radians(90.0f), 4.0f/3.0f, true);
     camera->name = "PerspectiveCamera";
@@ -831,6 +843,42 @@ Node* createMainMenu() {
     rain->setLinearVelocity({0.0f, -15.0f, 0.0f});
     rain->setTarget(camera);
     models->adopt(rain);
+
+    // Lights
+    AmbientLight *ambientLight = new AmbientLight({0.08f, 0.14f, 0.20f},{0.035f, 0.04f, 0.045f}, {0.0f, 1.0f, 0.0f});
+    ambientLight->name = "AmbientLight";
+    root->adopt(ambientLight);
+
+    DirectionalLight *directionalLight = new DirectionalLight(0.5,glm::vec3(1.0f, 0.95f, 0.8f),glm::normalize(glm::vec3(0.8f, 0.25f, 0.4f)));
+    directionalLight->name = "DirectionalLight";
+    root->adopt(directionalLight);
+
+    return root;
+}
+
+Node* createEndMenu() {
+    Node *root = new Node();
+    root->name = "root";
+
+    SpinningMageUpdate *speen = new SpinningMageUpdate();
+    speen->globalTranslate({0.0f, 0.0f, 5.0f});
+    root->adopt(speen);
+
+    LambertTexMaterial *mat = new LambertTexMaterial(VEC3_ONE, {1, 1, 1, 100}, "mage.png");
+    Model3D *mage = new Model3D("Mage.gltf", {0.0f, 0.0f, 0.0f}, {0.0f, M_PI, 0.0f}, VEC3_ONE, mat);
+    root->adopt(mage);
+    speen->adopt(mage);
+
+    Model3D *background = new Model3D("Unit Plane.gltf", {0, 0, 10.0f}, {std::numbers::pi / 2, 0, std::numbers::pi}, {30, 1, 30}, &rMat);
+    background->localRotateX(0.5f);
+    root->adopt(background);
+
+    PerspectiveCamera *camera = new PerspectiveCamera(0.1f, 400, glm::radians(90.0f), 4.0f/3.0f, true);
+    camera->name = "PerspectiveCamera";
+    camera->localTranslate({0, 5.0f, 0});
+    camera->localRotateY(M_PI);
+    camera->localRotateX(-0.5f);
+    root->adopt(camera);
 
     // Lights
     AmbientLight *ambientLight = new AmbientLight({0.08f, 0.14f, 0.20f},{0.035f, 0.04f, 0.045f}, {0.0f, 1.0f, 0.0f});
@@ -858,6 +906,7 @@ int main() {
     Engine::setGlobalVariable("Forest", createForestScene());
     Engine::setGlobalVariable("Dark", createDarkScene());
     Engine::setGlobalVariable("MainMenu", createMainMenu());
+    Engine::setGlobalVariable("EndMenu", createEndMenu());
 
     Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("MainMenu")));
 
@@ -875,6 +924,7 @@ int main() {
     freeNodeTree(std::any_cast<Node*>(Engine::getGlobalVariable("Unit")));
     freeNodeTree(std::any_cast<Node*>(Engine::getGlobalVariable("Forest")));
     freeNodeTree(std::any_cast<Node*>(Engine::getGlobalVariable("Dark")));
+    freeNodeTree(std::any_cast<Node*>(Engine::getGlobalVariable("EndMenu")));
 
     return EXIT_SUCCESS;
 }

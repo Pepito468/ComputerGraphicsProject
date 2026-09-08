@@ -259,12 +259,6 @@ class Engine : public BaseProject {
                 case UI_ID_BUTTON_QUIT:
                     Engine::MainEngine->requestEngineShutdown();
                     break;
-                // case UI_ID_BUTTON_SCENE1:
-                //     Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene1")));
-                //     break;
-                // case UI_ID_BUTTON_SCENE2:
-                //     Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene2")));
-                //     break;
                 case UI_ID_SLIDER_VOLUME:
                     setMasterVolume(data.data);
                     break;
@@ -287,6 +281,16 @@ class Engine : public BaseProject {
                     break;
                 }
             }
+        }
+
+        static void endGame() {
+            if (MainEngine->isPauseMenuOpen())
+                MainEngine->ui.togglePauseMenu();
+
+            MainEngine->canPause = false;
+            MainEngine->ui.renderEndMenu();
+            Engine::setCursorMode(GLFW_CURSOR_NORMAL);
+            Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("EndMenu")));
         }
 
     private:
@@ -682,15 +686,12 @@ class Engine : public BaseProject {
 
             // UIElements for the main menu
             ui.initElement(UI_ID_MENU_BACKGROUND, {{ProceduralTextures::generateMenuBackgroundTint(windowWidth, windowHeight)}, true, FULL_RESIZABLE});
-            // ui.initElement(UI_ID_MENU_BACKGROUND, {{"assets/textures/ui/background.png"}, true, FULL_RESIZABLE});
             ui.initElement(UI_ID_TITLE, {{"assets/textures/ui/title.png"}, true, KEEP_ASPECT_RATIO});   //TODO make the tile bigger (i dont know why scale doesn't work) 
             ui.initElement(UI_ID_BUTTON_START, {{"assets/textures/ui/start_button.png", "assets/textures/ui/start_button_hover.png", "assets/textures/ui/start_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
             ui.initElement(UI_ID_BUTTON_QUIT, {{"assets/textures/ui/quit_button.png", "assets/textures/ui/quit_button_hover.png", "assets/textures/ui/quit_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
 
             // UIElements for the pause menu
             ui.initElement(UI_ID_BUTTON_RESUME, {{"assets/textures/ui/resume_button.png", "assets/textures/ui/resume_button_hover.png", "assets/textures/ui/resume_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
-            // ui.initElement(UI_ID_BUTTON_SCENE1, {{"assets/textures/ui/scene1_button.png", "assets/textures/ui/scene1_button_hover.png", "assets/textures/ui/scene1_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
-            // ui.initElement(UI_ID_BUTTON_SCENE2, {{"assets/textures/ui/scene2_button.png", "assets/textures/ui/scene2_button_hover.png", "assets/textures/ui/scene2_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
             ui.initElement(UI_ID_SLIDER_VOLUME, {{"assets/textures/ui/slider_juice.png"}, false, KEEP_ASPECT_RATIO, UI_SLIDER});
             ui.initElement(UI_ID_SLIDER_VOLUME_BACKGROUND, {{"assets/textures/ui/slider_border_appeasement.png"}, true, KEEP_ASPECT_RATIO, UI_NORMAL});
             ui.initElement(UI_ID_SLIDER_VOLUME_PLAQUE, {{"assets/textures/ui/volume_high.png", "assets/textures/ui/volume.png", "assets/textures/ui/volume_low.png"}, true, KEEP_ASPECT_RATIO, UI_NORMAL});
@@ -698,6 +699,8 @@ class Engine : public BaseProject {
             ui.initElement(UI_ID_SLIDER_SENSITIVITY_BACKGROUND, {{"assets/textures/ui/slider_border_appeasement.png"}, true, KEEP_ASPECT_RATIO, UI_NORMAL});
             ui.initElement(UI_ID_SLIDER_SENSITIVITY_PLAQUE, {{"assets/textures/ui/sensitivity.png"}, true, KEEP_ASPECT_RATIO, UI_NORMAL});
             ui.initElement(UI_ID_COMMANDS, {{"assets/textures/ui/commands.png"}, true, KEEP_ASPECT_RATIO, UI_NORMAL});
+
+            ui.initElement(UI_ID_END, {{"assets/textures/ui/end.png"}, true, KEEP_ASPECT_RATIO, UI_NORMAL});
 
             ui.init(windowWidth, windowHeight);
 

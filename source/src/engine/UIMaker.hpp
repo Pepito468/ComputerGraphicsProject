@@ -20,6 +20,8 @@
 	- Add a forceModelUpdate flag to UIMaker and a needsUpdating flag to UIElements (maybe)
 	- Checkboxes (equiv 2-stage buttons) (maybe)
 	- N-stage buttons (A -> click -> B -> click -> C -> click -> A -> ...) (maybe)
+	- Update main menu with authors and course
+	- Fix title scaling
 */
 
 #define DEFAULT_SUBMIT_ORDER				9999
@@ -39,8 +41,7 @@
 #define UI_ID_BUTTON_QUIT					101
 #define UI_ID_SLIDER_VOLUME					150
 #define UI_ID_SLIDER_SENSITIVITY			151
-#define UI_ID_BUTTON_SCENE1					200
-#define UI_ID_BUTTON_SCENE2					201
+#define UI_ID_END							200
 
 #define UI_DEBUG_STRING COLOR_BRIGHT_GREEN << "[UI DEBUG]" << COLOR_DEFAULT
 
@@ -149,7 +150,6 @@ class UIMaker {
 
 		Pipeline P;
 		Model *M = nullptr;
-		// std::list<Model*> oldM = {};	 /// oldM stores M in case other processes still have the previous model
 		UITextureData T;
 		DescriptorSet DS;
 
@@ -707,13 +707,10 @@ public:
 	}
 
 	void renderPauseMenu() {
-		// renderUI(0.0f, 0.0f, UI_ID_MENU_BACKGROUND, UIO_CENTER, UIO_MIDDLE);	already loaded from the main menu
+		// UI_ID_MENU_BACKGROUND already loaded from the main menu
 
 		renderUI(0.0f, -0.085f, UI_ID_BUTTON_RESUME, UIO_CENTER, UIO_MIDDLE);
 		renderUI(0.0f, 0.085f, UI_ID_BUTTON_QUIT, UIO_CENTER, UIO_MIDDLE);
-
-		// renderUI(-1.0f, 1.0f, UI_ID_BUTTON_SCENE1, UIO_LEFT, UIO_BOTTOM);
-		// renderUI(-0.85f, 1.0f, UI_ID_BUTTON_SCENE2, UIO_LEFT, UIO_BOTTOM);
 
 		renderUI(-1.0f, -0.06, UI_ID_SLIDER_VOLUME, UIO_LEFT, UIO_MIDDLE);
 		renderUI(-1.0f, -0.06, UI_ID_SLIDER_VOLUME_BACKGROUND, UIO_LEFT, UIO_MIDDLE);
@@ -726,6 +723,12 @@ public:
 		renderUI(0.95f, -.95f, UI_ID_COMMANDS, UIO_RIGHT, UIO_TOP, 1.25f, 1.25f);
 	}
 
+	void renderEndMenu() {
+		renderUI(0.0f, -0.35f, UI_ID_END, UIO_CENTER, UIO_MIDDLE);
+
+		renderUI(-0.9f, 0.9f, UI_ID_BUTTON_QUIT, UIO_LEFT, UIO_BOTTOM);
+	}
+
 	/** 
 	* Toggles visibility of the pause menu
 	*/
@@ -733,8 +736,6 @@ public:
 		toggleVisibility(UI_ID_MENU_BACKGROUND);
 		toggleVisibility(UI_ID_BUTTON_RESUME);
 		toggleVisibility(UI_ID_BUTTON_QUIT);
-		// toggleVisibility(UI_ID_BUTTON_SCENE1);
-		// toggleVisibility(UI_ID_BUTTON_SCENE2);
 		toggleVisibility(UI_ID_SLIDER_VOLUME);
 		toggleVisibility(UI_ID_SLIDER_VOLUME_BACKGROUND);
 		toggleVisibility(UI_ID_SLIDER_VOLUME_PLAQUE);
