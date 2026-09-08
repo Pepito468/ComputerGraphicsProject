@@ -24,6 +24,9 @@ class AudioNode3D : public Node3D, public AudioNode {
 
         AudioNode3D() {}
 
+        AudioNode3D(const std::string filename, const float volume = 1.0f) :
+        AudioNode(filename, volume) {}
+
         AudioNode3D(const std::string filename, const float minDistance, const float maxDistance, const float rolloff, ATTENUTATION_MODE attenuationMode, const float volume = 1.0f) :
         AudioNode(filename, volume) {
             this->rolloff = rolloff;

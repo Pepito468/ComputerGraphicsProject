@@ -590,10 +590,16 @@ Node* createDarkScene() {
     Node *root = new Node();
     root->name = "root";
 
+
     // Player
     Node3D* player = PlayerNode::makeStandardPlayer();
     static_cast<CapsuleCollider*>(player)->radius = 3;
     root->adopt(player);
+
+    // Audio
+    AudioNode3D *rain = new AudioNode3D("heavyRain.wav", 0.02f);
+    rain->localTranslate({0, 4, 0});
+    player->adopt(new AudioController(rain, true));
 
     Node *staticObjects = new Node();
     staticObjects->name = "StaticObjectsContainer";

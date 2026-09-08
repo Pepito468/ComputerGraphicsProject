@@ -220,12 +220,13 @@ class Node3D : public virtual Node {
             this->commitGlobalUpdate();
         }
 
-        /// Sets the node's global matrix
-        void setGlobalMatrix(glm::mat4 mat)
-        {
-            globalMatrix = mat;
-            updateGlobalTransformPropertiesFromGlobalMatrix();
-            commitGlobalUpdate();
+        /// Sets the node's global matrix.
+        /// NOTE: this method is *very* dangerous and should be used with care:
+        /// If the given matrix has shear, it may break the Node.
+        void setGlobalMatrix(glm::mat4 newGlobalMatrix) {
+            this->globalMatrix = newGlobalMatrix;
+            this->updateGlobalTransformPropertiesFromGlobalMatrix();
+            this->commitGlobalUpdate();
         }
 
         /// Translates the node globally
