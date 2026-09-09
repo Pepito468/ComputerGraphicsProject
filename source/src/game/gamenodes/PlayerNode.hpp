@@ -85,6 +85,12 @@ class PlayerNode : public UpdateNode3D
             selectedInteraction->select();
     }
 
+    void sonar(const SonarMaterial::SONAR_COLORID color) const
+    {
+        log("Sonar out: " + std::to_string(color));
+        sonarMat->trigger(getGlobalPosition(), Engine::getCurrentTime(), color);
+    }
+
 public:
 
     void onEnter() override
@@ -185,36 +191,18 @@ public:
         if (selectedInteraction && Engine::isKeyBeingPressed(GLFW_KEY_E, true))
             selectedInteraction->interact();
 
-        if (sonarMat && Engine::isKeyBeingPressed(GLFW_MOUSE_BUTTON_LEFT, true)) {
-            log("SONAR");
-            sonarMat->trigger(this->getGlobalPosition(), Engine::getCurrentTime(), SonarMaterial::WHITE);
-        } else if (sonarMat && Engine::isKeyBeingPressed(GLFW_KEY_T, true)) {
-            log("SONAR");
-            sonarMat->trigger(this->getGlobalPosition(), Engine::getCurrentTime(), SonarMaterial::RED);
-        } else if (sonarMat && Engine::isKeyBeingPressed(GLFW_KEY_U, true)) {
-            log("SONAR");
-            sonarMat->trigger(this->getGlobalPosition(), Engine::getCurrentTime(), SonarMaterial::GREEN);
-        } else if (sonarMat && Engine::isKeyBeingPressed(GLFW_KEY_Y, true)) {
-            log("SONAR");
-            sonarMat->trigger(this->getGlobalPosition(), Engine::getCurrentTime(), SonarMaterial::YELLOW);
-        } else if (sonarMat && Engine::isKeyBeingPressed(GLFW_KEY_R, true)) {
-            log("SONAR");
-            sonarMat->trigger(this->getGlobalPosition(), Engine::getCurrentTime(), SonarMaterial::BLUE);
-        }
+        if (sonarMat && Engine::isKeyBeingPressed(GLFW_MOUSE_BUTTON_LEFT, true))
+            sonar(SonarMaterial::WHITE);
+        else if (sonarMat && Engine::isKeyBeingPressed(GLFW_KEY_T, true))
+            sonar(SonarMaterial::RED);
+        else if (sonarMat && Engine::isKeyBeingPressed(GLFW_KEY_U, true))
+            sonar(SonarMaterial::GREEN);
+        else if (sonarMat && Engine::isKeyBeingPressed(GLFW_KEY_Y, true))
+            sonar(SonarMaterial::YELLOW);
+        else if (sonarMat && Engine::isKeyBeingPressed(GLFW_KEY_R, true))
+            sonar(SonarMaterial::BLUE);
 
-        if (Engine::isKeyBeingPressed(GLFW_KEY_1)) {
-            Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Forest")));
-        } else if (Engine::isKeyBeingPressed(GLFW_KEY_2)) {
-            Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Unit")));
-        } else if (Engine::isKeyBeingPressed(GLFW_KEY_3)) {
-            Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Dark")));
-        } else if (Engine::isKeyBeingPressed(GLFW_KEY_9)) {
-            Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene1")));
-        } else if (Engine::isKeyBeingPressed(GLFW_KEY_0)) {
-            Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Scene2")));
-        }
-
-        if (this->mapCam && Engine::isKeyBeingPressed(GLFW_KEY_M, true)) {
+        if (mapCam && Engine::isKeyBeingPressed(GLFW_KEY_M, true)) {
             if (isCamPersp)
                 Engine::setMainCamera(this->mapCam);
             else

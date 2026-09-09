@@ -628,13 +628,28 @@ class Engine : public BaseProject {
 
             // Pause game
             if (canPause && isKeyBeingPressed(GLFW_KEY_ESCAPE, true)) {
-                if (Engine::isPauseMenuOpen()) {
-                    Engine::setCursorMode(GLFW_CURSOR_DISABLED);
+                if (isPauseMenuOpen()) {
+                    setCursorMode(GLFW_CURSOR_DISABLED);
                 } else {
-                    Engine::setCursorMode(GLFW_CURSOR_NORMAL);
+                    setCursorMode(GLFW_CURSOR_NORMAL);
                 }
                 
                 MainEngine->ui.togglePauseMenu();
+            }
+
+            //Scene controls
+            if (isKeyBeingPressed(GLFW_KEY_1)) {
+                requestSceneChange(std::any_cast<Node*>(getGlobalVariable("MainMenu")));
+            } else if (isKeyBeingPressed(GLFW_KEY_2)) {
+                requestSceneChange(std::any_cast<Node*>(getGlobalVariable("Forest")));
+            } else if (isKeyBeingPressed(GLFW_KEY_3)) {
+                requestSceneChange(std::any_cast<Node*>(getGlobalVariable("Dark")));
+            } else if (isKeyBeingPressed(GLFW_KEY_8)) {
+                requestSceneChange(std::any_cast<Node*>(getGlobalVariable("Unit")));
+            } else if (isKeyBeingPressed(GLFW_KEY_9)) {
+                requestSceneChange(std::any_cast<Node*>(getGlobalVariable("Scene1")));
+            } else if (isKeyBeingPressed(GLFW_KEY_0)) {
+                requestSceneChange(std::any_cast<Node*>(getGlobalVariable("Scene2")));
             }
 
             // Recompute hierarchy in case something changed
