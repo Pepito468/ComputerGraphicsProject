@@ -1371,6 +1371,12 @@ Node* createEndMenu() {
     // Music
     root->adopt(new AudioController(new AudioNode("door_into_summer.mp3", 0.2f), true));
 
+    // Time
+    FPSTextUpdater *time = new FPSTextUpdater();
+    time->name = "time";
+    root->adopt(time);
+    time->stopTotalTime();
+
     return root;
 }
 

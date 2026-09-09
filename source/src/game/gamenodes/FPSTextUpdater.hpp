@@ -9,6 +9,7 @@ class FPSTextUpdater : public UpdateNode3D
 {
     Text2D* fpsText;
     Text2D* timeText = nullptr;
+    bool stopTime = false;
 
 public:
 
@@ -25,6 +26,10 @@ public:
         Node::adopt(fpsText);
     }
 
+    void stopTotalTime() {
+        stopTime = true;
+    }
+
     void update() override
     {
         if (!fpsText)
@@ -38,11 +43,12 @@ public:
         elapsedT += Engine::getDeltaTime();
         count++;
 
-        if (Engine::isPauseMenuOpen())
+        if (Engine::isPauseMenuOpen() && !stopTime)
             return;
 
         static float totalTimeElaped = 0.0f;
-        totalTimeElaped += Engine::getDeltaTime();
+        if (!stopTime)
+            totalTimeElaped += Engine::getDeltaTime();
 
         if (elapsedT >= 1.0f) {
             fpsText->text = std::format("FPS: {}", count / elapsedT);
