@@ -215,18 +215,18 @@ Node* createScene1() {
     platformColl->layer = FLOOR;
     platformColl->collidesWith = NONE;
     platform->adopt(platformColl);
-    BoxCollider* platformColl2 = new BoxCollider({0, 1, 0}, VEC3_ZERO, VEC3_ONE);
-    platformColl2->isTrigger = true;
-    platformColl2->layer = ENVIRONMENT;
-    platformColl2->collidesWith = PLAYER;
-    platformColl2->onTriggerEnter = [platform] (Collider* other)
-    {
-        log(std::format("other {} @ {} {}", other, other->getGlobalPosition(), other->getLocalPosition()));
-        platform->adopt(other);
-        log(std::format("other {} @ {} {}", other, other->getGlobalPosition(), other->getLocalPosition()));
-    };
-    platformColl2->onTriggerExit = [platform] (Collider* other) {platform->disown(other);};
-    platform->adopt(platformColl2);
+    //BoxCollider* platformColl2 = new BoxCollider({0, 1, 0}, VEC3_ZERO, VEC3_ONE);
+    //platformColl2->isTrigger = true;
+    //platformColl2->layer = ENVIRONMENT;
+    //platformColl2->collidesWith = PLAYER;
+    //platformColl2->onTriggerEnter = [platform] (Collider* other)
+    //{
+    //    log(std::format("other {} @ {} {}", other, other->getGlobalPosition(), other->getLocalPosition()));
+    //    platform->adopt(other);
+    //    log(std::format("other {} @ {} {}", other, other->getGlobalPosition(), other->getLocalPosition()));
+    //};
+    //platformColl2->onTriggerExit = [platform] (Collider* other) {platform->disown(other);};
+    //platform->adopt(platformColl2);
     models->adopt(platform);
 
     FollowPath* path = new FollowPath({{5, 0, 5}, {10, 0, 5}, {10, 0, 10}, {5, 0, 10}}, platform, 3, true);
@@ -890,6 +890,16 @@ Node* createLabyrinthScene()
         };
         root->adopt(spikeColl);
     }
+
+    Model3D* platform = new Model3D("Unit Cube.gltf", {-10, 0, 55}, {0, 0, 0}, {6, 1, 6}, &sMat);
+    BoxCollider* platformColl = new BoxCollider();
+    platformColl->layer = FLOOR;
+    platformColl->collidesWith = NONE;
+    platform->adopt(platformColl);
+    root->adopt(platform);
+
+    FollowPath* path = new FollowPath({{10, 0, 55}, {-30, 0, 55}}, platform, 4);
+    root->adopt(path);
 
     Model3D* labCeiling = new Model3D("Unit Plane.gltf", {0, 6, 40}, {0, 0, M_PI}, {90, 1, 80}, &sMat);
     root->adopt(labCeiling);
