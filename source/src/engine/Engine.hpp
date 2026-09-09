@@ -248,9 +248,9 @@ class Engine : public BaseProject {
             log(std::format("Node deletion request accepted [{}, ID: {}], delete children? [{}]", node->name, node->UUID, deleteDescendants ? "Y" : "N"));
         }
 
-        /** Communicates to the ui that something was clicked in the menu, and handles calling of engine functions */
+        /** Communicates to the UI that something was clicked in the menu, and handles subsequent calling of engine functions */
         static void handleMenuMouse(bool click, double mouseX, double mouseY) {
-            for (auto data : MainEngine->ui.updateMouseStatus(mouseX, mouseY, click, MainEngine->leftMouseButtonDown)) {
+            for (auto data : MainEngine->ui.handleMouseEvent(mouseX, mouseY, click, MainEngine->leftMouseButtonDown)) {
                 switch (data.id) {
                 case UI_ID_BUTTON_RESUME:
                     Engine::setCursorMode(GLFW_CURSOR_DISABLED);
@@ -283,14 +283,15 @@ class Engine : public BaseProject {
             }
         }
 
+        /** Loads the EndMenu scene after removing the ability to pause and rendering the end menu */
         static void endGame() {
+            MainEngine->canPause = false;
             if (MainEngine->isPauseMenuOpen())
                 MainEngine->ui.togglePauseMenu();
 
-            MainEngine->canPause = false;
+            Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("EndMenu")));
             MainEngine->ui.renderEndMenu();
             Engine::setCursorMode(GLFW_CURSOR_NORMAL);
-            Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("EndMenu")));
         }
 
     private:

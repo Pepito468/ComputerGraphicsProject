@@ -9,7 +9,7 @@
 #include "Texture.hpp"
 #include "Debug.hpp"
 
-// uncomment to remove errors from missing libraries
+//uncomment to remove errors from missing libraries
 // #include <vulkan/vulkan_core.h>
 // #include "stb_image.h"
 // #define  STARTER_IMPLEMENTATION
@@ -70,13 +70,13 @@ struct UITextureData {
 	std::vector<Texture> textureVec;
 };
 
+/// Stores parameters of the UI element, with a list of either texture files or texture data
 struct TextureFilesWithParams {
 	std::list<std::string> TextureFiles;
 	bool isTransparent = false;
 	ResizableType resize = NOT_RESIZABLE;
 	UIElementType type = UI_NORMAL;
 };
-
 struct TextureDataWithParams {
 	std::list<GeneratedTextureData> TextureData;
 	bool isTransparent = false;
@@ -84,11 +84,13 @@ struct TextureDataWithParams {
 	UIElementType type = UI_NORMAL;
 };
 
+/// Stores information about the interacted UI element, to send to the Engine to call appropriates methods
 struct InteractedUIElementData {
 	int id;
 	float data;
 };
 
+/// Returns true if the point (_x, _y) is inside a rectangle with edges parallel/perpendicular to the screen boundaries and defined by the points (x1, y1) and (x2, y2)
 inline bool isPointInsideRectangle(float _x, float _y, float x1, float y1, float x2, float y2) {
 	bool inside = true;
 			
@@ -104,25 +106,26 @@ inline bool isPointInsideRectangle(float _x, float _y, glm::vec2 a, glm::vec2 b)
 	return isPointInsideRectangle(_x, _y, a.x, a.y, b.x, b.y);
 }
 
-inline std::array<glm::vec2, 2> getPixelCoordinates(int screenW, int screenH, float x, float y, float sx, float sy, UIOriginH RegH, UIOriginV RegV, int width, int height) {
+/// Returns the pixel coordinates of a rectangle defined by the parameters in a screen with dimensions screenW * screenH
+inline std::array<glm::vec2, 2> getPixelCoordinates(int screenW, int screenH, float x, float y, float sx, float sy, UIOriginH RegH, UIOriginV RegV, int Twidth, int Theight) {
 	// std::cout << UI_DEBUG_STRING << " getting coordinates of an element: " << x << " x " << y << "|" << sx << " x " << sy << std::endl;
 	float tpx = 0.0f, tpy = 0.0f;
 	std::array<glm::vec2, 2> coordinates = {};
 
 	tpx = (x + 1.0f)/2.0f * screenW - sx * (
-		(RegH == UIO_RIGHT  ? (float)width		: 0.0f) +
-		(RegH == UIO_CENTER ? (float)width/2.0f	: 0.0f)
+		(RegH == UIO_RIGHT  ? (float)Twidth		: 0.0f) +
+		(RegH == UIO_CENTER ? (float)Twidth/2.0f	: 0.0f)
 	);
 	tpy = (y + 1.0f)/2.0f * screenH - sy * (
-		(RegV == UIO_BOTTOM ? (float)height		: 0.0f) +
-		(RegV == UIO_MIDDLE ? (float)height/2.0f: 0.0f)
+		(RegV == UIO_BOTTOM ? (float)Theight		: 0.0f) +
+		(RegV == UIO_MIDDLE ? (float)Theight/2.0f: 0.0f)
 	);
 
 	coordinates[0].x = tpx;
 	coordinates[0].y = tpy;
 
-	coordinates[1].x = tpx + (float)(width) * sx;
-	coordinates[1].y = tpy + (float)(height) * sy;
+	coordinates[1].x = tpx + (float)(Twidth) * sx;
+	coordinates[1].y = tpy + (float)(Theight) * sy;
 
 	return coordinates;
 }
@@ -138,13 +141,13 @@ class UIMaker {
 		float sx, sy;	/// If the UIElement is scalable, these are relative to a screen sized 1080x720
 		
 		/**
-		* Position of the origin between the following points of the rectangle:
-		* x -- x -- x
-		* |         |
-		* x    x    x
-		* |         |
-		* x -- x -- x
-		*/
+		 * Position of the origin between the following points of the rectangle:
+		 * x -- x -- x
+		 * |         |
+		 * x    x    x
+		 * |         |
+		 * x -- x -- x
+		 */
 		UIOriginH RegH;
 		UIOriginV RegV;
 
@@ -222,6 +225,9 @@ class UIMaker {
 			this->M->initMesh(BP, VD, false);
 		}
 
+		/**
+		 * Assigns to the UIVertex V its position in screen coordinates and uv
+		 */
 		void makeUIVertex(UIVertex *V, float px, float py, float tx, float ty, int screenW, int screenH) {
 			// std::cout << UI_DEBUG_STRING << " makeUIVertex: ";
 			/// Transforms pixel to screen coordinates
@@ -290,24 +296,21 @@ class UIMaker {
 		}
 	};
 
+	/// Stores data to pass to the BaseProject for the command buffer
 	struct UIMakerAndElement {
 		UIMaker* ui;
 		UIElement* elem;
 		Model* m;
 	};
 
-	/**
-	 * Stores button specific data
-	 */
+	/// Stores button specific data
 	struct ButtonData {
 		int id;
 		bool hovered;
 		bool clicked;
 	};
 
-	/**
-	 * Stores slider specific data (the id is the index of the map)
-	 */
+	/// Stores slider specific data (the id is stored as the index of the slider in SlidersMap)
 	struct SliderData {
 		bool moving;
 		float currentMaxScale;
@@ -317,6 +320,8 @@ class UIMaker {
 
 	enum VOLUME_STATUS {VOLUME_LOW, VOLUME_MEDIUM, VOLUME_HIGH};
 
+	//--------------------------------------------
+
 	VOLUME_STATUS volume_status = VOLUME_HIGH;
 
 	VertexDescriptor UI_VD;
@@ -324,9 +329,7 @@ class UIMaker {
 	DescriptorSetLayout UI_DSL;
 	RenderPass UI_RP;
 
-	int screenW, screenH;	//should be swapchain width and height instead of screen, but can't access it (TextMaker has the same bug)
-	
-	double mousePosX, mousePosY;
+	int screenW, screenH;	//should be swapchain width and height instead of screen, but can't access it
 	
 	std::unordered_map<int, UIElement> UIElementsMap = {};
 	std::list<ButtonData> ButtonsList = {};
@@ -365,7 +368,7 @@ class UIMaker {
 	}
 
 	/**
-	 * Initializes the slider hitbox, using DEFAULT_WINDOW_* as the window dimension
+	 * Initializes the slider hitbox
 	 */
 	void setSliderHitbox(int id) {
 		std::array<glm::vec2, 2> coordinates = UIElementsMap[id].getPixelCoordinates(screenW, screenH);
@@ -399,7 +402,7 @@ public:
 	/**
 	 * Initialises a UIElement with the given id and parameters
 	 * Prints a warning if the id is already in use and skips execution
-	 * NOTE: the element is initialized as not visible, you need a call to renderUI with proper parameters to see it
+	 * NOTE: the element is initialized as not visible, you need a call to renderUI with proper parameters to render it
 	 */
 	void initElement(int id, TextureFilesWithParams textureFile) {
 		if (UIElementsMap.find(id) != UIElementsMap.end()) {
@@ -416,7 +419,7 @@ public:
 			UIElementsMap[id].addTexture(temp);
 		}
 
-		/// Assumes all texture with the same size
+		/// Assumes all textures have the same sizes
 		unsigned char* pixels = stbi_load(textureFile.TextureFiles.front().c_str(), &UIElementsMap[id].T.width, &UIElementsMap[id].T.height, &garbage, STBI_rgb_alpha);
 		stbi_image_free(pixels);
 
@@ -449,11 +452,11 @@ public:
 	}
 
 	/**
-	* Finalizes the UIMaker initialization, setting global parameters and (eventually) adding a UIElement for all given textures
-	* To be called after all other initElements
-	* NOTE: the id of the UIElement depends on the position in the lists TextureFiles and TextureDataList (in order)
-	* NOTE: the elements are initialized as not visible, you need a call to renderUI with proper parameters to see them
-	*/
+	 * Finalizes the UIMaker initialization, setting global parameters and (eventually) adding a UIElement for all given textures
+	 * To be called after all other initElements
+	 * NOTE: the id of the UIElement depends on the position in the lists TextureFiles and TextureDataList (in order)
+	 * NOTE: the elements are initialized as not visible, you need a call to renderUI with proper parameters to see them
+	 */
 	void init(int sW, int sH, std::list<TextureFilesWithParams> TextureFilesList = {}, std::list<TextureDataWithParams> TextureDataList = {}, int so = DEFAULT_SUBMIT_ORDER)  {
 		// std::cout << UI_DEBUG_STRING << " UI init" << std::endl;
 		screenW = sW;
@@ -498,6 +501,9 @@ public:
 		BP->DPSZs.setsInPool += UIElementsMap.size();
 	}
 
+	/**
+	 * Creates the UI render pass and a descriptor set for each UI element
+	 */
 	void pipelinesAndDescriptorSetsInit() {
 		// std::cout << UI_DEBUG_STRING << " UI pipelines and descriptor sets init" << std::endl;
 		UI_RP.create();
@@ -517,11 +523,15 @@ public:
 
 	//--------------------------------------------
 
-	std::list<InteractedUIElementData> updateMouseStatus(double x, double y, bool mouseClick = false, bool holding = false) {
+	/**
+	 * Updates interactive UI elements with the mouse status
+	 * To be called everytime the mouse changes status (it moves, clicks or releases click)
+	 * @return list of InteractedUIElementData, containing the info of UI elements with meaningful interactions (buttons clicked or sliders moved)
+	 */
+	std::list<InteractedUIElementData> handleMouseEvent(double mousePosX, double mousePosY, bool mouseClick = false, bool holding = false) {
+		/// In theory, UIElements shouldn't overlap, so the list should always be 1 element long
 		std::list<InteractedUIElementData> ret = {};
-		this->mousePosX = x;
-		this->mousePosY = y;
-		// std::cout << UI_DEBUG_STRING << " updating mouse status: " << x << " x " << y << " | mouseClick = " << mouseClick << " | holding = " << holding << std::endl;
+		// std::cout << UI_DEBUG_STRING << " updating mouse status: " << mousePosX << " x " << mousePosY << " | mouseClick = " << mouseClick << " | holding = " << holding << std::endl;
 
 		// After the cursor moves, checks every button to see if their status changed
 		for (auto &b : ButtonsList) {
@@ -562,14 +572,14 @@ public:
 			// std::cout << UI_DEBUG_STRING << " slider #" << s.first << ": moving = " << s.second.moving << " | upper left corner = " << s.second.upperLeftCorner.x << " x " << s.second.upperLeftCorner.y << " | lower right corner = " << s.second.lowerRightCorner.x << " x " << s.second.lowerRightCorner.y << " | xscale = " << UIElementsMap[s.first].sx << std::endl;
 			if (holding && s.second.moving) {
 				// the user is moving the slider around (doesn't matter if the cursor is on the slider, as long as they keep pressing it)
-				if (x <= s.second.upperLeftCorner.x) {
+				if (mousePosX <= s.second.upperLeftCorner.x) {
 					// lower bound
 					if (UIElementsMap[s.first].sx != 0.0f) {
 						UIElementsMap[s.first].sx = 0.0f;
 						commandBufferMustUpdate = true;
 						ret.push_back({s.first, 0.0f});
 					}
-				} else if (x >= s.second.lowerRightCorner.x) {
+				} else if (mousePosX >= s.second.lowerRightCorner.x) {
 					// upper bound
 					if (UIElementsMap[s.first].sx != s.second.currentMaxScale) {
 						UIElementsMap[s.first].sx = s.second.currentMaxScale;
@@ -578,13 +588,13 @@ public:
 					}
 				} else {
 					// value in between
-					UIElementsMap[s.first].sx = (x - s.second.upperLeftCorner.x)/(s.second.lowerRightCorner.x - s.second.upperLeftCorner.x) * s.second.currentMaxScale;
+					UIElementsMap[s.first].sx = (mousePosX - s.second.upperLeftCorner.x)/(s.second.lowerRightCorner.x - s.second.upperLeftCorner.x) * s.second.currentMaxScale;
 					commandBufferMustUpdate = true;
 					ret.push_back({s.first, UIElementsMap[s.first].sx / s.second.currentMaxScale});
 				}
-			} else if (mouseClick && isPointInsideRectangle(x, y, s.second.upperLeftCorner, s.second.lowerRightCorner)) {
+			} else if (mouseClick && isPointInsideRectangle(mousePosX, mousePosY, s.second.upperLeftCorner, s.second.lowerRightCorner)) {
 				// the user clicks inside the "hitbox" of the slider, setting the slider to that point and saving that the slider is moving
-				UIElementsMap[s.first].sx = (x - s.second.upperLeftCorner.x)/(s.second.lowerRightCorner.x - s.second.upperLeftCorner.x) * s.second.currentMaxScale;
+				UIElementsMap[s.first].sx = (mousePosX - s.second.upperLeftCorner.x)/(s.second.lowerRightCorner.x - s.second.upperLeftCorner.x) * s.second.currentMaxScale;
 				s.second.moving = true;
 				commandBufferMustUpdate = true;
 				ret.push_back({s.first, UIElementsMap[s.first].sx / s.second.currentMaxScale});
@@ -623,6 +633,10 @@ public:
 		return ret;
 	}
 
+	/**
+	 * Toggles the visibility of the UI element with the given element on or off
+	 * Throws an error if the id isn't present in UIElementsMap
+	 */
 	void toggleVisibility(int id) {
 		auto elem = UIElementsMap.find(id);
 		if (elem == UIElementsMap.end())
@@ -633,9 +647,9 @@ public:
 	}
 
 	/**
-	* Notifies that the UI element with the given id needs to be updated
-	* Throws an error if the id isn't present in UIElementsMap, and a warning if either sx or sy are 0
-	*/
+	 * Notifies that the UI element with the given id needs to be updated
+	 * Throws an error if the id isn't present in UIElementsMap, and a warning if either sx or sy are 0
+	 */
 	void renderUI(float x, float y, int id, UIOriginH RegH = UIO_LEFT, UIOriginV RegV = UIO_TOP, float sx = 1.0f, float sy = 1.0f, bool isVisible = true) {
 		// std::cout << UI_DEBUG_STRING << " renderUI id = " << id << std::endl;
 		if (sx == 0 || sy == 0)
@@ -654,8 +668,8 @@ public:
 	}
 
 	/**
-	* Rearranges UI elements on screen resize
-	*/
+	 * Rearranges UI elements on screen resize and updates UIMaker local screenW and screenH
+	 */
 	void resizeScreen(int sW, int sH) {
 		// std::cout << UI_DEBUG_STRING << " UI resizeScreen" << std::endl;
 		screenW = sW;
@@ -676,8 +690,8 @@ public:
 	}
 
 	/**
-	* Creates the mesh for the given UI element
-	*/
+	 * Creates the mesh for the given UI element
+	 */
 	void createUIMesh(int id) {
 		// std::cout << UI_DEBUG_STRING << " createUImesh with id " << id << std::endl;
 		auto elem = UIElementsMap.find(id);
@@ -688,6 +702,10 @@ public:
 		UIElementsMap[id].createMesh(&UI_VD, screenW, screenH, BP);
 	}
 
+	/**
+	 * Recreates the descript set of the UI element with the given id using textureVec[textureId] as the texture
+	 * Throws an error if the id isn't present in UIElementsMap
+	 */
 	void recreateUIDescriptorSet(int id, int idTexture) {
 		// std::cout << UI_DEBUG_STRING << " re-create DS with id " << id << "and texture " << idTexture << std::endl;
 		auto elem = UIElementsMap.find(id);
@@ -697,6 +715,9 @@ public:
 		UIElementsMap[id].recreateDescriptorSet(&UI_DSL, BP, idTexture);
 	}
 
+	/**
+	 * Renders the main menu
+	 */
 	void renderMainMenu() {
 		renderUI(0.0f, 0.0f, UI_ID_MENU_BACKGROUND, UIO_CENTER, UIO_MIDDLE);
 
@@ -706,6 +727,9 @@ public:
 		renderUI(-0.9f, 0.9f, UI_ID_BUTTON_QUIT, UIO_LEFT, UIO_BOTTOM);
 	}
 
+	/**
+	 * Renders the pause menu
+	 */
 	void renderPauseMenu() {
 		// UI_ID_MENU_BACKGROUND already loaded from the main menu
 
@@ -720,9 +744,12 @@ public:
 		renderUI(-1.0f, 0.06, UI_ID_SLIDER_SENSITIVITY_BACKGROUND, UIO_LEFT, UIO_MIDDLE);
 		renderUI(-1.0f, 0.06, UI_ID_SLIDER_SENSITIVITY_PLAQUE, UIO_LEFT, UIO_TOP);
 
-		renderUI(0.95f, -.95f, UI_ID_COMMANDS, UIO_RIGHT, UIO_TOP, 1.25f, 1.25f);
+		renderUI(0.95f, -0.95f, UI_ID_COMMANDS, UIO_RIGHT, UIO_TOP, 1.25f, 1.25f);
 	}
 
+	/**
+	 * Renders the end menu
+	 */
 	void renderEndMenu() {
 		renderUI(0.0f, -0.35f, UI_ID_END, UIO_CENTER, UIO_MIDDLE);
 
@@ -802,8 +829,8 @@ public:
 	//--------------------------------------------
 
 	/**
-	* Removes a single UI element, given its id
-	*/
+	 * Removes a single UI element, given its id
+	 */
 	// void removeUIElement(int id) {
 	// 	// std::cout << UI_DEBUG_STRING << " removeUIElement id = " << id << std::endl;
 	// 	//TODO implement proper deconstructor
@@ -812,8 +839,8 @@ public:
 	// }
 
 	/**
-	* Removes all UI elements
-	*/
+	 * Removes all UI elements
+	 */
 	// void removeUI() {
 	// 	// std::cout << UI_DEBUG_STRING << " removeUI" << std::endl;
 	// 	//TODO implement proper deconstructor
@@ -864,11 +891,6 @@ public:
 		// std::cout << UI_DEBUG_STRING << "\tDestroying render pass" << std::endl;
 		UI_RP.destroy();
 	}
-
-	// void deleteMainMenu() {
-	// 	removeUIElement(UI_ID_TITLE);
-	// 	removeUIElement(UI_ID_BUTTON_START);
-	// }
 
 	//--------------------------------------------
 
