@@ -448,6 +448,7 @@ Node* createForestScene() {
     // root->adopt(mapCam);
 
     Node3D *player = PlayerNode::makeStandardPlayer(mapCam);
+    player->localTranslate({0.0f, -1.0f, 0.0f});
     player->adopt(mapCam);
     root->adopt(player);
 
@@ -1238,8 +1239,6 @@ Node* createMainMenu() {
     Node *root = new Node();
     root->name = "root";
 
-    root->adopt(new FPSTextUpdater());
-
     root->adopt(new AudioController(new AudioNode("heavyRain.wav", 0.02f), true));
 
     // Models
@@ -1329,7 +1328,7 @@ Node* createMainMenu() {
     root->adopt(directionalLight);
 
     // Text
-    Text2D *authors = new Text2D("Michele Sangaletti\nAndrea Riccioli\nShaan Vashisht\nChristian Vezzoli", {.95, .95}, "SS", false, false, true, TAL_RIGHT, TRH_RIGHT, TRV_BOTTOM);
+    Text2D *authors = new Text2D("Michele Sangaletti\nAndrea Ricciardi\nShaan Vashisht\nChristian Vezzoli", {.95, .95}, "SS", false, false, true, TAL_RIGHT, TRH_RIGHT, TRV_BOTTOM);
     root->adopt(authors);
 
     return root;
