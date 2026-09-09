@@ -33,8 +33,7 @@ public:
         Node::adopt(light);
         Node::adopt(sound);
 
-        this->light->isOn = false;
-        this->light->radiance = 0.0f;
+        this->light->radiance = maxIntensity * std::pow(2, -10);
         this->sound->setLooping(false);
     }
 
@@ -66,8 +65,8 @@ public:
             {
                 //End flash
                 isFlashing = false;
-                this->light->isOn = false;
-                this->light->radiance = 0.0f;
+                //this->light->isOn = false;
+                //this->light->radiance = 0.001f;
                 this->sound->stopSound();
 
                 timer = 0.0f;

@@ -268,6 +268,7 @@ class Renderer {
                 mat_info[i]["texture"].get<std::string>())});
         }
 
+        /*
         mat_info = data["materials"]["Water"];
         for (size_t i = 0; i < mat_info.size(); i++) {
 
@@ -284,7 +285,7 @@ class Renderer {
                     mat_info[i]["specular"][3]
                     ),
             mat_info[i]["texture"].get<std::string>())});
-        }
+        }*/
 
         mat_info = data["materials"]["Toon"];
         for (size_t i = 0; i < mat_info.size(); i++) {
@@ -442,11 +443,11 @@ class Renderer {
     ///Turn off light that are too far away
     void updateLightCulling(glm::vec3 camPos, float maxDist) {
         for (auto& o : pointlights) {
-            o->isOn = glm::distance(o->getLocalPosition(), camPos) < maxDist;
+            o->isOn = glm::distance(o->getGlobalPosition(), camPos) < maxDist;
         }
 
         for (auto& o : spotlights) {
-            o->isOn = glm::distance(o->getLocalPosition(), camPos) < maxDist;
+            o->isOn = glm::distance(o->getGlobalPosition(), camPos) < maxDist;
         }
     }
 

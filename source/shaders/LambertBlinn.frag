@@ -22,9 +22,23 @@ layout(binding = 0, set = 0) uniform GlobalUniformBufferObject {
     vec4 lightDir;
     vec4 lightColor;
     vec3 eyePos;
+
+    // --- Hemispheric ambient ---
+    vec4 ambientUpper;  // xyz = sky / upper  color  (lU)
+    vec4 ambientLower;  // xyz = ground / lower color (lD)
+    vec4 ambientDir;    // xyz = "up" direction for blending (d)
 } gubo;
 
+vec3 hemisphericAmbient(vec3 N, vec3 mA) {
+    vec3 lU = gubo.ambientUpper.xyz;
+    vec3 lD = gubo.ambientLower.xyz;
+    vec3 d  = normalize(gubo.ambientDir.xyz);
+    float dotNd = dot(N, d);
 
+    vec3 lA = ((dotNd + 1.0)/2.0)*lU + ((1.0 - dotNd)/2.0)*lD;
+
+    return lA * mA;
+}
 
 void main() {
 	// returns a color computed with lambert + blinn
@@ -38,9 +52,14 @@ void main() {
 	// blinn specular
 	vec3 H = normalize(V + L);
 	float kS = pow(max(dot(H, N), 0.0), ubo.specular.w);
-	
+
+
+
 	// final color
 	vec3 color = (kD * ubo.diffuse + kS * ubo.specular.rgb) * gubo.lightColor.rgb;
+
+	vec3 ambient = hemisphericAmbient(N, ubo.diffuse);
+    color += ambient;
 	
 	outColor = vec4(color, 1.0f);
 }

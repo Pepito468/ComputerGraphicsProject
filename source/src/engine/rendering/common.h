@@ -1,5 +1,5 @@
-#ifndef SKELETONTOCHANGE_COMMON_H
-#define SKELETONTOCHANGE_COMMON_H
+#ifndef ENGINE_COMMON_H
+#define ENGINE_COMMON_H
 
 #define  STARTER_IMPLEMENTATION
 #include "modules/Starter.hpp"
@@ -74,9 +74,9 @@ struct UniformBufferObject {
     alignas(16) glm::vec4 param9;
 };
 
-enum ShaderType {LAMBERT_BLINN, LAMBERT_TEX, WATER, TOON, MAGIC_CIRCLE, FIRE, COOK_TORRANCE_ANIM, RAINBOW, SONAR, OUTLINE, WIND};
+enum ShaderType {LAMBERT_BLINN, LAMBERT_TEX, WATER, TOON, MAGIC_CIRCLE, FIRE, COOK_TORRANCE_ANIM, RAINBOW, SONAR, COOK_TORRANCE, OUTLINE, WIND};
 
-constexpr std::initializer_list<ShaderType> allShadersTypes = {LAMBERT_BLINN, LAMBERT_TEX,WATER, TOON, MAGIC_CIRCLE, FIRE, COOK_TORRANCE_ANIM, RAINBOW, SONAR, OUTLINE, WIND};
+constexpr std::initializer_list<ShaderType> allShadersTypes = {LAMBERT_BLINN, LAMBERT_TEX,WATER, TOON, MAGIC_CIRCLE, FIRE, COOK_TORRANCE_ANIM, RAINBOW, SONAR, COOK_TORRANCE, OUTLINE, WIND};
 
 const std::string getShaderFragName(ShaderType s)
 {
@@ -91,6 +91,7 @@ const std::string getShaderFragName(ShaderType s)
         case COOK_TORRANCE_ANIM: return "CookTorranceAnim";
         case RAINBOW: return "Rainbow";
         case SONAR: return "Sonar";
+        case COOK_TORRANCE: return "CookTorrance";
         case OUTLINE: return "Outline";
         case WIND: return "LambertBlinnTexture";
         default:      return "Error";
@@ -110,6 +111,7 @@ const std::string getShaderVertName(ShaderType s)
         case COOK_TORRANCE_ANIM: return "PosNormUvWeights";
         case RAINBOW: return "Rainbow";
         case SONAR: return "Sonar";
+        case COOK_TORRANCE: return "PosNormUV";
         case OUTLINE: return "Outline";
         case WIND: return "Wind";
         default:      return "Error";

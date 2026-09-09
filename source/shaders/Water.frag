@@ -20,6 +20,7 @@ layout (binding = 0, set = 1) uniform UniformBufferObject {
 	mat4 nMat;
 	vec3 diffuse;
 	vec4 specular;
+	vec4 param1;
 } ubo;
 
 
@@ -106,8 +107,8 @@ float blinn(vec3 L, vec3 N, vec3 V, float smoothness){
 float linearizeDepth(float depth)
 {
     //TODO: should always be coherent with the current camera
-    const float nearPlane = 0.01;
-    const float farPlane = 100.0;
+    const float nearPlane = 0.1;
+    const float farPlane = 400.0;
 
     return (nearPlane * farPlane) /
            (farPlane - depth * (farPlane - nearPlane));
@@ -123,6 +124,7 @@ void pointLight(vec3 pos, out vec3 direction, out vec3 color, int i) {
     color     = gubo.pointLightColor[i].rgb * pow(g/dist, beta);
 }
 
+const float PI = 3.14159265359;
 
 //from: https://ameye.dev/notes/stylized-water-shader/
 void main()
@@ -134,14 +136,14 @@ void main()
     vec3 horizonColor  = vec3(0.07, 0.22, 0.30);
     vec3 specularColor = vec3(1.00, 0.96, 0.82);
     vec3 shallowColor  = vec3(0.5, 1, 1);
-    vec3 deepColor     = vec3(0.015, 0.055, 0.075);
+    vec3 deepColor     = vec3(0.15, 0.055, 0.075);
     vec3 foamColor     = vec3(0.82, 0.94, 0.92);
 
     //Lighting params
     float smoothness = 200;
     float lightingHardness = 0.35;
     float normalSpeed = 0.05;
-    float normalScale = 0.1;
+    float normalScale = ubo.param1.x;
     float normalStrength = 0.5;
 
     //Foam params
@@ -206,13 +208,37 @@ void main()
     vec3 ambient = mix(gubo.ambientLower.rgb,gubo.ambientUpper.rgb,max(dot(N, normalize(gubo.ambientDir.xyz)), 0.0));
     color += ambient * 0.02;
 
-    //Foam
+    //Foam1
+    /*
     float foam = 1.0 - smoothstep(0.0, intersectionFoamDepth, waterDepth);
     vec2 foamUV = panningUV(fragUV, intersectionFoamTiling, intersectionFoamDirection, intersectionFoamSpeed, vec2(0.0), gubo.time);
     float foamTex = texture(armTex, foamUV).r;
     float foamPattern = step(intersectionFoamCutoff, foamTex);
     foam *= foamPattern;
     color = mix(color, foamColor, foam);
+    */
+
+    //Foam2
+    float foamDir = -1.0;
+    float foamSpeed = 0.1;
+    vec2 foamTilling = vec2(30.0, 30.0);
+    vec2 foamOffset = vec2(0.0, 0.0);
+    float distortionAmount = 1;
+    float arg = PI*(foamDir*2 - 1);
+
+    vec2 UV = normalize(vec2(cos(arg), sin(arg)));
+    UV *= t*foamSpeed;
+
+    UV += fragUV*foamTilling + foamOffset;
+
+
+    UV.y += distortionAmount * 0.01 * (sin(UV.x * 3.5 + t * 0.35) + sin(UV.x * 4.8 + t * 1.05) + sin(UV.x * 7.3 + t * 0.45)) / 3.0;
+    UV.x += distortionAmount * 0.12 * (sin(UV.y * 4.0 + t * 0.50) + sin(UV.y * 6.8 + t * 0.75) + sin(UV.y * 11.3 + t * 0.2)) / 3.0;
+    UV.y += distortionAmount * 0.12 * (sin(UV.x * 4.2 + t * 0.64) + sin(UV.x * 6.3 + t * 1.65) + sin(UV.x * 8.2 + t * 0.45)) / 3.0;
+
+    vec3 foamTex = texture(tex, UV).rgb;
+
+    color = mix(color, foamTex, 0.01);
 
     //Gamma correction
     color = color / (color + vec3(1.0));

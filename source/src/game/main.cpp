@@ -34,15 +34,15 @@
 #include "gamenodes/SpinningMageUpdate.hpp"
 #include "glm/ext/vector_float3.hpp"
 
-#define TEX_MAT(texName) new LambertTexMaterial(VEC3_ONE, {1, 1, 1, 100}, texName)
+#define TEX_MAT(texName) new LambertTexMaterial(VEC3_ONE, {1, 1, 1, 50}, texName)
 
 float randNorm() {return (float)std::rand() / RAND_MAX;}
 
 LambertMaterial mat3 = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}};
 ToonMaterial mat2 = {glm::vec3(0.9f, 0.45f, 0.9f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
-LambertTexMaterial mat1 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "rock.png"};
+CookTorranceMaterial mat1 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "rock.png"};
 //LambertTexMaterial mat2 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "VChecker.png"};
-WaterMaterial mat4 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "water.png"};
+WaterMaterial mat4 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f},0.5f, "water.png"};
 FireMaterial flame1 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "smallFlame.png"};
 FireMaterial flame2 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "bigFlame.png"};
 FireMaterial flame3 = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "fire.png"};
@@ -67,8 +67,8 @@ WindMaterial* grassMat = new WindMaterial({-0.6f, 1}, 1.5f, 3, VEC3_ONE, {1, 1, 
 LambertTexMaterial* pathMat = TEX_MAT("path.png");
 LambertTexMaterial* lowGrassMat = TEX_MAT("low_grass.png");
 LambertTexMaterial* wood_metalMat = TEX_MAT("wood-metal.png");
-LambertTexMaterial* rockMat = TEX_MAT("rock.png");
-WaterMaterial waterMat = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, "water.png"};
+CookTorranceMaterial* rockMat = new CookTorranceMaterial({1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 100.0f},"rock.png");
+WaterMaterial waterMat = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, 0.5f, "water.png"};
 LambertMaterial rainMat = {glm::vec3(0.0f, 0.0f, .9f), {1.0f,1.0f,1.0f,100.0f}};
 OutlineMaterial outlineMat = OutlineMaterial({1, 0, 1}, 4.0f);
 
@@ -462,7 +462,20 @@ Node* createForestScene() {
     Model3D* rocks2 = new Model3D("Unit Plane.gltf", {0, -2.5f, 76.2f}, {M_PI/2, 0, 0}, {100, 1, 5}, rockMat);
     models->adopt(rocks2);
 
-    Model3D* water = new Model3D("Unit Plane.gltf", {0, -3, 84}, VEC3_ZERO, {100, 1, 100}, &waterMat);
+    //flames
+    Model3D *fire1 = new Model3D("Unit Plane.gltf", {7.0f, 8.0f, 101.0f}, {glm::radians(90.0f), 0.0f, glm::radians(180.0f)}, glm::vec3(2.5, 3.5, 2.5), &flame1);
+    models->adopt(fire1);
+
+    PointLight* pl1 = new PointLight(glm::vec3(0.0f, 0.0f, 0.0f), 2.0f, glm::vec3(0.9f, 0.7f, 0.0f), 0.5f, 2.0f);
+    fire1->adopt(pl1);
+
+    Model3D *fire2 = new Model3D("Unit Plane.gltf", {-7.0f, 8.0f, 101.0f}, {glm::radians(90.0f), 0.0f, glm::radians(180.0f)}, glm::vec3(2.5, 3.5, 2.5), &flame1);
+    models->adopt(fire2);
+
+    PointLight* pl2 = new PointLight(glm::vec3(0.0f, 0.0f, 0.0f), 2.0f, glm::vec3(0.9f, 0.7f, 0.0f), 0.5f, 2.0f);
+    fire2->adopt(pl2);
+
+    Model3D* water = new Model3D("Water.gltf", {0, -3, 84}, VEC3_ZERO, {100, 100, 100}, &waterMat);
     models->adopt(water);
 
     // trees
@@ -567,13 +580,18 @@ Node* createForestScene() {
     };
     walls->adopt(endZone);
 
-    // Lights
-    AmbientLight *ambientLight = new AmbientLight({0.18, 0.106, 0.341}, {0.025, 0, 0.1}, VEC3_Y);//new AmbientLight({0.08f, 0.14f, 0.20f},{0.035f, 0.04f, 0.045f}, {0.0f, 1.0f, 0.0f});
+    AmbientLight *ambientLight = new AmbientLight({0.18, 0.106, 0.341}, {0.01, 0.01, 0.2}, VEC3_Y);//new AmbientLight({0.08f, 0.14f, 0.20f},{0.035f, 0.04f, 0.045f}, {0.0f, 1.0f, 0.0f});
     ambientLight->name = "AmbientLight";
     root->adopt(ambientLight);
 
+    /*
+    DirectionalLight *directionalLight = new DirectionalLight(0.1,glm::vec3(1.0f, 0.95f, 0.8f),glm::normalize(glm::vec3(0.8f, 0.25f, 0.4f)));
+    root->adopt(directionalLight);
+    */
+
+
     LightningNode* lightning = new LightningNode(
-        new DirectionalLight(10, {0, 0.698, 1}, glm::normalize(glm::vec3(0.3f, -0.8, -1))),
+        new DirectionalLight(10,glm::vec3(1.0f, 0.95f, 0.8f),glm::normalize(glm::vec3(0.8f, 0.25f, 0.4f))),
         new AudioNode("lightning.wav", 0.2f),
         10.0f, 7.0f, 3.0f
         );

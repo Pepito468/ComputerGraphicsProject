@@ -53,6 +53,24 @@ class LambertTexMaterial : public Material {
     }
 };
 
+class CookTorranceMaterial : public Material {
+public:
+    CookTorranceMaterial(glm::vec3 diffuse, glm::vec4 specular, std::string textureName = "Default.png") {
+        this->diffuse = diffuse;
+        this->specular = specular;
+
+        this->textureName = textureName;
+
+        shaderType = ShaderType::COOK_TORRANCE;
+    }
+
+    ~CookTorranceMaterial() override = default;
+    void updateUBO(UniformBufferObject& ubo) override {
+        ubo.color = diffuse;
+        ubo.specular = specular;
+    }
+};
+
 class LambertMaterial : public Material {
     public:
     LambertMaterial(glm::vec3 diffuse, glm::vec4 specular, std::string textureName = "Default.png") {
@@ -72,10 +90,14 @@ class LambertMaterial : public Material {
 };
 
 class WaterMaterial : public Material {
+    float normalScale;
+
     public:
-    WaterMaterial(glm::vec3 diffuse, glm::vec4 specular, std::string textureName = "Default.png") {
+    WaterMaterial(glm::vec3 diffuse, glm::vec4 specular, float normalScale, std::string textureName = "Default.png") {
         this->diffuse = diffuse;
         this->specular = specular;
+        this->normalScale = normalScale;
+
         this->textureName = textureName;
 
 
@@ -85,6 +107,8 @@ class WaterMaterial : public Material {
     void updateUBO(UniformBufferObject& ubo) override {
         ubo.color = diffuse;
         ubo.specular = specular;
+
+        ubo.param1.x = normalScale;
     }
 };
 
