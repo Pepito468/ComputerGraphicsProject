@@ -14,8 +14,8 @@
 | Game Nodes        |         0          |        0        |       13       |         2         |
 | Engine            |         0          |        0        |       0        |         24        |
 | Audio             |         0          |        0        |       0        |         5         |
-| Asset Procurement |         0          |        0        |       16       |         0         |
-| Scene Layout      |         9          |        0        |       6        |         3         |
+| Asset Procurement |         0          |        0        |       18       |         0         |
+| Scene Layout      |         9          |        0        |     11.30      |         3         |
 
 ## Asset Sources
 
@@ -35,6 +35,12 @@
 - Perfume bottle by Poly by Google [CC-BY](https://creativecommons.org/licenses/by/3.0/) via [Poly Pizza](https://poly.pizza/m/aJbcT0Vrldz)
 - Elven Bed by Nick Slough [CC-BY](https://creativecommons.org/licenses/by/3.0/) via [Poly Pizza](https://poly.pizza/m/8_e2sYzz8gg)
 - Cloudy Skyboxes by Screaming Brain Studios via [Open Game Art](https://opengameart.org/content/cloudy-skyboxes-0)
+- Hook and chain by Zacharylll [CC-BY](https://creativecommons.org/licenses/by/3.0/) via [Poly Pizza](https://poly.pizza/m/dBp9m8k9kTi)
+- Cage Medieval by hat_my_guy via [Poly Pizza](https://poly.pizza/m/mybhRIyuL9)
+- Coffin by Kay Lousberg via [Poly Pizza](https://poly.pizza/m/ySERERWPgE)
+- Pile of Bones by Zsky [CC-BY](https://creativecommons.org/licenses/by/3.0/) via [Poly Pizza](https://poly.pizza/m/uZ3GefauOE)
+- Basic chain by Justin Randall [CC-BY](https://creativecommons.org/licenses/by/3.0/) via [Poly Pizza](https://poly.pizza/m/1-ClUMXHL57)
+- Skeleton by Quaternius via [Poly Pizza](https://poly.pizza/m/wODZYCgX5Z)
 
 ### Audio
 
