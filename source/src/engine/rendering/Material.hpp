@@ -323,12 +323,12 @@ class SonarMaterial : public Material {
 
 class OutlineMaterial : public Material
 {
-    glm::vec3 color;
+    glm::vec4 color;
     float thickness;
-    bool isActive;
+    bool isVisible;
 
 public:
-    OutlineMaterial(const glm::vec3 color, const float thickness)
+    OutlineMaterial(const glm::vec4 color, const float thickness)
     {
         this->diffuse = VEC3_ONE;
         this->specular = glm::vec4(0.0f);
@@ -336,21 +336,17 @@ public:
 
         this->color = color;
         this->thickness = thickness;
-        this->isActive = false;
 
         shaderType = ShaderType::OUTLINE;
     }
     ~OutlineMaterial() override = default;
 
-    void toggle()
-    {
-        isActive = !isActive;
-    }
+    void setVisible(const bool v) {isVisible = v;};
 
     void updateUBO(UniformBufferObject& ubo) override
     {
         ubo.color = color;
-        ubo.param1 = glm::vec4(thickness, isActive ? 1.0f : 0.0f, 0, 0);
+        ubo.param1 = glm::vec4(thickness, color.a * (int)isVisible, 0, 0);
     }
 };
 

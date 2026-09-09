@@ -74,6 +74,9 @@ class Renderer {
 
             if (IsLateDraw(shaderType))
                 pipeline.setTransparency(true);
+
+            if (shaderType == OUTLINE)
+                pipeline.setCullMode(VK_CULL_MODE_FRONT_BIT);
         }
 
         ///Must be called inside Renderer.descriptorSetsInits()
@@ -376,7 +379,6 @@ class Renderer {
             const std::string name = checkFileExists("assets/textures/normal/" + model3D->getMaterial()->getTextureName()) ? model->getMaterial()->getTextureName() : "Default.png";
             t->init(bp,"assets/textures/normal/" + name);
         }
-
 
         //Insert model and texture
         model3D->getMaterial()->setAlbedoTex(&albedoTexAssets[model3D->getMaterial()->getTextureName()]);

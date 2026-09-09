@@ -70,7 +70,7 @@ LambertTexMaterial* wood_metalMat = TEX_MAT("wood-metal.png");
 CookTorranceMaterial* rockMat = new CookTorranceMaterial({1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 100.0f},"rock.png");
 WaterMaterial waterMat = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, 0.5f, "water.png"};
 LambertMaterial rainMat = {glm::vec3(0.0f, 0.0f, .9f), {1.0f,1.0f,1.0f,100.0f}};
-OutlineMaterial outlineMat = OutlineMaterial({1, 0, 1}, 4.0f);
+OutlineMaterial outlineMat = OutlineMaterial({1, 0, 1, 0.5}, 0.1f);
 LambertMaterial metalMat = {{0.153, 0.212, 0.322}, {0.153, 0.212, 0.322, 1}};
 
 Node* createScene1() {
@@ -346,9 +346,10 @@ Node* createUnitScene() {
         cube->adopt(box);
         box->setLocalPosition(VEC3_ZERO);
    }
-    Model3D* sphere = new Model3D("Unit Sphere.gltf", {0, 2, 3}, {0, 0, 0}, {1, 1, 1}, &outlineMat);
-    outlineMat.toggle();
+    Model3D* sphere = new Model3D("Unit Sphere.gltf", {0, 2, 3}, {0, 0, 0}, {1, 1, 1}, &blankMat);
     models->adopt(sphere);
+    Model3D* outline = new Model3D("Unit Sphere.gltf", {0, 2, 3}, {0, 0, 0}, {1, 1, 1}, &outlineMat);
+    models->adopt(outline);
     SphereCollider* sColl = new SphereCollider();
     sphere->adopt(sColl);
     sColl->setLocalPosition(VEC3_ZERO);

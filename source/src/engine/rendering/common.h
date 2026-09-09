@@ -129,6 +129,7 @@ const bool IsLateDraw(ShaderType s) {
     switch (s) {
         case FIRE: return true;
         case MAGIC_CIRCLE: return true;
+        case OUTLINE: return true;
         default: return false;
     }
 }

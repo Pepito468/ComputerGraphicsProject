@@ -153,7 +153,6 @@ public:
                     RPoffScreen->attachments[0].getViewAndSampler() //shadowMap
             });
 
-
         if (justOnce) {
             Anim.resize(assets.size());
             for(int i = 0; i < Anim.size(); i++) {
