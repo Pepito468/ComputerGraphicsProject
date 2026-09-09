@@ -50,7 +50,7 @@ class PlayerNode : public UpdateNode3D
         SphereCollider* bulletColl = new SphereCollider();
         bulletColl->name = "bullColl";
         bulletColl->layer = BULLETS;
-        bulletColl->collidesWith = ENVIRONMENT;
+        bulletColl->collidesWith = FLOOR;
         BulletNode* bullet = new BulletNode();
         bullet->name = "bullet";
         Model3D *bulletMod = new Model3D("SuzanneUV.obj", {0, 0, 0}, {0, 0, 0}, {0.5f, 0.5f, 0.5f}, &rMat);
@@ -136,7 +136,7 @@ public:
         }
 
         //Check grounded
-        isGrounded = Physics::raycast(playerColl->getGlobalPosition() - VEC3_Y * 1.5f, -VEC3_Y, {.maxDistance = 0.2f, .layer = ENVIRONMENT});
+        isGrounded = Physics::raycast(playerColl->getGlobalPosition() - VEC3_Y * 1.5f, -VEC3_Y, {.maxDistance = 0.2f, .layer = FLOOR});
         if (isGrounded)
         {
             vertSpeed = 0.0f;
@@ -219,7 +219,7 @@ public:
         CapsuleCollider* rootCollider = new CapsuleCollider();
         rootCollider->name = "PlayerCollider";
         rootCollider->layer = PLAYER;
-        rootCollider->collidesWith = ENVIRONMENT;
+        rootCollider->collidesWith = FLOOR | ENVIRONMENT;
 
         PlayerNode* controls = new PlayerNode();
         controls->name = "Player";

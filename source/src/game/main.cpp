@@ -25,6 +25,7 @@
 #include "Particles.hpp"
 #include "gamenodes/AudioController.hpp"
 #include "gamenodes/CustomCameraUpdate.hpp"
+#include "gamenodes/FollowPath.hpp"
 #include "gamenodes/FPSTextUpdater.hpp"
 #include "gamenodes/LeverNode.hpp"
 #include "gamenodes/LightningNode.hpp"
@@ -124,7 +125,7 @@ Node* createScene1() {
     BoxCollider* planeColl = new BoxCollider(2.0f, 0.05f, 2.0f);
     planeColl->name = "PlaneHB";
     planeColl->movementStatus = STATIC;
-    planeColl->layer = ENVIRONMENT;
+    planeColl->layer = FLOOR;
     plane->name = "Plane";
     plane->adopt(planeColl);
     models->adopt(plane);
@@ -209,6 +210,28 @@ Node* createScene1() {
     movingAudio->name = "RocketJumWaltz";
     planet->adopt(movingAudio);
 
+    Model3D* platform = new Model3D("Unit Cube.gltf", {5, 0, 5}, {0, 0, 0}, {8, 1, 8}, &mat1);
+    BoxCollider* platformColl = new BoxCollider();
+    platformColl->layer = FLOOR;
+    platformColl->collidesWith = NONE;
+    platform->adopt(platformColl);
+    BoxCollider* platformColl2 = new BoxCollider({0, 1, 0}, VEC3_ZERO, VEC3_ONE);
+    platformColl2->isTrigger = true;
+    platformColl2->layer = ENVIRONMENT;
+    platformColl2->collidesWith = PLAYER;
+    platformColl2->onTriggerEnter = [platform] (Collider* other)
+    {
+        log(std::format("other {} @ {} {}", other, other->getGlobalPosition(), other->getLocalPosition()));
+        platform->adopt(other);
+        log(std::format("other {} @ {} {}", other, other->getGlobalPosition(), other->getLocalPosition()));
+    };
+    platformColl2->onTriggerExit = [platform] (Collider* other) {platform->disown(other);};
+    platform->adopt(platformColl2);
+    models->adopt(platform);
+
+    FollowPath* path = new FollowPath({{5, 0, 5}, {10, 0, 5}, {10, 0, 10}, {5, 0, 10}}, platform, 3, true);
+    root->adopt(path);
+
     return root;
 }
 
@@ -258,7 +281,7 @@ Node* createScene2() {
     BoxCollider* planeColl = new BoxCollider(2.0f, 0.01f, 2.0f);
     planeColl->name = "PlaneHB";
     planeColl->movementStatus = STATIC;
-    planeColl->layer = ENVIRONMENT;
+    planeColl->layer = FLOOR;
     plane->name = "Plane";
     plane->adopt(planeColl);
     models->adopt(plane);
@@ -334,7 +357,7 @@ Node* createUnitScene() {
     BoxCollider* planeColl = new BoxCollider(1.0f, 0.05f, 1.0f);
     planeColl->name = "PlaneHB";
     planeColl->movementStatus = STATIC;
-    planeColl->layer = ENVIRONMENT;
+    planeColl->layer = FLOOR;
     plane->name = "Plane";
     plane->adopt(planeColl);
     models->adopt(plane);
@@ -448,14 +471,14 @@ Node* createForestScene() {
     Model3D *plane = new Model3D("Unit Plane.gltf", {0, 0, 26.25f}, {0, 0, 0}, {100, 1, 100}, pathMat);
     BoxCollider* planeColl = new BoxCollider(1.0f, 0.05f, 1.0f);
     planeColl->movementStatus = STATIC;
-    planeColl->layer = ENVIRONMENT;
+    planeColl->layer = FLOOR;
     plane->adopt(planeColl);
     models->adopt(plane);
 
     Model3D *plane2 = new Model3D("Unit Plane.gltf", {0, 0, 141.5f}, {0, M_PI, 0}, {100, 1, 100}, pathMat);
     BoxCollider* plane2Coll = new BoxCollider(1.0f, 0.05f, 1.0f);
     plane2Coll->movementStatus = STATIC;
-    plane2Coll->layer = ENVIRONMENT;
+    plane2Coll->layer = FLOOR;
     plane2->adopt(plane2Coll);
     models->adopt(plane2);
 
@@ -463,7 +486,7 @@ Node* createForestScene() {
     bridgeWall->name = "BridgeWall";
     bridgeWall->setGlobalPosition({0, 0, 76.525f});
     bridgeWall->movementStatus = STATIC;
-    bridgeWall->layer = ENVIRONMENT;
+    bridgeWall->layer = FLOOR;
     root->adopt(bridgeWall);
 
     Model3D* bridge = new Model3D("Bridge.gltf", {0, 0, 91.5f}, {0, M_PI, 0}, VEC3_ONE * 1.6f, wood_metalMat);
@@ -587,7 +610,7 @@ Node* createForestScene() {
         BoxCollider* coll = new BoxCollider(w[0], w[1], w[2] * 2.0f);
         coll->name = std::format("Wall @ {}", w[0]);
         coll->movementStatus = STATIC;
-        coll->layer = ENVIRONMENT;
+        coll->layer = FLOOR;
         walls->adopt(coll);
         /*
         Model3D* box = new Model3D("Unit Cube.gltf", VEC3_ZERO, VEC3_ZERO, VEC3_ONE, &blankMat);
@@ -597,7 +620,7 @@ Node* createForestScene() {
 
     BoxCollider* endZone = new BoxCollider(true, {0, 2, 100}, VEC3_ZERO, {20, 4, 1});
     endZone->movementStatus = STATIC;
-    endZone->layer = ENVIRONMENT;
+    endZone->layer = FLOOR;
     endZone->onTriggerEnter = [](Collider* _)
     {
         info("You have reached the door to the castle, loading next scene...");
@@ -688,7 +711,7 @@ Node* createDarkScene() {
     BoxCollider* floorCollider = new BoxCollider(5.0f, 0.2f, 5.0f);
     floorCollider->name = "Floorcoll";
     floorCollider->movementStatus = STATIC;
-    floorCollider->layer = ENVIRONMENT;
+    floorCollider->layer = FLOOR;
     floor->adopt(floorCollider);
 
     // Ceiling
@@ -716,7 +739,7 @@ Node* createDarkScene() {
                 BoxCollider* wallCollider = new BoxCollider(pos, {0, 0, 0}, {cellSize/2, cellSize/2, cellSize/2});
                 wallCollider->name = std::format("WallColl {} {}", i, j);
                 wallCollider->movementStatus = STATIC;
-                wallCollider->layer = ENVIRONMENT;
+                wallCollider->layer = FLOOR;
                 staticObjects->adopt(wallCollider);
                 break;
             }
@@ -733,7 +756,7 @@ Node* createDarkScene() {
                 BoxCollider* endFloorColl = new BoxCollider(1.0f, 0.05f, 1.0f);
                 endFloorColl->name = "endFloorColl";
                 endFloorColl->movementStatus = STATIC;
-                endFloorColl->layer = ENVIRONMENT;
+                endFloorColl->layer = FLOOR;
                 endFloor->adopt(endFloorColl);
                 endRoom->adopt(endFloor);
 
@@ -741,21 +764,21 @@ Node* createDarkScene() {
                 BoxCollider* endWall1Coll = new BoxCollider({i*cellSize, 5, j*cellSize + 30}, VEC3_ZERO, {25.0f, 25.0f, 1.0f});
                 endWall1Coll->name = "endWall1Coll";
                 endWall1Coll->movementStatus = STATIC;
-                endWall1Coll->layer = ENVIRONMENT;
+                endWall1Coll->layer = FLOOR;
                 endWall1->adopt(endWall1Coll);
                 endRoom->adopt(endWall1);
                 Model3D *endWall2 = new Model3D("Unit Plane.gltf", {i*cellSize - 9.5, 5, j*cellSize + 17.5}, {std::numbers::pi / 2, std::numbers::pi / 2, 0}, {27, 1, 27}, &mat1);
                 BoxCollider* endWall2Coll = new BoxCollider({i*cellSize - 9.5, 5, j*cellSize + 17.5}, VEC3_ZERO, {1.0f, 25.0f, 25.0f});
                 endWall2Coll->name = "endWall2Coll";
                 endWall2Coll->movementStatus = STATIC;
-                endWall2Coll->layer = ENVIRONMENT;
+                endWall2Coll->layer = FLOOR;
                 endWall2->adopt(endWall2Coll);
                 endRoom->adopt(endWall2);
                 Model3D *endWall3 = new Model3D("Unit Plane.gltf", {i*cellSize + 9.5, 5, j*cellSize + 17.5}, {std::numbers::pi / 2, -std::numbers::pi / 2, 0}, {27, 1, 27}, &mat1);
                 BoxCollider* endWall3Coll = new BoxCollider({i*cellSize + 9.5, 5, j*cellSize + 17.5}, VEC3_ZERO, {1.0f, 25.0f, 25.0f});
                 endWall3Coll->name = "endWall3Coll";
                 endWall3Coll->movementStatus = STATIC;
-                endWall3Coll->layer = ENVIRONMENT;
+                endWall3Coll->layer = FLOOR;
                 endWall3->adopt(endWall3Coll);
                 endRoom->adopt(endWall3);
 
@@ -767,7 +790,7 @@ Node* createDarkScene() {
 
                 BoxCollider* endZone = new BoxCollider(true, {i*cellSize, 0.1f, j*cellSize + 20.5}, VEC3_ZERO, {3, 3, 3});
                 endZone->movementStatus = STATIC;
-                endZone->layer = ENVIRONMENT;
+                endZone->layer = FLOOR;
                 endZone->onTriggerEnter = [](Collider* _)
                 {
                     Engine::endGame();
@@ -809,32 +832,79 @@ Node* createLabyrinthScene()
     root->name = "root";
 
     Node3D* player = PlayerNode::makeStandardPlayer();
-    player->setGlobalPosition({0, 3, -7});
+    constexpr glm::vec3 initialPos = {0, 3, -7};
+    player->setGlobalPosition(initialPos);
     root->adopt(player);
 
-    // temp floor, add holes later
-    Model3D* labFloor = new Model3D("Unit Plane.gltf", {0, 0, 40}, VEC3_ZERO, {90, 1, 80}, &sMat);
-    BoxCollider* floorColl = new BoxCollider(1, 0.05f, 1);
-    floorColl->name = "floorCollider";
-    floorColl->movementStatus = STATIC;
-    floorColl->layer = ENVIRONMENT;
-    labFloor->adopt(floorColl);
+    Model3D* labFloor = new Model3D("Labyrinth Floor.gltf", {0, 0, 40}, VEC3_ZERO, {1, 1, 1}, &sMat);
     root->adopt(labFloor);
+    //BoxCollider* floorColl = new BoxCollider(90, 0.05f, 80);
+    //floorColl->name = "floorCollider";
+    //floorColl->movementStatus = STATIC;
+    //floorColl->layer = ENVIRONMENT;
+    //labFloor->adopt(floorColl);
+
+    std::vector<std::vector<glm::vec3>> objPoints = {
+        {{0.000, 0.000, 25.000}, {30.000, 1.000, 50.000}},
+        {{-30.038, 0.000, 40.000}, {30.000, 1.000, 20.000}},
+        {{30.000, 0.000, 50.000}, {30.000, 1.000, 60.000}},
+        {{-20.000, 0.000, 70.000}, {50.000, 1.000, 20.000}},
+        {{-35.000, 0.000, 10.000}, {20.000, 1.000, 20.000}},
+        {{30.000, 0.000, 5.000}, {30.000, 1.000, 10.000}},
+        {{-20.000, 0.000, 20.000}, {10.000, 1.000, 20.000}},
+        {{-40.000, 0.000, 25.000}, {10.000, 1.000, 10.000}},
+        {{-40.000, 0.000, 55.000}, {10.000, 1.000, 10.000}},
+        {{10.000, 0.000, 65.000}, {10.000, 1.000, 10.000}},
+        {{20.000, 0.000, 15.000}, {10.000, 1.000, 10.000}},
+        {{40.000, 0.000, 15.000}, {10.000, 1.000, 10.000}},
+    };
+    for (auto p : objPoints)
+    {
+        BoxCollider* floorColl = new BoxCollider(p[0], VEC3_ZERO, p[1]);
+        floorColl->height = 0.05f;
+        floorColl->name = std::format("floor @ {}", p[0]);
+        floorColl->movementStatus = STATIC;
+        floorColl->layer = FLOOR;
+        root->adopt(floorColl);
+    }
+
+    AudioNode* painSound = new AudioNode("hurt.mp3", 1);
+    root->adopt(painSound);
+    objPoints = {
+        {{30.000, -4.000, 15.000}, {10.000, 1.000, 10.000}},
+        {{-20.000, -4.000, 5.000}, {10.000, 1.000, 10.000}},
+        {{-30.000, -4.000, 25.000}, {10.000, 1.000, 10.000}},
+        {{10.000, -4.000, 75.000}, {10.000, 1.000, 10.000}},
+        {{-10.000, -4.000, 55.000}, {50.000, 1.000, 10.000}},
+    };
+    for (auto p : objPoints)
+    {
+        BoxCollider* spikeColl = new BoxCollider(p[0], VEC3_ZERO, p[1]);
+        spikeColl->name = std::format("spikes @ {}", p[0]);
+        spikeColl->movementStatus = STATIC;
+        spikeColl->layer = ENVIRONMENT;
+        spikeColl->onCollision = [player, initialPos, painSound](Collider* collider)
+        {
+            player->setGlobalPosition(initialPos);
+            painSound->playSound();
+        };
+        root->adopt(spikeColl);
+    }
 
     Model3D* labCeiling = new Model3D("Unit Plane.gltf", {0, 6, 40}, {0, 0, M_PI}, {90, 1, 80}, &sMat);
     root->adopt(labCeiling);
 
     // Start and end rooms
-    std::vector<std::vector<glm::vec3>> objPoints = {
+    objPoints = {
         {{0.000, -0.010, -4.900}, {0.000, 0.000, 0.000}, {10.000, 1.000, 10.000}},
         {{-5.000, 3.000, -4.900}, {0.000, 3.142, 1.571}, {6.000, 1.000, 10.000}},
         {{5.000, 3.000, -4.900}, {3.142, 0, 1.571}, {6.000, 1.000, 10.000}},
         {{0.000, 3.000, -9.900}, {0, 1.571, 1.571}, {6.000, 1.000, 10.000}},
 
         {{-0.000, -0.010, 84.910}, {0.000, 3.142, 0.000}, {10.000, 1.000, 10.000}},
-        {{5.000, 3.000, 84.910}, {3.142, 0.000, 1.571}, {6.000, 1.000, 10.000}}, // ok
-        {{-5.000, 3.000, 84.910}, {0.000, 0.000, -1.571}, {6.000, 1.000, 10.000}}, // flip
-        {{0.000, 3.000, 89.910}, {0.000, -1.571, 1.571}, {6.000, 1.000, 10.000}} // rotate
+        {{5.000, 3.000, 84.910}, {3.142, 0.000, 1.571}, {6.000, 1.000, 10.000}},
+        {{-5.000, 3.000, 84.910}, {0.000, 0.000, -1.571}, {6.000, 1.000, 10.000}},
+        {{0.000, 3.000, 89.910}, {0.000, -1.571, 1.571}, {6.000, 1.000, 10.000}}
     };
     for (auto p : objPoints)
     {
@@ -842,7 +912,7 @@ Node* createLabyrinthScene()
         BoxCollider* coll = new BoxCollider(1, 0.1f, 1);
         coll->name = std::format("room plane @ {}", p[0]);
         coll->movementStatus = STATIC;
-        coll->layer = ENVIRONMENT;
+        coll->layer = FLOOR;
         plane->adopt(coll);
         root->adopt(plane);
     }
@@ -857,7 +927,7 @@ Node* createLabyrinthScene()
 
     BoxCollider* endZone = new BoxCollider(true, {0.0f, 0.1f, 84.900}, VEC3_ZERO, {5, 5, 5});
     endZone->movementStatus = STATIC;
-    endZone->layer = ENVIRONMENT;
+    endZone->layer = FLOOR;
     endZone->onTriggerEnter = [](Collider* _)
     {
         Engine::endGame();
@@ -916,7 +986,7 @@ Node* createLabyrinthScene()
         BoxCollider* coll = new BoxCollider();
         coll->name = std::format("wall @ {}", w[0]);
         coll->movementStatus = STATIC;
-        coll->layer = ENVIRONMENT;
+        coll->layer = FLOOR;
         wall->adopt(coll);
         root->adopt(wall);
     }
