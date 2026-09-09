@@ -855,6 +855,15 @@ Node* createLabyrinthScene()
     Model3D* magicCircle = new Model3D("Unit Plane.gltf", {0, 0, 84.900}, VEC3_ZERO, {5, 1, 5}, &magicMat);
     root->adopt(magicCircle);
 
+    BoxCollider* endZone = new BoxCollider(true, {0.0f, 0.1f, 84.900}, VEC3_ZERO, {5, 5, 5});
+    endZone->movementStatus = STATIC;
+    endZone->layer = ENVIRONMENT;
+    endZone->onTriggerEnter = [](Collider* _)
+    {
+        Engine::endGame();
+    };
+    root->adopt(endZone);
+
     // Walls
     objPoints = {
         {{-25.198, 3.000, -0.372}, {42.000, 6.000, 2.000}},
@@ -1214,7 +1223,7 @@ Node* createMainMenu() {
     Model3D* mage = new Model3D("Mage.gltf", {0.0f, 0.0f, 10.0f}, {0.0f, M_PI, 0.0f}, VEC3_ONE, mat);
     castle->adopt(mage);
 
-    PointLight *mageLight = new PointLight({0.0f, 2.5f, 0.5f}, 1.0f, {1.0f, 0.0f, 1.0f}, 4, 2);
+    PointLight *mageLight = new PointLight({0.0f, 3.0f, 0.0f}, 0.75f, {1.0f, 0.0f, 1.0f}, 4, 2);
     mage->adopt(mageLight);
 
     PerspectiveCamera *camera = new PerspectiveCamera(0.1f, 200, glm::radians(90.0f), 4.0f/3.0f, true);
@@ -1235,9 +1244,13 @@ Node* createMainMenu() {
     ambientLight->name = "AmbientLight";
     root->adopt(ambientLight);
 
-    DirectionalLight *directionalLight = new DirectionalLight(0.5,glm::vec3(1.0f, 0.95f, 0.8f),glm::normalize(glm::vec3(0.8f, 0.25f, 0.4f)));
+    DirectionalLight *directionalLight = new DirectionalLight(0.15,glm::vec3(0.5f, 0.5f, 0.5f),glm::normalize(glm::vec3(-0.8f, -0.25f, -0.4f)));
     directionalLight->name = "DirectionalLight";
     root->adopt(directionalLight);
+
+    // Text
+    Text2D *authors = new Text2D("Michele Sangaletti\nAndrea Riccioli\nShaan Vashisht\nChristian Vezzoli", {.95, .95}, "SS", false, false, true, TAL_RIGHT, TRH_RIGHT, TRV_BOTTOM);
+    root->adopt(authors);
 
     return root;
 }
@@ -1274,6 +1287,9 @@ Node* createEndMenu() {
     DirectionalLight *directionalLight = new DirectionalLight(0.5,glm::vec3(1.0f, 0.95f, 0.8f),glm::normalize(glm::vec3(0.8f, 0.25f, 0.4f)));
     directionalLight->name = "DirectionalLight";
     root->adopt(directionalLight);
+
+    // Music
+    root->adopt(new AudioController(new AudioNode("door_into_summer.mp3", 0.2f), true));
 
     return root;
 }
