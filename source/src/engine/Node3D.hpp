@@ -458,6 +458,14 @@ class Node3D : public virtual Node {
             this->commitLocalUpdate();
         }
 
+        void adopt(Node* child) override
+        {
+            Node::adopt(child);
+
+            if (Node3D* child3D = dynamic_cast<Node3D*>(child))
+                child3D->updateFatherMatrix(globalMatrix);
+        }
+
         /// Computes the local coordinates of the given point from the node's transform
         glm::vec3 toLocalSpace(const glm::vec3 point) const {
             return glm::vec3(glm::inverse(this->globalMatrix) * glm::vec4(point, DEFAULT_POINT_SCALE));

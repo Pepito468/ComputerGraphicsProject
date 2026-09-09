@@ -71,6 +71,7 @@ CookTorranceMaterial* rockMat = new CookTorranceMaterial({1.0f, 1.0f, 1.0f}, {1.
 WaterMaterial waterMat = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, 0.5f, "water.png"};
 LambertMaterial rainMat = {glm::vec3(0.0f, 0.0f, .9f), {1.0f,1.0f,1.0f,100.0f}};
 OutlineMaterial outlineMat = OutlineMaterial({1, 0, 1}, 4.0f);
+LambertMaterial metalMat = {{0.153, 0.212, 0.322}, {0.153, 0.212, 0.322, 1}};
 
 Node* createScene1() {
 
@@ -376,6 +377,30 @@ Node* createUnitScene() {
     lever->adopt(lever_h);
     lever->globalTranslate({0, 0, 17});
     models->adopt(lever);
+
+    Model3D* bones = new Model3D("Pile of Bones.gltf", {0, 0, 20}, {0, 0, 0}, VEC3_ONE, &blankMat);
+    models->adopt(bones);
+
+    Model3D* coffin = new Model3D("Coffin.gltf", {0, 0, 23}, {0, 0, 0}, VEC3_ONE, &blankMat);
+    models->adopt(coffin);
+
+    Model3D* chains = new Model3D("Chains.gltf", {0, 5, 26}, {0, 0, 0}, VEC3_ONE, &blankMat);
+    models->adopt(chains);
+
+    Model3D* hook = new Model3D("Hook and Chain.gltf", {0, 5, 29}, {0, 0, 0}, VEC3_ONE, &blankMat);
+    models->adopt(hook);
+
+    Model3D* cage = new Model3D("Cage.gltf", {0, 5, 32}, {0, 0, 0}, VEC3_ONE, &blankMat);
+    models->adopt(cage);
+
+    Model3D* torch = new Model3D("Torch.gltf", {0, 5, 35}, {0, 0, 0}, VEC3_ONE, &blankMat);
+    models->adopt(torch);
+
+    Model3D* skele1 = new Model3D("Skeleton_crawl.gltf", {0, 0, 40}, {0, 0, 0}, VEC3_ONE, &blankMat);
+    models->adopt(skele1);
+
+    Model3D* skele2 = new Model3D("Skeleton_lean.gltf", {0, 0, 45}, {0, 0, 0}, VEC3_ONE, &blankMat);
+    models->adopt(skele2);
 
     // Lights
     AmbientLight *ambientLight = new AmbientLight({0.08f, 0.14f, 0.20f},{0.035f, 0.04f, 0.045f}, {0.0f, 1.0f, 0.0f});
@@ -777,6 +802,348 @@ Node* createDarkScene() {
     return root;
 }
 
+Node* createLabyrinthScene()
+{
+    Node* root = new Node();
+    root->name = "root";
+
+    Node3D* player = PlayerNode::makeStandardPlayer();
+    player->setGlobalPosition({0, 3, -7});
+    root->adopt(player);
+
+    // temp floor, add holes later
+    Model3D* labFloor = new Model3D("Unit Plane.gltf", {0, 0, 40}, VEC3_ZERO, {90, 1, 80}, &sMat);
+    BoxCollider* floorColl = new BoxCollider(1, 0.05f, 1);
+    floorColl->name = "floorCollider";
+    floorColl->movementStatus = STATIC;
+    floorColl->layer = ENVIRONMENT;
+    labFloor->adopt(floorColl);
+    root->adopt(labFloor);
+
+    Model3D* labCeiling = new Model3D("Unit Plane.gltf", {0, 6, 40}, {0, 0, M_PI}, {90, 1, 80}, &sMat);
+    root->adopt(labCeiling);
+
+    // Start and end rooms
+    std::vector<std::vector<glm::vec3>> objPoints = {
+        {{0.000, -0.010, -4.900}, {0.000, 0.000, 0.000}, {10.000, 1.000, 10.000}},
+        {{-5.000, 3.000, -4.900}, {0.000, 3.142, 1.571}, {6.000, 1.000, 10.000}},
+        {{5.000, 3.000, -4.900}, {3.142, 0, 1.571}, {6.000, 1.000, 10.000}},
+        {{0.000, 3.000, -9.900}, {0, 1.571, 1.571}, {6.000, 1.000, 10.000}},
+
+        {{-0.000, -0.010, 84.910}, {0.000, 3.142, 0.000}, {10.000, 1.000, 10.000}},
+        {{5.000, 3.000, 84.910}, {3.142, 0.000, 1.571}, {6.000, 1.000, 10.000}}, // ok
+        {{-5.000, 3.000, 84.910}, {0.000, 0.000, -1.571}, {6.000, 1.000, 10.000}}, // flip
+        {{0.000, 3.000, 89.910}, {0.000, -1.571, 1.571}, {6.000, 1.000, 10.000}} // rotate
+    };
+    for (auto p : objPoints)
+    {
+        Model3D* plane = new Model3D("Unit Plane.gltf", p[0], p[1], p[2], rockMat);
+        BoxCollider* coll = new BoxCollider(1, 0.1f, 1);
+        coll->name = std::format("room plane @ {}", p[0]);
+        coll->movementStatus = STATIC;
+        coll->layer = ENVIRONMENT;
+        plane->adopt(coll);
+        root->adopt(plane);
+    }
+    objPoints.clear();
+    
+    Model3D* startCeiling = new Model3D("Unit Plane.gltf", {0, 5.990, -4.900}, {0, 0, 3.142}, {10, 1, 10}, rockMat);
+    root->adopt(startCeiling);
+    Model3D* endCeiling = new Model3D("Unit Plane.gltf", {0, 5.990, 84.900}, {0, 0, 3.142}, {10, 1, 10}, &rMat);
+    root->adopt(endCeiling);
+    Model3D* magicCircle = new Model3D("Unit Plane.gltf", {0, 0, 84.900}, VEC3_ZERO, {5, 1, 5}, &magicMat);
+    root->adopt(magicCircle);
+
+    // Walls
+    objPoints = {
+        {{-25.198, 3.000, -0.372}, {42.000, 6.000, 2.000}},
+        {{24.802, 3.000, -0.372}, {42.000, 6.000, 2.000}},
+        {{-25.198, 3.000, 79.628}, {42.000, 6.000, 2.000}},
+        {{24.802, 3.000, 79.628}, {42.000, 6.000, 2.000}},
+        {{-45.198, 3.000, 39.628}, {2.000, 6.000, 82.000}},
+        {{44.802, 3.000, 39.628}, {2.000, 6.000, 82.000}},
+        {{-25.198, 3.000, 9.628}, {2.000, 6.000, 22.000}},
+        {{-25.198, 3.000, 44.628}, {2.000, 6.000, 12.000}},
+        {{-25.198, 3.000, 69.628}, {2.000, 6.000, 22.080}},
+        {{-15.198, 3.000, 24.628}, {2.000, 6.000, 32.076}},
+        {{-5.198, 3.000, 34.628}, {2.000, 6.000, 32.076}},
+        {{-5.198, 3.000, 74.628}, {2.000, 6.000, 12.000}},
+        {{4.802, 3.000, 64.628}, {2.000, 6.000, 12.000}},
+        {{4.802, 3.000, 44.628}, {2.000, 6.000, 12.000}},
+        {{14.802, 3.000, 44.628}, {2.000, 6.000, 12.000}},
+        {{14.802, 3.000, 14.628}, {2.000, 6.000, 32.076}},
+        {{24.802, 3.000, 44.628}, {2.000, 6.000, 32.076}},
+        {{24.802, 3.000, 14.628}, {2.000, 6.000, 12.000}},
+        {{34.802, 3.000, 14.628}, {2.000, 6.000, 12.000}},
+        {{34.802, 3.000, 44.628}, {2.000, 6.000, 12.000}},
+        {{34.802, 3.000, 64.628}, {2.000, 6.000, 12.000}},
+        {{24.802, 3.000, 74.628}, {2.000, 6.000, 12.000}},
+        {{-35.198, 3.000, 34.628}, {2.000, 6.000, 12.000}},
+        {{-20.198, 3.000, 19.628}, {32.076, 6.000, 2.000}},
+        {{-40.198, 3.000, 49.628}, {12.000, 6.000, 2.000}},
+        {{-35.198, 3.000, 29.628}, {22.000, 6.000, 2.000}},
+        {{-5.198, 3.000, 9.628}, {22.000, 6.000, 2.000}},
+        {{14.802, 3.000, 19.628}, {22.000, 6.000, 2.000}},
+        {{39.802, 3.000, 19.628}, {12.000, 6.000, 2.000}},
+        {{-0.198, 3.000, 29.628}, {12.000, 6.000, 2.000}},
+        {{24.802, 3.000, 29.628}, {22.000, 6.000, 2.000}},
+        {{-20.198, 3.000, 39.628}, {12.000, 6.000, 2.000}},
+        {{-40.198, 3.000, 9.628}, {12.000, 6.000, 2.000}},
+        {{-10.198, 3.000, 49.628}, {12.000, 6.000, 2.000}},
+        {{-25.198, 3.000, 59.628}, {22.000, 6.000, 2.000}},
+        {{-30.198, 3.000, 69.628}, {12.000, 6.000, 2.000}},
+        {{-0.198, 3.000, 59.628}, {12.000, 6.000, 2.000}},
+        {{-0.198, 3.000, 69.628}, {32.076, 6.000, 2.000}},
+        {{29.802, 3.000, 69.628}, {12.000, 6.000, 2.000}},
+        {{39.802, 3.000, 39.628}, {12.000, 6.000, 2.000}},
+        {{19.802, 3.000, 59.628}, {12.000, 6.000, 2.000}},
+        {{9.802, 3.000, 39.628}, {12.000, 6.000, 2.000}},
+        {{19.802, 3.000, 49.628}, {12.000, 6.000, 2.000}}
+    };
+    for (auto w : objPoints)
+    {
+        Model3D* wall = new Model3D("Unit Cube.gltf", w[0], VEC3_ZERO, w[1], &sMat);
+        BoxCollider* coll = new BoxCollider();
+        coll->name = std::format("wall @ {}", w[0]);
+        coll->movementStatus = STATIC;
+        coll->layer = ENVIRONMENT;
+        wall->adopt(coll);
+        root->adopt(wall);
+    }
+    objPoints.clear();
+    
+    // Decor
+    Node* decor = new Node();
+    decor->name = "Decor container";
+    root->adopt(decor);
+    // Bones
+    objPoints = {
+        {{-12.562, 0.000, 6.933}}, 
+        {{10.930, 0.000, 3.018}}, 
+        {{-8.891, 0.000, 16.151}}, 
+        {{7.586, 0.000, 25.450}}, 
+        {{-11.012, 0.000, 40.540}}, 
+        {{-30.507, 0.000, 38.991}}, 
+        {{-19.658, 0.000, 24.308}}, 
+        {{-42.335, 0.000, 16.477}}, 
+        {{-28.794, 0.000, 2.610}}, 
+        {{-42.253, 0.000, 42.335}}, 
+        {{-42.253, 0.000, 56.202}}, 
+        {{-29.610, 0.000, 63.380}}, 
+        {{-42.824, 0.000, 72.516}}, 
+        {{-30.344, 0.000, 75.697}}, 
+        {{-4.894, 0.000, 63.788}}, 
+        {{-22.024, 0.000, 64.930}}, 
+        {{-10.767, 0.000, 77.165}}, 
+        {{13.133, 0.000, 63.869}}, 
+        {{21.371, 0.000, 74.963}}, 
+        {{21.127, 0.000, 55.305}}, 
+        {{10.196, 0.000, 46.087}}, 
+        {{21.616, 0.000, 33.525}}, 
+        {{30.670, 0.000, 24.960}}, 
+        {{18.924, 0.000, 23.737}}, 
+        {{18.924, 0.000, 12.399}}, 
+        {{39.072, 0.000, 6.118}}, 
+        {{41.111, 0.000, 14.193}}, 
+        {{39.317, 0.000, 35.401}}, 
+        {{31.649, 0.000, 55.712}}, 
+        {{40.214, 0.000, 47.555}}
+    };
+    for (auto p : objPoints)
+    {
+        const float rot = MA_TAU * randNorm();
+        const float scale = 0.8f + 0.6f * randNorm();
+        Model3D* obj = new Model3D("Pile of Bones.gltf", p[0], {0, rot, 0}, VEC3_ONE * scale, &sMat);
+        decor->adopt(obj);
+    }
+    objPoints.clear();
+
+    // Chains
+    objPoints = {
+        {{10.686, 6.000, 16.803}},
+        {{9.299, 6.000, 16.396}},
+        {{-2.529, 6.000, 25.450}},
+        {{-1.224, 6.000, 26.755}},
+        {{-18.598, 6.000, 28.142}},
+        {{-27.081, 6.000, 35.238}},
+        {{-39.806, 6.000, 46.169}},
+        {{-40.051, 6.000, 59.791}},
+        {{-35.075, 6.000, 65.011}},
+        {{-40.703, 6.000, 67.703}},
+        {{-20.637, 6.000, 72.597}},
+        {{-11.175, 6.000, 63.869}},
+        {{16.967, 6.000, 69.008}},
+        {{22.024, 6.000, 68.927}},
+        {{27.000, 6.000, 47.229}},
+        {{42.253, 6.000, 59.057}},
+        {{36.707, 6.000, 66.643}},
+        {{30.263, 6.000, 72.108}},
+        {{42.335, 6.000, 29.447}},
+        {{23.003, 6.000, 22.269}},
+        {{20.637, 6.000, 2.366}},
+        {{42.498, 6.000, 2.855}},
+        {{42.580, 6.000, 9.462}}
+    };
+    for (auto p : objPoints)
+    {
+        const float scale = 1 + randNorm();
+        Model3D* obj = new Model3D("Chains.gltf", p[0], VEC3_ZERO, VEC3_ONE * scale, &sMat);
+        decor->adopt(obj);
+    }
+    objPoints.clear();
+
+    // Hooks
+    objPoints = {
+        {{10.359, 6.000, 15.580}},
+        {{24.308, 6.000, 22.106}},
+        {{40.133, 6.000, 1.795}},
+        {{-17.130, 6.000, 27.244}},
+        {{-28.550, 6.000, 7.178}},
+        {{-28.305, 6.000, 48.861}},
+        {{-18.924, 6.000, 72.026}},
+        {{32.873, 6.000, 46.740}},
+        {{21.861, 6.000, 39.480}}
+    };
+    for (auto p : objPoints)
+    {
+        const float rot = MA_TAU * randNorm();
+        Model3D* obj = new Model3D("Hook and Chain.gltf", p[0], {0, rot, 0}, VEC3_ONE, &sMat);
+        decor->adopt(obj);
+    }
+    objPoints.clear();
+
+    // Cages
+    objPoints = {
+        {{12.303, 6.000, 22.228}},
+        {{-16.450, 6.000, 42.552}},
+        {{-36.598, 6.000, 67.839}},
+        {{12.263, 6.000, 42.063}},
+        {{37.386, 6.000, 57.480}}
+    };
+    for (auto p : objPoints)
+    {
+        Model3D* obj = new Model3D("Cage.gltf", p[0], VEC3_ZERO, VEC3_ONE, &sMat);
+        decor->adopt(obj);
+    }
+    objPoints.clear();
+
+    // Coffins
+    objPoints = {
+        {{-13.291, 1.328, 11.263}, {1.136, 0.462, -0.207}},
+        {{17.807, 0.000, 25.835}, {0.000, 1.951, -0.000}},
+        {{-32.950, 0.578, 32.054}, {0.544, 0.423, 0.251}},
+        {{-2.493, 0.000, 32.544}, {0.000, 2.189, -0.000}},
+        {{33.075, 1.474, 68.235}, {1.548, -2.590, -0.005}},
+        {{-7.074, 1.271, 71.234}, {1.163, -0.886, 0.168}}
+    };
+    for (auto p : objPoints)
+    {
+        Model3D* obj = new Model3D("Coffin.gltf", p[0], p[1], VEC3_ONE, &sMat);
+        decor->adopt(obj);
+    }
+    objPoints.clear();
+
+    // Skeletons crawl
+    objPoints = {
+        {{6.315, 0.000, 12.444}, {0.000, 2.334,0.000}},
+        {{7.573, 0.000, 32.369}, {0.000, 2.965, 0.000}},
+        {{21.835, 0.000, 65.821}, {0.000, -1.770, 0.000}},
+    };
+    for (auto p : objPoints)
+    {
+        Model3D* obj = new Model3D("Skeleton_crawl.gltf", p[0], p[1], VEC3_ONE, &sMat);
+        decor->adopt(obj);
+    }
+    objPoints.clear();
+
+    // Skeletons lean
+    objPoints = {
+        {{-20.277, 0.000, 18.089}, {0.000, 2.869, 0.000}},
+        {{-43.763, 0.000, 5.202}, {0.000, 1.898, 0.000}},
+        {{-43.397, 0.000, 31.281}, {0.000, 0.830, 0.000}},
+        {{-27.090, 0.000, 67.830}, {0.000, -2.167, 0.000}},
+        {{-26.779, 0.000, 75.762}, {-0.000, -2.167, 0.000}},
+        {{43.040, 0.000, 77.959}, {0.000, -2.167, 0.000}},
+        {{26.415, 0.000, 77.990}, {0.000, 2.473, 0.000}},
+        {{29.941, 0.000, 1.047}, {0.000, -0.245, 0.000}},
+    };
+    for (auto p : objPoints)
+    {
+        Model3D* obj = new Model3D("Skeleton_lean.gltf", p[0], p[1], VEC3_ONE, &sMat);
+        decor->adopt(obj);
+    }
+    objPoints.clear();
+    // special case
+    Model3D* skeleton = new Model3D("Skeleton_lean.gltf", {-26.621, 0.000, 73.940}, {0.000, -1.565, 0.000}, {-1.000, 1.000, 1.000}, &sMat);
+    decor->adopt(skeleton);
+
+    // Torches
+    objPoints = {
+        {{-5.474, 3.733, 1.001}, {0.000, 0.000, -0.000}},
+        {{5.357, 3.733, 1.001}, {0.000, 0.000, -0.000}},
+        {{0.148, 3.733, 11.027}, {0.000, 0.000, -0.000}},
+        {{-39.362, 3.733, 11.027}, {0.000, 0.000, -0.000}},
+        {{25.257, 3.733, 1.001}, {0.000, 0.000, -0.000}},
+        {{35.110, 3.733, 1.001}, {0.000, 0.000, -0.000}},
+        {{-10.081, 3.733, 20.995}, {0.000, 0.000, -0.000}},
+        {{-30.174, 3.733, 20.995}, {0.000, 0.000, -0.000}},
+        {{-10.660, 3.733, 50.950}, {0.000, 0.000, -0.000}},
+        {{-25.113, 3.733, 58.292}, {0.000, -3.142, 0.000}},
+        {{-0.460, 3.733, 58.348}, {0.000, -3.142, 0.000}},
+        {{10.139, 3.733, 78.339}, {0.000, -3.142, 0.000}}
+    };
+    for (auto p : objPoints)
+    {
+        Model3D* obj = new Model3D("Torch.gltf", p[0], p[1], VEC3_ONE, &sMat);
+        decor->adopt(obj);
+    }
+    objPoints.clear();
+
+    // lit torches
+    objPoints = {
+        {{4.600, 3.733, -5.000}, {0.000, -1.571, 0.000}},
+        {{-4.600, 3.733, -5.000}, {0.000, 1.571, 0.000}},
+        {{-4.600, 3.733, 85.010}, {0.000, 1.571, 0.000}},
+        {{4.600, 3.733, 84.900}, {0.000, 4.712, -0.000}}
+    };
+    for (auto p : objPoints)
+    {
+        Model3D* torch = new Model3D("Torch.gltf", p[0], p[1], VEC3_ONE, &metalMat);
+        constexpr float flameScale = 0.5f;
+        constexpr float flameOffset = 0.7139f;
+        for (int i = 0; i < 3; i++)
+        {
+            Model3D* flame = new Model3D("Unit Plane.gltf", VEC3_ZERO, {1.571, i * 1.571, 0}, VEC3_ONE * flameScale, &flame3);
+            torch->adopt(flame);
+            flame->setLocalPosition({0, flameOffset, 0});
+        }
+        PointLight* torchLight = new PointLight(VEC3_ZERO, 5, {1, 0.541, 0}, 8, 0.5);
+        torch->adopt(torchLight);
+        torchLight->setLocalPosition({0, flameOffset, 0});
+
+        decor->adopt(torch);
+    }
+    objPoints.clear();
+
+    // Lights
+    AmbientLight *ambientLight = new AmbientLight({0.08f, 0.14f, 0.20f},{0.035f, 0.04f, 0.045f}, {0.0f, 1.0f, 0.0f});
+    ambientLight->name = "AmbientLight";
+    root->adopt(ambientLight);
+
+    DirectionalLight *directionalLight = new DirectionalLight(0.5,glm::vec3(1.0f, 0.95f, 0.8f),glm::normalize(glm::vec3(0.8f, 0.25f, 0.4f)));
+    directionalLight->name = "DirectionalLight";
+    root->adopt(directionalLight);
+
+    // FPS
+    root->adopt(new FPSTextUpdater());
+
+    // TutorialText
+    Text2D *cameraTutorial = new Text2D("Press left mouse to cast spell", {-1, 1}, "SS", false, false, false, TAL_LEFT, TRH_LEFT, TRV_BOTTOM);
+    root->adopt(cameraTutorial);
+
+    return root;
+}
+
 Node* createMainMenu() {
     Node *root = new Node();
     root->name = "root";
@@ -922,7 +1289,7 @@ int main() {
     Engine::setGlobalVariable("Scene2", createScene2());
     Engine::setGlobalVariable("Unit", createUnitScene());
     Engine::setGlobalVariable("Forest", createForestScene());
-    Engine::setGlobalVariable("Dark", createDarkScene());
+    Engine::setGlobalVariable("Dark", createLabyrinthScene());
     Engine::setGlobalVariable("MainMenu", createMainMenu());
     Engine::setGlobalVariable("EndMenu", createEndMenu());
 
