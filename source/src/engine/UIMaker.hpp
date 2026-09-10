@@ -538,96 +538,100 @@ public:
 
 		// After the cursor moves, checks every button to see if their status changed
 		for (auto &b : ButtonsList) {
-			bool inside = UIElementsMap[b.id].isPointInsideHitbox((float)mousePosX, (float)mousePosY, screenW, screenH);
-			// std::cout << UI_DEBUG_STRING << " " << b.id << " hovered: " << b.hovered << "; inside: " << inside << std::endl;
+			if (UIElementsMap[b.id].isVisible) {
+				bool inside = UIElementsMap[b.id].isPointInsideHitbox((float)mousePosX, (float)mousePosY, screenW, screenH);
+				// std::cout << UI_DEBUG_STRING << " " << b.id << " hovered: " << b.hovered << "; inside: " << inside << std::endl;
 
-			if (b.hovered) {
-				if (!inside) {
-					// if the button was previously hovered and now the cursor is outside the hitbox
-					UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 0);
-					b.hovered = false;
-					commandBufferMustUpdate = true;
-				} else {
-					if (mouseClick && !b.clicked) {
-						// if the button was previously hovered and now the cursor clicks it
-						// std::cout << UI_DEBUG_STRING << " clicked a button" << std::endl;
-						b.clicked = true;
-						UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 2);
-						if (b.id != UI_ID_BUTTON_QUIT)
-							commandBufferMustUpdate = true;
-						ret.push_back({b.id});
-					} else if (b.clicked && !mouseClick) {
-						// if the button was previously clicked, restore its texture to hovered
-						b.clicked = false;
-						UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 1);
+				if (b.hovered) {
+					if (!inside) {
+						// if the button was previously hovered and now the cursor is outside the hitbox
+						UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 0);
+						b.hovered = false;
 						commandBufferMustUpdate = true;
+					} else {
+						if (mouseClick && !b.clicked) {
+							// if the button was previously hovered and now the cursor clicks it
+							// std::cout << UI_DEBUG_STRING << " clicked a button" << std::endl;
+							b.clicked = true;
+							UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 2);
+							if (b.id != UI_ID_BUTTON_QUIT)
+								commandBufferMustUpdate = true;
+							ret.push_back({b.id});
+						} else if (b.clicked && !mouseClick) {
+							// if the button was previously clicked, restore its texture to hovered
+							b.clicked = false;
+							UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 1);
+							commandBufferMustUpdate = true;
+						}
 					}
+				} else if (!b.hovered && inside) {
+					// if the button was not previously hovered and now the button is inside the hitbox
+					UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 1);
+					b.hovered = true;
+					commandBufferMustUpdate = true;
 				}
-			} else if (!b.hovered && inside) {
-				// if the button was not previously hovered and now the button is inside the hitbox
-				UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 1);
-				b.hovered = true;
-				commandBufferMustUpdate = true;
 			}
 		}
 
 		for (auto &s : SlidersMap) {
-			// std::cout << UI_DEBUG_STRING << " slider #" << s.first << ": moving = " << s.second.moving << " | upper left corner = " << s.second.upperLeftCorner.x << " x " << s.second.upperLeftCorner.y << " | lower right corner = " << s.second.lowerRightCorner.x << " x " << s.second.lowerRightCorner.y << " | xscale = " << UIElementsMap[s.first].sx << std::endl;
-			if (holding && s.second.moving) {
-				// the user is moving the slider around (doesn't matter if the cursor is on the slider, as long as they keep pressing it)
-				if (mousePosX <= s.second.upperLeftCorner.x) {
-					// lower bound
-					if (UIElementsMap[s.first].sx != 0.0f) {
-						UIElementsMap[s.first].sx = 0.0f;
+			if (UIElementsMap[s.first].isVisible) {
+				// std::cout << UI_DEBUG_STRING << " slider #" << s.first << ": moving = " << s.second.moving << " | upper left corner = " << s.second.upperLeftCorner.x << " x " << s.second.upperLeftCorner.y << " | lower right corner = " << s.second.lowerRightCorner.x << " x " << s.second.lowerRightCorner.y << " | xscale = " << UIElementsMap[s.first].sx << std::endl;
+				if (holding && s.second.moving) {
+					// the user is moving the slider around (doesn't matter if the cursor is on the slider, as long as they keep pressing it)
+					if (mousePosX <= s.second.upperLeftCorner.x) {
+						// lower bound
+						if (UIElementsMap[s.first].sx != 0.0f) {
+							UIElementsMap[s.first].sx = 0.0f;
+							commandBufferMustUpdate = true;
+							ret.push_back({s.first, 0.0f});
+						}
+					} else if (mousePosX >= s.second.lowerRightCorner.x) {
+						// upper bound
+						if (UIElementsMap[s.first].sx != s.second.currentMaxScale) {
+							UIElementsMap[s.first].sx = s.second.currentMaxScale;
+							commandBufferMustUpdate = true;
+							ret.push_back({s.first, 1.0f});
+						}
+					} else {
+						// value in between
+						UIElementsMap[s.first].sx = (mousePosX - s.second.upperLeftCorner.x)/(s.second.lowerRightCorner.x - s.second.upperLeftCorner.x) * s.second.currentMaxScale;
 						commandBufferMustUpdate = true;
-						ret.push_back({s.first, 0.0f});
+						ret.push_back({s.first, UIElementsMap[s.first].sx / s.second.currentMaxScale});
 					}
-				} else if (mousePosX >= s.second.lowerRightCorner.x) {
-					// upper bound
-					if (UIElementsMap[s.first].sx != s.second.currentMaxScale) {
-						UIElementsMap[s.first].sx = s.second.currentMaxScale;
-						commandBufferMustUpdate = true;
-						ret.push_back({s.first, 1.0f});
-					}
-				} else {
-					// value in between
+				} else if (mouseClick && isPointInsideRectangle(mousePosX, mousePosY, s.second.upperLeftCorner, s.second.lowerRightCorner)) {
+					// the user clicks inside the "hitbox" of the slider, setting the slider to that point and saving that the slider is moving
 					UIElementsMap[s.first].sx = (mousePosX - s.second.upperLeftCorner.x)/(s.second.lowerRightCorner.x - s.second.upperLeftCorner.x) * s.second.currentMaxScale;
+					s.second.moving = true;
 					commandBufferMustUpdate = true;
 					ret.push_back({s.first, UIElementsMap[s.first].sx / s.second.currentMaxScale});
-				}
-			} else if (mouseClick && isPointInsideRectangle(mousePosX, mousePosY, s.second.upperLeftCorner, s.second.lowerRightCorner)) {
-				// the user clicks inside the "hitbox" of the slider, setting the slider to that point and saving that the slider is moving
-				UIElementsMap[s.first].sx = (mousePosX - s.second.upperLeftCorner.x)/(s.second.lowerRightCorner.x - s.second.upperLeftCorner.x) * s.second.currentMaxScale;
-				s.second.moving = true;
-				commandBufferMustUpdate = true;
-				ret.push_back({s.first, UIElementsMap[s.first].sx / s.second.currentMaxScale});
-			} else if (s.second.moving) {
-				s.second.moving = false;
-			}
-
-			// if the modified slider was the volume, check to see if the plaque needs updating
-			if (s.first == UI_ID_SLIDER_VOLUME && commandBufferMustUpdate) {
-				VOLUME_STATUS old_volume_status = volume_status;
-
-				if (UIElementsMap[s.first].sx == 0.0f) {
-					volume_status = VOLUME_LOW;
-				} else if (UIElementsMap[s.first].sx == s.second.currentMaxScale) {
-					volume_status = VOLUME_HIGH;
-				} else {
-					volume_status = VOLUME_MEDIUM;
+				} else if (s.second.moving) {
+					s.second.moving = false;
 				}
 
-				if (old_volume_status != volume_status) {
-					switch(volume_status) {
-					case VOLUME_LOW:
-						UIElementsMap[UI_ID_SLIDER_VOLUME_PLAQUE].recreateDescriptorSet(&UI_DSL, BP, 2);
-						break;
-					case VOLUME_MEDIUM:
-						UIElementsMap[UI_ID_SLIDER_VOLUME_PLAQUE].recreateDescriptorSet(&UI_DSL, BP, 1);
-						break;
-					case VOLUME_HIGH:
-						UIElementsMap[UI_ID_SLIDER_VOLUME_PLAQUE].recreateDescriptorSet(&UI_DSL, BP, 0);
-						break;
+				// if the modified slider was the volume, check to see if the plaque needs updating
+				if (s.first == UI_ID_SLIDER_VOLUME && commandBufferMustUpdate) {
+					VOLUME_STATUS old_volume_status = volume_status;
+
+					if (UIElementsMap[s.first].sx == 0.0f) {
+						volume_status = VOLUME_LOW;
+					} else if (UIElementsMap[s.first].sx == s.second.currentMaxScale) {
+						volume_status = VOLUME_HIGH;
+					} else {
+						volume_status = VOLUME_MEDIUM;
+					}
+
+					if (old_volume_status != volume_status) {
+						switch(volume_status) {
+						case VOLUME_LOW:
+							UIElementsMap[UI_ID_SLIDER_VOLUME_PLAQUE].recreateDescriptorSet(&UI_DSL, BP, 2);
+							break;
+						case VOLUME_MEDIUM:
+							UIElementsMap[UI_ID_SLIDER_VOLUME_PLAQUE].recreateDescriptorSet(&UI_DSL, BP, 1);
+							break;
+						case VOLUME_HIGH:
+							UIElementsMap[UI_ID_SLIDER_VOLUME_PLAQUE].recreateDescriptorSet(&UI_DSL, BP, 0);
+							break;
+						}
 					}
 				}
 			}
