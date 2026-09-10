@@ -74,6 +74,8 @@ class Renderer {
 
             if (IsLateDraw(shaderType))
                 pipeline.setTransparency(true);
+
+
         }
 
         ///Must be called inside Renderer.descriptorSetsInits()

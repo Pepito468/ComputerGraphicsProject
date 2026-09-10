@@ -25,6 +25,7 @@
 #include "Particles.hpp"
 #include "gamenodes/AudioController.hpp"
 #include "gamenodes/CustomCameraUpdate.hpp"
+#include "gamenodes/FlyingBat.hpp"
 #include "gamenodes/FPSTextUpdater.hpp"
 #include "gamenodes/LeverNode.hpp"
 #include "gamenodes/LightningNode.hpp"
@@ -53,6 +54,8 @@ CookTorranceAnimMaterial animMat = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f
 RainbowMaterial rMat = {0.2, 1, 1, 0.3};
 SonarMaterial sMat = {20, 10, 75};
 
+CookTorranceMaterial duckMat = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}, "duck.png"};
+
 void freeNodeTree(Node *node) {
     for (Node *child : node->children)
         freeNodeTree(child);
@@ -72,6 +75,7 @@ WaterMaterial waterMat = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, 
 LambertMaterial rainMat = {glm::vec3(0.0f, 0.0f, .9f), {1.0f,1.0f,1.0f,100.0f}};
 OutlineMaterial outlineMat = OutlineMaterial({1, 0, 1}, 4.0f);
 LambertMaterial metalMat = {{0.153, 0.212, 0.322}, {0.153, 0.212, 0.322, 1}};
+LambertMaterial batMat = {{0.1,0.1,0.1}, {1,1,1,5}};
 
 Node* createScene1() {
 
@@ -487,6 +491,26 @@ Node* createForestScene() {
     Model3D* rocks2 = new Model3D("Unit Plane.gltf", {0, -2.5f, 76.2f}, {M_PI/2, 0, 0}, {100, 1, 5}, rockMat);
     models->adopt(rocks2);
 
+    Model3D* duck = new Model3D("scene.gltf", {-1.5,0,-9.5},{-M_PI/2,glm::radians(15.0f),0},{0.03,0.03,0.03},&duckMat);
+    models->adopt(duck);
+
+    FlyingBat* bat = new FlyingBat({0,30,20},{0,0,0}, {0.5,0.5,0.5}, 30.0f, 2.0f, 10.0f, &batMat);
+    bat->adopt(bat->createBody());
+    models->adopt(bat);
+
+
+    FlyingBat* bat2 = new FlyingBat({20,20,40},{0,0,0}, {0.5,0.5,0.5}, 30.0f, 1.2f, 5.0f, &batMat);
+    bat2->adopt(bat2->createBody());
+    models->adopt(bat2);
+
+    FlyingBat* bat3 = new FlyingBat({-20,23,60},{0,0,0}, {0.5,0.5,0.5}, 30.0f, 2.5f, 15.0f, &batMat);
+    bat3->adopt(bat3->createBody());
+    models->adopt(bat3);
+
+    FlyingBat* bat4 = new FlyingBat({5,35,100},{0,0,0}, {0.5,0.5,0.5}, 30.0f, 1.8f, 20.0f, &batMat);
+    bat4->adopt(bat4->createBody());
+    models->adopt(bat4);
+
     //flames
     Model3D *fire1 = new Model3D("Unit Plane.gltf", {7.0f, 8.0f, 101.0f}, {glm::radians(90.0f), 0.0f, glm::radians(180.0f)}, glm::vec3(2.5, 3.5, 2.5), &flame1);
     models->adopt(fire1);
@@ -608,12 +632,6 @@ Node* createForestScene() {
     AmbientLight *ambientLight = new AmbientLight({0.18, 0.106, 0.341}, {0.01, 0.01, 0.2}, VEC3_Y);//new AmbientLight({0.08f, 0.14f, 0.20f},{0.035f, 0.04f, 0.045f}, {0.0f, 1.0f, 0.0f});
     ambientLight->name = "AmbientLight";
     root->adopt(ambientLight);
-
-    /*
-    DirectionalLight *directionalLight = new DirectionalLight(0.1,glm::vec3(1.0f, 0.95f, 0.8f),glm::normalize(glm::vec3(0.8f, 0.25f, 0.4f)));
-    root->adopt(directionalLight);
-    */
-
 
     LightningNode* lightning = new LightningNode(
         new DirectionalLight(10,glm::vec3(1.0f, 0.95f, 0.8f),glm::normalize(glm::vec3(0.8f, 0.25f, 0.4f))),
