@@ -507,9 +507,9 @@ Node* createForestScene() {
     Model3D* door = new Model3D("Door.gltf", VEC3_ZERO, VEC3_ZERO, VEC3_ONE, wood_metalMat);
     castle->adopt(door);
 
-    Model3D* rocks1 = new Model3D("Unit Plane.gltf", {0, -2.5f, 91.5f}, {M_PI/2, M_PI, 0}, {100, 1, 5}, rockMat);
+    Model3D* rocks1 = new Model3D("Unit Plane.gltf", {0, -50, 91.5f}, {M_PI/2, M_PI, 0}, {100, 1, 100}, rockMat);
     models->adopt(rocks1);
-    Model3D* rocks2 = new Model3D("Unit Plane.gltf", {0, -2.5f, 76.2f}, {M_PI/2, 0, 0}, {100, 1, 5}, rockMat);
+    Model3D* rocks2 = new Model3D("Unit Plane.gltf", {0, -50, 76.2f}, {M_PI/2, 0, 0}, {100, 1, 100}, rockMat);
     models->adopt(rocks2);
 
     //flames
