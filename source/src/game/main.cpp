@@ -655,6 +655,7 @@ Node* createForestScene() {
     return root;
 }
 
+//Deprecated, see createLabyrinth scene
 Node* createDarkScene() {
     Node *root = new Node();
     root->name = "root";
@@ -1326,6 +1327,8 @@ Node* createMainMenu() {
     DirectionalLight *directionalLight = new DirectionalLight(0.15,glm::vec3(0.5f, 0.5f, 0.5f),glm::normalize(glm::vec3(-0.8f, -0.25f, -0.4f)));
     directionalLight->name = "DirectionalLight";
     root->adopt(directionalLight);
+
+    // BGM
 
     // Text
     Text2D *authors = new Text2D("Michele Sangaletti\nAndrea Ricciardi\nShaan Vashisht\nChristian Vezzoli", {.95, .95}, "SS", false, false, true, TAL_RIGHT, TRH_RIGHT, TRV_BOTTOM);

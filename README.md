@@ -47,6 +47,7 @@
 - Heavy Rain by EricsSoundschmiede via [Free Sound](https://freesound.org/s/666624/) -- License: Creative Commons 0
 - Lightning by Pasha_Shishkov via [Free Sound](https://freesound.org/s/866347/) -- License: Attribution 4.0
 - Hurt by PNMCarrieRailfan via [Free Sound](https://freesound.org/s/682400/) -- License: Attribution NonCommercial 4.0
+- Bell by Gaming Sound FX via [YouTube](https://www.youtube.com/watch?v=umqA5IMx_2I)
 
 ### Fonts
 

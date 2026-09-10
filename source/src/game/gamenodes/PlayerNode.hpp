@@ -34,6 +34,7 @@ class PlayerNode : public UpdateNode3D
     InteractableNode* selectedInteraction = nullptr;
 
     AudioNode *quack = nullptr;
+    AudioNode* bell = nullptr;
 
     ToonMaterial bulletMat = {glm::vec3(0.9f, 0.45f, 0.9f), {1.0f,1.0f,1.0f,100.0f}, 0.3f, 1.0f, 0.3f, 0.95f, 1.0f, 0.0f};
     RainbowMaterial rMat = {0.2, 1, 1, 0.3};
@@ -89,6 +90,7 @@ class PlayerNode : public UpdateNode3D
     {
         log("Sonar out: " + std::to_string(color));
         sonarMat->trigger(getGlobalPosition(), Engine::getCurrentTime(), color);
+        bell->playSound();
     }
 
 public:
@@ -191,16 +193,19 @@ public:
         if (selectedInteraction && Engine::isKeyBeingPressed(GLFW_KEY_E, true))
             selectedInteraction->interact();
 
-        if (sonarMat && Engine::isKeyBeingPressed(GLFW_MOUSE_BUTTON_LEFT, true))
-            sonar(SonarMaterial::WHITE);
-        else if (sonarMat && Engine::isKeyBeingPressed(GLFW_KEY_T, true))
-            sonar(SonarMaterial::RED);
-        else if (sonarMat && Engine::isKeyBeingPressed(GLFW_KEY_U, true))
-            sonar(SonarMaterial::GREEN);
-        else if (sonarMat && Engine::isKeyBeingPressed(GLFW_KEY_Y, true))
-            sonar(SonarMaterial::YELLOW);
-        else if (sonarMat && Engine::isKeyBeingPressed(GLFW_KEY_R, true))
-            sonar(SonarMaterial::BLUE);
+        if (sonarMat && bell)
+        {
+            if (Engine::isKeyBeingPressed(GLFW_MOUSE_BUTTON_LEFT, true))
+                sonar(SonarMaterial::WHITE);
+            else if (Engine::isKeyBeingPressed(GLFW_KEY_T, true))
+                sonar(SonarMaterial::RED);
+            else if (Engine::isKeyBeingPressed(GLFW_KEY_U, true))
+                sonar(SonarMaterial::GREEN);
+            else if (Engine::isKeyBeingPressed(GLFW_KEY_Y, true))
+                sonar(SonarMaterial::YELLOW);
+            else if (Engine::isKeyBeingPressed(GLFW_KEY_R, true))
+                sonar(SonarMaterial::BLUE);
+        }
 
         if (mapCam && Engine::isKeyBeingPressed(GLFW_KEY_M, true)) {
             if (isCamPersp)
@@ -241,6 +246,11 @@ public:
         AudioNode *quack = new AudioNode("quack.mp3", 0.1f);
         quack->name = "quack";
         controls->adopt(quack);
+
+        AudioNode* bell = new AudioNode("bell.mp3", 0.1f);
+        bell->name = "bell";
+        controls->bell = bell;
+        controls->adopt(bell);
 
         rootCollider->globalTranslate({0, 5, 0});
         rootCollider->localRotateY(M_PI);
