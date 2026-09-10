@@ -98,15 +98,16 @@ NLOHMANN_JSON_SERIALIZE_ENUM(MovementStatus, {
 
 enum PhysicsLayer
 {
-    NONE = 0,
-    ENVIRONMENT = 1,
-    PLAYER = 2,
-    BULLETS = 4,
-    INTERACTABLE = 8,
-    ALL = ENVIRONMENT | PLAYER | BULLETS | INTERACTABLE
+    NONE            = 0,
+    FLOOR           = 1 << 0,
+    PLAYER          = 1 << 1,
+    BULLETS         = 1 << 2,
+    INTERACTABLE    = 1 << 3,
+    ENVIRONMENT     = 1 << 4,
+    ALL = FLOOR | PLAYER | BULLETS | INTERACTABLE | ENVIRONMENT
 };
 NLOHMANN_JSON_SERIALIZE_ENUM(PhysicsLayer, {
-    {ENVIRONMENT, "env"},
+    {FLOOR, "env"},
     {PLAYER, "player"},
     {ALL, "all"}
 })
@@ -126,9 +127,9 @@ public:
     /// Colliders that are within this trigger's bounds
     std::set<Collider*> collidersInTrigger = std::set<Collider*>();
     /// Physics layer the collider is part of
-    PhysicsLayer layer = ALL;
+    uint32_t layer = ALL;
     /// Physics layer(s) the collider can collide with
-    PhysicsLayer collidesWith = ALL;
+    uint32_t collidesWith = ALL;
 
     typedef Function<void(Collider*)> CollisionCallback;
     /// External function to call when another collider collides with this one

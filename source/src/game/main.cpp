@@ -26,6 +26,7 @@
 #include "gamenodes/AudioController.hpp"
 #include "gamenodes/CustomCameraUpdate.hpp"
 #include "gamenodes/FlyingBat.hpp"
+#include "gamenodes/FollowPath.hpp"
 #include "gamenodes/FPSTextUpdater.hpp"
 #include "gamenodes/LeverNode.hpp"
 #include "gamenodes/LightningNode.hpp"
@@ -73,7 +74,7 @@ LambertTexMaterial* wood_metalMat = TEX_MAT("wood-metal.png");
 CookTorranceMaterial* rockMat = new CookTorranceMaterial({1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 100.0f},"rock.png");
 WaterMaterial waterMat = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, 0.5f, "water.png"};
 LambertMaterial rainMat = {glm::vec3(0.0f, 0.0f, .9f), {1.0f,1.0f,1.0f,100.0f}};
-OutlineMaterial outlineMat = OutlineMaterial({1, 0, 1}, 4.0f);
+OutlineMaterial outlineMat = OutlineMaterial({1, 0, 1, 0.5}, 0.1f);
 LambertMaterial metalMat = {{0.153, 0.212, 0.322}, {0.153, 0.212, 0.322, 1}};
 LambertMaterial batMat = {{0.1,0.1,0.1}, {1,1,1,5}};
 
@@ -128,7 +129,7 @@ Node* createScene1() {
     BoxCollider* planeColl = new BoxCollider(2.0f, 0.05f, 2.0f);
     planeColl->name = "PlaneHB";
     planeColl->movementStatus = STATIC;
-    planeColl->layer = ENVIRONMENT;
+    planeColl->layer = FLOOR;
     plane->name = "Plane";
     plane->adopt(planeColl);
     models->adopt(plane);
@@ -213,6 +214,28 @@ Node* createScene1() {
     movingAudio->name = "RocketJumWaltz";
     planet->adopt(movingAudio);
 
+    Model3D* platform = new Model3D("Unit Cube.gltf", {5, 0, 5}, {0, 0, 0}, {8, 1, 8}, &mat1);
+    BoxCollider* platformColl = new BoxCollider();
+    platformColl->layer = FLOOR;
+    platformColl->collidesWith = NONE;
+    platform->adopt(platformColl);
+    //BoxCollider* platformColl2 = new BoxCollider({0, 1, 0}, VEC3_ZERO, VEC3_ONE);
+    //platformColl2->isTrigger = true;
+    //platformColl2->layer = ENVIRONMENT;
+    //platformColl2->collidesWith = PLAYER;
+    //platformColl2->onTriggerEnter = [platform] (Collider* other)
+    //{
+    //    log(std::format("other {} @ {} {}", other, other->getGlobalPosition(), other->getLocalPosition()));
+    //    platform->adopt(other);
+    //    log(std::format("other {} @ {} {}", other, other->getGlobalPosition(), other->getLocalPosition()));
+    //};
+    //platformColl2->onTriggerExit = [platform] (Collider* other) {platform->disown(other);};
+    //platform->adopt(platformColl2);
+    models->adopt(platform);
+
+    FollowPath* path = new FollowPath({{5, 0, 5}, {10, 0, 5}, {10, 0, 10}, {5, 0, 10}}, platform, 3, true);
+    root->adopt(path);
+
     return root;
 }
 
@@ -262,7 +285,7 @@ Node* createScene2() {
     BoxCollider* planeColl = new BoxCollider(2.0f, 0.01f, 2.0f);
     planeColl->name = "PlaneHB";
     planeColl->movementStatus = STATIC;
-    planeColl->layer = ENVIRONMENT;
+    planeColl->layer = FLOOR;
     plane->name = "Plane";
     plane->adopt(planeColl);
     models->adopt(plane);
@@ -338,7 +361,7 @@ Node* createUnitScene() {
     BoxCollider* planeColl = new BoxCollider(1.0f, 0.05f, 1.0f);
     planeColl->name = "PlaneHB";
     planeColl->movementStatus = STATIC;
-    planeColl->layer = ENVIRONMENT;
+    planeColl->layer = FLOOR;
     plane->name = "Plane";
     plane->adopt(planeColl);
     models->adopt(plane);
@@ -350,9 +373,10 @@ Node* createUnitScene() {
         cube->adopt(box);
         box->setLocalPosition(VEC3_ZERO);
    }
-    Model3D* sphere = new Model3D("Unit Sphere.gltf", {0, 2, 3}, {0, 0, 0}, {1, 1, 1}, &outlineMat);
-    outlineMat.toggle();
+    Model3D* sphere = new Model3D("Unit Sphere.gltf", {0, 2, 3}, {0, 0, 0}, {1, 1, 1}, &blankMat);
     models->adopt(sphere);
+    Model3D* outline = new Model3D("Unit Sphere.gltf", {0, 2, 3}, {0, 0, 0}, {1, 1, 1}, &outlineMat);
+    models->adopt(outline);
     SphereCollider* sColl = new SphereCollider();
     sphere->adopt(sColl);
     sColl->setLocalPosition(VEC3_ZERO);
@@ -428,6 +452,7 @@ Node* createForestScene() {
     // root->adopt(mapCam);
 
     Node3D *player = PlayerNode::makeStandardPlayer(mapCam);
+    player->localTranslate({0.0f, -1.0f, 0.0f});
     player->adopt(mapCam);
     root->adopt(player);
 
@@ -451,14 +476,14 @@ Node* createForestScene() {
     Model3D *plane = new Model3D("Unit Plane.gltf", {0, 0, 26.25f}, {0, 0, 0}, {100, 1, 100}, pathMat);
     BoxCollider* planeColl = new BoxCollider(1.0f, 0.05f, 1.0f);
     planeColl->movementStatus = STATIC;
-    planeColl->layer = ENVIRONMENT;
+    planeColl->layer = FLOOR;
     plane->adopt(planeColl);
     models->adopt(plane);
 
     Model3D *plane2 = new Model3D("Unit Plane.gltf", {0, 0, 141.5f}, {0, M_PI, 0}, {100, 1, 100}, pathMat);
     BoxCollider* plane2Coll = new BoxCollider(1.0f, 0.05f, 1.0f);
     plane2Coll->movementStatus = STATIC;
-    plane2Coll->layer = ENVIRONMENT;
+    plane2Coll->layer = FLOOR;
     plane2->adopt(plane2Coll);
     models->adopt(plane2);
 
@@ -466,7 +491,7 @@ Node* createForestScene() {
     bridgeWall->name = "BridgeWall";
     bridgeWall->setGlobalPosition({0, 0, 76.525f});
     bridgeWall->movementStatus = STATIC;
-    bridgeWall->layer = ENVIRONMENT;
+    bridgeWall->layer = FLOOR;
     root->adopt(bridgeWall);
 
     Model3D* bridge = new Model3D("Bridge.gltf", {0, 0, 91.5f}, {0, M_PI, 0}, VEC3_ONE * 1.6f, wood_metalMat);
@@ -486,9 +511,9 @@ Node* createForestScene() {
     Model3D* door = new Model3D("Door.gltf", VEC3_ZERO, VEC3_ZERO, VEC3_ONE, wood_metalMat);
     castle->adopt(door);
 
-    Model3D* rocks1 = new Model3D("Unit Plane.gltf", {0, -2.5f, 91.5f}, {M_PI/2, M_PI, 0}, {100, 1, 5}, rockMat);
+    Model3D* rocks1 = new Model3D("Unit Plane.gltf", {0, -50, 91.5f}, {M_PI/2, M_PI, 0}, {100, 1, 100}, rockMat);
     models->adopt(rocks1);
-    Model3D* rocks2 = new Model3D("Unit Plane.gltf", {0, -2.5f, 76.2f}, {M_PI/2, 0, 0}, {100, 1, 5}, rockMat);
+    Model3D* rocks2 = new Model3D("Unit Plane.gltf", {0, -50, 76.2f}, {M_PI/2, 0, 0}, {100, 1, 100}, rockMat);
     models->adopt(rocks2);
 
     Model3D* duck = new Model3D("scene.gltf", {-1.5,0,-9.5},{-M_PI/2,glm::radians(15.0f),0},{0.03,0.03,0.03},&duckMat);
@@ -610,7 +635,7 @@ Node* createForestScene() {
         BoxCollider* coll = new BoxCollider(w[0], w[1], w[2] * 2.0f);
         coll->name = std::format("Wall @ {}", w[0]);
         coll->movementStatus = STATIC;
-        coll->layer = ENVIRONMENT;
+        coll->layer = FLOOR;
         walls->adopt(coll);
         /*
         Model3D* box = new Model3D("Unit Cube.gltf", VEC3_ZERO, VEC3_ZERO, VEC3_ONE, &blankMat);
@@ -620,7 +645,7 @@ Node* createForestScene() {
 
     BoxCollider* endZone = new BoxCollider(true, {0, 2, 100}, VEC3_ZERO, {20, 4, 1});
     endZone->movementStatus = STATIC;
-    endZone->layer = ENVIRONMENT;
+    endZone->layer = FLOOR;
     endZone->onTriggerEnter = [](Collider* _)
     {
         info("You have reached the door to the castle, loading next scene...");
@@ -632,6 +657,12 @@ Node* createForestScene() {
     AmbientLight *ambientLight = new AmbientLight({0.18, 0.106, 0.341}, {0.01, 0.01, 0.2}, VEC3_Y);//new AmbientLight({0.08f, 0.14f, 0.20f},{0.035f, 0.04f, 0.045f}, {0.0f, 1.0f, 0.0f});
     ambientLight->name = "AmbientLight";
     root->adopt(ambientLight);
+
+    /*
+    DirectionalLight *directionalLight = new DirectionalLight(0.1,glm::vec3(1.0f, 0.95f, 0.8f),glm::normalize(glm::vec3(0.8f, 0.25f, 0.4f)));
+    root->adopt(directionalLight);
+    */
+
 
     LightningNode* lightning = new LightningNode(
         new DirectionalLight(10,glm::vec3(1.0f, 0.95f, 0.8f),glm::normalize(glm::vec3(0.8f, 0.25f, 0.4f))),
@@ -648,6 +679,7 @@ Node* createForestScene() {
     return root;
 }
 
+//Deprecated, see createLabyrinth scene
 Node* createDarkScene() {
     Node *root = new Node();
     root->name = "root";
@@ -705,7 +737,7 @@ Node* createDarkScene() {
     BoxCollider* floorCollider = new BoxCollider(5.0f, 0.2f, 5.0f);
     floorCollider->name = "Floorcoll";
     floorCollider->movementStatus = STATIC;
-    floorCollider->layer = ENVIRONMENT;
+    floorCollider->layer = FLOOR;
     floor->adopt(floorCollider);
 
     // Ceiling
@@ -733,7 +765,7 @@ Node* createDarkScene() {
                 BoxCollider* wallCollider = new BoxCollider(pos, {0, 0, 0}, {cellSize/2, cellSize/2, cellSize/2});
                 wallCollider->name = std::format("WallColl {} {}", i, j);
                 wallCollider->movementStatus = STATIC;
-                wallCollider->layer = ENVIRONMENT;
+                wallCollider->layer = FLOOR;
                 staticObjects->adopt(wallCollider);
                 break;
             }
@@ -750,7 +782,7 @@ Node* createDarkScene() {
                 BoxCollider* endFloorColl = new BoxCollider(1.0f, 0.05f, 1.0f);
                 endFloorColl->name = "endFloorColl";
                 endFloorColl->movementStatus = STATIC;
-                endFloorColl->layer = ENVIRONMENT;
+                endFloorColl->layer = FLOOR;
                 endFloor->adopt(endFloorColl);
                 endRoom->adopt(endFloor);
 
@@ -758,21 +790,21 @@ Node* createDarkScene() {
                 BoxCollider* endWall1Coll = new BoxCollider({i*cellSize, 5, j*cellSize + 30}, VEC3_ZERO, {25.0f, 25.0f, 1.0f});
                 endWall1Coll->name = "endWall1Coll";
                 endWall1Coll->movementStatus = STATIC;
-                endWall1Coll->layer = ENVIRONMENT;
+                endWall1Coll->layer = FLOOR;
                 endWall1->adopt(endWall1Coll);
                 endRoom->adopt(endWall1);
                 Model3D *endWall2 = new Model3D("Unit Plane.gltf", {i*cellSize - 9.5, 5, j*cellSize + 17.5}, {std::numbers::pi / 2, std::numbers::pi / 2, 0}, {27, 1, 27}, &mat1);
                 BoxCollider* endWall2Coll = new BoxCollider({i*cellSize - 9.5, 5, j*cellSize + 17.5}, VEC3_ZERO, {1.0f, 25.0f, 25.0f});
                 endWall2Coll->name = "endWall2Coll";
                 endWall2Coll->movementStatus = STATIC;
-                endWall2Coll->layer = ENVIRONMENT;
+                endWall2Coll->layer = FLOOR;
                 endWall2->adopt(endWall2Coll);
                 endRoom->adopt(endWall2);
                 Model3D *endWall3 = new Model3D("Unit Plane.gltf", {i*cellSize + 9.5, 5, j*cellSize + 17.5}, {std::numbers::pi / 2, -std::numbers::pi / 2, 0}, {27, 1, 27}, &mat1);
                 BoxCollider* endWall3Coll = new BoxCollider({i*cellSize + 9.5, 5, j*cellSize + 17.5}, VEC3_ZERO, {1.0f, 25.0f, 25.0f});
                 endWall3Coll->name = "endWall3Coll";
                 endWall3Coll->movementStatus = STATIC;
-                endWall3Coll->layer = ENVIRONMENT;
+                endWall3Coll->layer = FLOOR;
                 endWall3->adopt(endWall3Coll);
                 endRoom->adopt(endWall3);
 
@@ -784,7 +816,7 @@ Node* createDarkScene() {
 
                 BoxCollider* endZone = new BoxCollider(true, {i*cellSize, 0.1f, j*cellSize + 20.5}, VEC3_ZERO, {3, 3, 3});
                 endZone->movementStatus = STATIC;
-                endZone->layer = ENVIRONMENT;
+                endZone->layer = FLOOR;
                 endZone->onTriggerEnter = [](Collider* _)
                 {
                     Engine::endGame();
@@ -826,32 +858,89 @@ Node* createLabyrinthScene()
     root->name = "root";
 
     Node3D* player = PlayerNode::makeStandardPlayer();
-    player->setGlobalPosition({0, 3, -7});
+    constexpr glm::vec3 initialPos = {0, 3, -7};
+    player->setGlobalPosition(initialPos);
     root->adopt(player);
 
-    // temp floor, add holes later
-    Model3D* labFloor = new Model3D("Unit Plane.gltf", {0, 0, 40}, VEC3_ZERO, {90, 1, 80}, &sMat);
-    BoxCollider* floorColl = new BoxCollider(1, 0.05f, 1);
-    floorColl->name = "floorCollider";
-    floorColl->movementStatus = STATIC;
-    floorColl->layer = ENVIRONMENT;
-    labFloor->adopt(floorColl);
+    Model3D* labFloor = new Model3D("Labyrinth Floor.gltf", {0, 0, 40}, VEC3_ZERO, {1, 1, 1}, &sMat);
     root->adopt(labFloor);
+    //BoxCollider* floorColl = new BoxCollider(90, 0.05f, 80);
+    //floorColl->name = "floorCollider";
+    //floorColl->movementStatus = STATIC;
+    //floorColl->layer = ENVIRONMENT;
+    //labFloor->adopt(floorColl);
+
+    std::vector<std::vector<glm::vec3>> objPoints = {
+        {{0.000, 0.000, 25.000}, {30.000, 1.000, 50.000}},
+        {{-30.038, 0.000, 40.000}, {30.000, 1.000, 20.000}},
+        {{30.000, 0.000, 50.000}, {30.000, 1.000, 60.000}},
+        {{-20.000, 0.000, 70.000}, {50.000, 1.000, 20.000}},
+        {{-35.000, 0.000, 10.000}, {20.000, 1.000, 20.000}},
+        {{30.000, 0.000, 5.000}, {30.000, 1.000, 10.000}},
+        {{-20.000, 0.000, 20.000}, {10.000, 1.000, 20.000}},
+        {{-40.000, 0.000, 25.000}, {10.000, 1.000, 10.000}},
+        {{-40.000, 0.000, 55.000}, {10.000, 1.000, 10.000}},
+        {{10.000, 0.000, 65.000}, {10.000, 1.000, 10.000}},
+        {{20.000, 0.000, 15.000}, {10.000, 1.000, 10.000}},
+        {{40.000, 0.000, 15.000}, {10.000, 1.000, 10.000}},
+    };
+    for (auto p : objPoints)
+    {
+        BoxCollider* floorColl = new BoxCollider(p[0], VEC3_ZERO, p[1]);
+        floorColl->height = 0.05f;
+        floorColl->name = std::format("floor @ {}", p[0]);
+        floorColl->movementStatus = STATIC;
+        floorColl->layer = FLOOR;
+        root->adopt(floorColl);
+    }
+
+    AudioNode* painSound = new AudioNode("hurt.mp3", 1);
+    root->adopt(painSound);
+    objPoints = {
+        {{30.000, -4.000, 15.000}, {10.000, 1.000, 10.000}},
+        {{-20.000, -4.000, 5.000}, {10.000, 1.000, 10.000}},
+        {{-30.000, -4.000, 25.000}, {10.000, 1.000, 10.000}},
+        {{10.000, -4.000, 75.000}, {10.000, 1.000, 10.000}},
+        {{-10.000, -4.000, 55.000}, {50.000, 1.000, 10.000}},
+    };
+    for (auto p : objPoints)
+    {
+        BoxCollider* spikeColl = new BoxCollider(p[0], VEC3_ZERO, p[1]);
+        spikeColl->name = std::format("spikes @ {}", p[0]);
+        spikeColl->movementStatus = STATIC;
+        spikeColl->layer = ENVIRONMENT;
+        spikeColl->onCollision = [player, initialPos, painSound](Collider* collider)
+        {
+            player->setGlobalPosition(initialPos);
+            painSound->playSound();
+        };
+        root->adopt(spikeColl);
+    }
+
+    Model3D* platform = new Model3D("Unit Cube.gltf", {-10, 0, 55}, {0, 0, 0}, {6, 1, 6}, &sMat);
+    BoxCollider* platformColl = new BoxCollider();
+    platformColl->layer = FLOOR;
+    platformColl->collidesWith = NONE;
+    platform->adopt(platformColl);
+    root->adopt(platform);
+
+    FollowPath* path = new FollowPath({{10, 0, 55}, {-30, 0, 55}}, platform, 4);
+    root->adopt(path);
 
     Model3D* labCeiling = new Model3D("Unit Plane.gltf", {0, 6, 40}, {0, 0, M_PI}, {90, 1, 80}, &sMat);
     root->adopt(labCeiling);
 
     // Start and end rooms
-    std::vector<std::vector<glm::vec3>> objPoints = {
+    objPoints = {
         {{0.000, -0.010, -4.900}, {0.000, 0.000, 0.000}, {10.000, 1.000, 10.000}},
         {{-5.000, 3.000, -4.900}, {0.000, 3.142, 1.571}, {6.000, 1.000, 10.000}},
         {{5.000, 3.000, -4.900}, {3.142, 0, 1.571}, {6.000, 1.000, 10.000}},
         {{0.000, 3.000, -9.900}, {0, 1.571, 1.571}, {6.000, 1.000, 10.000}},
 
         {{-0.000, -0.010, 84.910}, {0.000, 3.142, 0.000}, {10.000, 1.000, 10.000}},
-        {{5.000, 3.000, 84.910}, {3.142, 0.000, 1.571}, {6.000, 1.000, 10.000}}, // ok
-        {{-5.000, 3.000, 84.910}, {0.000, 0.000, -1.571}, {6.000, 1.000, 10.000}}, // flip
-        {{0.000, 3.000, 89.910}, {0.000, -1.571, 1.571}, {6.000, 1.000, 10.000}} // rotate
+        {{5.000, 3.000, 84.910}, {3.142, 0.000, 1.571}, {6.000, 1.000, 10.000}},
+        {{-5.000, 3.000, 84.910}, {0.000, 0.000, -1.571}, {6.000, 1.000, 10.000}},
+        {{0.000, 3.000, 89.910}, {0.000, -1.571, 1.571}, {6.000, 1.000, 10.000}}
     };
     for (auto p : objPoints)
     {
@@ -859,7 +948,7 @@ Node* createLabyrinthScene()
         BoxCollider* coll = new BoxCollider(1, 0.1f, 1);
         coll->name = std::format("room plane @ {}", p[0]);
         coll->movementStatus = STATIC;
-        coll->layer = ENVIRONMENT;
+        coll->layer = FLOOR;
         plane->adopt(coll);
         root->adopt(plane);
     }
@@ -871,6 +960,15 @@ Node* createLabyrinthScene()
     root->adopt(endCeiling);
     Model3D* magicCircle = new Model3D("Unit Plane.gltf", {0, 0, 84.900}, VEC3_ZERO, {5, 1, 5}, &magicMat);
     root->adopt(magicCircle);
+
+    BoxCollider* endZone = new BoxCollider(true, {0.0f, 0.1f, 84.900}, VEC3_ZERO, {5, 5, 5});
+    endZone->movementStatus = STATIC;
+    endZone->layer = FLOOR;
+    endZone->onTriggerEnter = [](Collider* _)
+    {
+        Engine::endGame();
+    };
+    root->adopt(endZone);
 
     // Walls
     objPoints = {
@@ -924,7 +1022,7 @@ Node* createLabyrinthScene()
         BoxCollider* coll = new BoxCollider();
         coll->name = std::format("wall @ {}", w[0]);
         coll->movementStatus = STATIC;
-        coll->layer = ENVIRONMENT;
+        coll->layer = FLOOR;
         wall->adopt(coll);
         root->adopt(wall);
     }
@@ -1166,8 +1264,6 @@ Node* createMainMenu() {
     Node *root = new Node();
     root->name = "root";
 
-    root->adopt(new FPSTextUpdater());
-
     root->adopt(new AudioController(new AudioNode("heavyRain.wav", 0.02f), true));
 
     // Models
@@ -1231,7 +1327,7 @@ Node* createMainMenu() {
     Model3D* mage = new Model3D("Mage.gltf", {0.0f, 0.0f, 10.0f}, {0.0f, M_PI, 0.0f}, VEC3_ONE, mat);
     castle->adopt(mage);
 
-    PointLight *mageLight = new PointLight({0.0f, 2.5f, 0.5f}, 1.0f, {1.0f, 0.0f, 1.0f}, 4, 2);
+    PointLight *mageLight = new PointLight({0.0f, 3.0f, 0.0f}, 0.75f, {1.0f, 0.0f, 1.0f}, 4, 2);
     mage->adopt(mageLight);
 
     PerspectiveCamera *camera = new PerspectiveCamera(0.1f, 200, glm::radians(90.0f), 4.0f/3.0f, true);
@@ -1252,9 +1348,15 @@ Node* createMainMenu() {
     ambientLight->name = "AmbientLight";
     root->adopt(ambientLight);
 
-    DirectionalLight *directionalLight = new DirectionalLight(0.5,glm::vec3(1.0f, 0.95f, 0.8f),glm::normalize(glm::vec3(0.8f, 0.25f, 0.4f)));
+    DirectionalLight *directionalLight = new DirectionalLight(0.15,glm::vec3(0.5f, 0.5f, 0.5f),glm::normalize(glm::vec3(-0.8f, -0.25f, -0.4f)));
     directionalLight->name = "DirectionalLight";
     root->adopt(directionalLight);
+
+    // BGM
+
+    // Text
+    Text2D *authors = new Text2D("Michele Sangaletti\nAndrea Ricciardi\nShaan Vashisht\nChristian Vezzoli", {.95, .95}, "SS", false, false, true, TAL_RIGHT, TRH_RIGHT, TRV_BOTTOM);
+    root->adopt(authors);
 
     return root;
 }
@@ -1291,6 +1393,15 @@ Node* createEndMenu() {
     DirectionalLight *directionalLight = new DirectionalLight(0.5,glm::vec3(1.0f, 0.95f, 0.8f),glm::normalize(glm::vec3(0.8f, 0.25f, 0.4f)));
     directionalLight->name = "DirectionalLight";
     root->adopt(directionalLight);
+
+    // Music
+    root->adopt(new AudioController(new AudioNode("door_into_summer.mp3", 0.2f), true));
+
+    // Time
+    FPSTextUpdater *time = new FPSTextUpdater();
+    time->name = "time";
+    root->adopt(time);
+    time->stopTotalTime();
 
     return root;
 }

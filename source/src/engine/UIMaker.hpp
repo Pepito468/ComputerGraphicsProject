@@ -20,8 +20,6 @@
 	- Add a forceModelUpdate flag to UIMaker and a needsUpdating flag to UIElements (maybe)
 	- Checkboxes (equiv 2-stage buttons) (maybe)
 	- N-stage buttons (A -> click -> B -> click -> C -> click -> A -> ...) (maybe)
-	- Update main menu with authors and course
-	- Fix title scaling
 */
 
 #define DEFAULT_SUBMIT_ORDER				9999
@@ -31,6 +29,7 @@
 #define UI_ID_NULL							-1
 #define UI_ID_MENU_BACKGROUND				20
 #define UI_ID_TITLE							21
+#define UI_ID_LOGO							22
 #define UI_ID_COMMANDS						75
 #define UI_ID_SLIDER_VOLUME_PLAQUE			50
 #define UI_ID_SLIDER_VOLUME_BACKGROUND		51
@@ -139,6 +138,8 @@ class UIMaker {
 		/// Scale
 		/// NOTE: negative scale produce mirroring, and might have unintuitive behavior with UIOrigin
 		float sx, sy;	/// If the UIElement is scalable, these are relative to a screen sized 1080x720
+
+		float baseSx, baseSy;
 		
 		/**
 		 * Position of the origin between the following points of the rectangle:
@@ -178,6 +179,9 @@ class UIMaker {
 			this->RegH = RegH;
 			this->RegV = RegV;
 			this->isVisible = isVisible;
+
+			this->baseSx = sx;
+			this->baseSy = sy;
 		}
 
 		/**
@@ -265,15 +269,15 @@ class UIMaker {
 		 * NOTE: scalable elements use DEFAULT_WINDOW_WIDTH and DEFAULT_WINDOW_HEIGHT as the "default" scaling
 		 */
 		void scaleToScreen(int screenW, int screenH) {
-			float aspectRatio = this->sx / this->sy, xRatio = (float)screenW / DEFAULT_WINDOW_WIDTH, yRatio = (float)screenH / DEFAULT_WINDOW_HEIGHT;
+			float xRatio = (float)screenW / DEFAULT_WINDOW_WIDTH, yRatio = (float)screenH / DEFAULT_WINDOW_HEIGHT;
 
 			if (this->resize == KEEP_ASPECT_RATIO) {
 				if (xRatio < yRatio) {
-					this->sx = xRatio;
-					this->sy = xRatio / aspectRatio;
+					this->sx = xRatio * baseSx;
+					this->sy = xRatio * baseSy;
 				} else {
-					this->sx = yRatio * aspectRatio;
-					this->sy = yRatio;
+					this->sx = yRatio * baseSx;
+					this->sy = yRatio * baseSy;
 				}
 			} else {
 				if (this->resize == FULL_RESIZABLE || this->resize == WIDTH_ONLY_RESIZABLE)
@@ -411,7 +415,6 @@ public:
 		}
 
 		int garbage;
-
 		for (auto t : textureFile.TextureFiles) {
 			Texture temp;
 			temp.init(BP, t);
@@ -535,96 +538,100 @@ public:
 
 		// After the cursor moves, checks every button to see if their status changed
 		for (auto &b : ButtonsList) {
-			bool inside = UIElementsMap[b.id].isPointInsideHitbox((float)mousePosX, (float)mousePosY, screenW, screenH);
-			// std::cout << UI_DEBUG_STRING << " " << b.id << " hovered: " << b.hovered << "; inside: " << inside << std::endl;
+			if (UIElementsMap[b.id].isVisible) {
+				bool inside = UIElementsMap[b.id].isPointInsideHitbox((float)mousePosX, (float)mousePosY, screenW, screenH);
+				// std::cout << UI_DEBUG_STRING << " " << b.id << " hovered: " << b.hovered << "; inside: " << inside << std::endl;
 
-			if (b.hovered) {
-				if (!inside) {
-					// if the button was previously hovered and now the cursor is outside the hitbox
-					UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 0);
-					b.hovered = false;
-					commandBufferMustUpdate = true;
-				} else {
-					if (mouseClick && !b.clicked) {
-						// if the button was previously hovered and now the cursor clicks it
-						// std::cout << UI_DEBUG_STRING << " clicked a button" << std::endl;
-						b.clicked = true;
-						UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 2);
-						if (b.id != UI_ID_BUTTON_QUIT)
-							commandBufferMustUpdate = true;
-						ret.push_back({b.id});
-					} else if (b.clicked && !mouseClick) {
-						// if the button was previously clicked, restore its texture to hovered
-						b.clicked = false;
-						UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 1);
+				if (b.hovered) {
+					if (!inside) {
+						// if the button was previously hovered and now the cursor is outside the hitbox
+						UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 0);
+						b.hovered = false;
 						commandBufferMustUpdate = true;
+					} else {
+						if (mouseClick && !b.clicked) {
+							// if the button was previously hovered and now the cursor clicks it
+							// std::cout << UI_DEBUG_STRING << " clicked a button" << std::endl;
+							b.clicked = true;
+							UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 2);
+							if (b.id != UI_ID_BUTTON_QUIT)
+								commandBufferMustUpdate = true;
+							ret.push_back({b.id});
+						} else if (b.clicked && !mouseClick) {
+							// if the button was previously clicked, restore its texture to hovered
+							b.clicked = false;
+							UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 1);
+							commandBufferMustUpdate = true;
+						}
 					}
+				} else if (!b.hovered && inside) {
+					// if the button was not previously hovered and now the button is inside the hitbox
+					UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 1);
+					b.hovered = true;
+					commandBufferMustUpdate = true;
 				}
-			} else if (!b.hovered && inside) {
-				// if the button was not previously hovered and now the button is inside the hitbox
-				UIElementsMap[b.id].recreateDescriptorSet(&UI_DSL, BP, 1);
-				b.hovered = true;
-				commandBufferMustUpdate = true;
 			}
 		}
 
 		for (auto &s : SlidersMap) {
-			// std::cout << UI_DEBUG_STRING << " slider #" << s.first << ": moving = " << s.second.moving << " | upper left corner = " << s.second.upperLeftCorner.x << " x " << s.second.upperLeftCorner.y << " | lower right corner = " << s.second.lowerRightCorner.x << " x " << s.second.lowerRightCorner.y << " | xscale = " << UIElementsMap[s.first].sx << std::endl;
-			if (holding && s.second.moving) {
-				// the user is moving the slider around (doesn't matter if the cursor is on the slider, as long as they keep pressing it)
-				if (mousePosX <= s.second.upperLeftCorner.x) {
-					// lower bound
-					if (UIElementsMap[s.first].sx != 0.0f) {
-						UIElementsMap[s.first].sx = 0.0f;
+			if (UIElementsMap[s.first].isVisible) {
+				// std::cout << UI_DEBUG_STRING << " slider #" << s.first << ": moving = " << s.second.moving << " | upper left corner = " << s.second.upperLeftCorner.x << " x " << s.second.upperLeftCorner.y << " | lower right corner = " << s.second.lowerRightCorner.x << " x " << s.second.lowerRightCorner.y << " | xscale = " << UIElementsMap[s.first].sx << std::endl;
+				if (holding && s.second.moving) {
+					// the user is moving the slider around (doesn't matter if the cursor is on the slider, as long as they keep pressing it)
+					if (mousePosX <= s.second.upperLeftCorner.x) {
+						// lower bound
+						if (UIElementsMap[s.first].sx != 0.0f) {
+							UIElementsMap[s.first].sx = 0.0f;
+							commandBufferMustUpdate = true;
+							ret.push_back({s.first, 0.0f});
+						}
+					} else if (mousePosX >= s.second.lowerRightCorner.x) {
+						// upper bound
+						if (UIElementsMap[s.first].sx != s.second.currentMaxScale) {
+							UIElementsMap[s.first].sx = s.second.currentMaxScale;
+							commandBufferMustUpdate = true;
+							ret.push_back({s.first, 1.0f});
+						}
+					} else {
+						// value in between
+						UIElementsMap[s.first].sx = (mousePosX - s.second.upperLeftCorner.x)/(s.second.lowerRightCorner.x - s.second.upperLeftCorner.x) * s.second.currentMaxScale;
 						commandBufferMustUpdate = true;
-						ret.push_back({s.first, 0.0f});
+						ret.push_back({s.first, UIElementsMap[s.first].sx / s.second.currentMaxScale});
 					}
-				} else if (mousePosX >= s.second.lowerRightCorner.x) {
-					// upper bound
-					if (UIElementsMap[s.first].sx != s.second.currentMaxScale) {
-						UIElementsMap[s.first].sx = s.second.currentMaxScale;
-						commandBufferMustUpdate = true;
-						ret.push_back({s.first, 1.0f});
-					}
-				} else {
-					// value in between
+				} else if (mouseClick && isPointInsideRectangle(mousePosX, mousePosY, s.second.upperLeftCorner, s.second.lowerRightCorner)) {
+					// the user clicks inside the "hitbox" of the slider, setting the slider to that point and saving that the slider is moving
 					UIElementsMap[s.first].sx = (mousePosX - s.second.upperLeftCorner.x)/(s.second.lowerRightCorner.x - s.second.upperLeftCorner.x) * s.second.currentMaxScale;
+					s.second.moving = true;
 					commandBufferMustUpdate = true;
 					ret.push_back({s.first, UIElementsMap[s.first].sx / s.second.currentMaxScale});
-				}
-			} else if (mouseClick && isPointInsideRectangle(mousePosX, mousePosY, s.second.upperLeftCorner, s.second.lowerRightCorner)) {
-				// the user clicks inside the "hitbox" of the slider, setting the slider to that point and saving that the slider is moving
-				UIElementsMap[s.first].sx = (mousePosX - s.second.upperLeftCorner.x)/(s.second.lowerRightCorner.x - s.second.upperLeftCorner.x) * s.second.currentMaxScale;
-				s.second.moving = true;
-				commandBufferMustUpdate = true;
-				ret.push_back({s.first, UIElementsMap[s.first].sx / s.second.currentMaxScale});
-			} else if (s.second.moving) {
-				s.second.moving = false;
-			}
-
-			// if the modified slider was the volume, check to see if the plaque needs updating
-			if (s.first == UI_ID_SLIDER_VOLUME && commandBufferMustUpdate) {
-				VOLUME_STATUS old_volume_status = volume_status;
-
-				if (UIElementsMap[s.first].sx == 0.0f) {
-					volume_status = VOLUME_LOW;
-				} else if (UIElementsMap[s.first].sx == s.second.currentMaxScale) {
-					volume_status = VOLUME_HIGH;
-				} else {
-					volume_status = VOLUME_MEDIUM;
+				} else if (s.second.moving) {
+					s.second.moving = false;
 				}
 
-				if (old_volume_status != volume_status) {
-					switch(volume_status) {
-					case VOLUME_LOW:
-						UIElementsMap[UI_ID_SLIDER_VOLUME_PLAQUE].recreateDescriptorSet(&UI_DSL, BP, 2);
-						break;
-					case VOLUME_MEDIUM:
-						UIElementsMap[UI_ID_SLIDER_VOLUME_PLAQUE].recreateDescriptorSet(&UI_DSL, BP, 1);
-						break;
-					case VOLUME_HIGH:
-						UIElementsMap[UI_ID_SLIDER_VOLUME_PLAQUE].recreateDescriptorSet(&UI_DSL, BP, 0);
-						break;
+				// if the modified slider was the volume, check to see if the plaque needs updating
+				if (s.first == UI_ID_SLIDER_VOLUME && commandBufferMustUpdate) {
+					VOLUME_STATUS old_volume_status = volume_status;
+
+					if (UIElementsMap[s.first].sx == 0.0f) {
+						volume_status = VOLUME_LOW;
+					} else if (UIElementsMap[s.first].sx == s.second.currentMaxScale) {
+						volume_status = VOLUME_HIGH;
+					} else {
+						volume_status = VOLUME_MEDIUM;
+					}
+
+					if (old_volume_status != volume_status) {
+						switch(volume_status) {
+						case VOLUME_LOW:
+							UIElementsMap[UI_ID_SLIDER_VOLUME_PLAQUE].recreateDescriptorSet(&UI_DSL, BP, 2);
+							break;
+						case VOLUME_MEDIUM:
+							UIElementsMap[UI_ID_SLIDER_VOLUME_PLAQUE].recreateDescriptorSet(&UI_DSL, BP, 1);
+							break;
+						case VOLUME_HIGH:
+							UIElementsMap[UI_ID_SLIDER_VOLUME_PLAQUE].recreateDescriptorSet(&UI_DSL, BP, 0);
+							break;
+						}
 					}
 				}
 			}
@@ -721,7 +728,9 @@ public:
 	void renderMainMenu() {
 		renderUI(0.0f, 0.0f, UI_ID_MENU_BACKGROUND, UIO_CENTER, UIO_MIDDLE);
 
-		renderUI(-0.9f, -0.9f, UI_ID_TITLE, UIO_LEFT, UIO_TOP, 5.0f, 5.0f);
+		renderUI(-0.9f, -0.9f, UI_ID_TITLE, UIO_LEFT, UIO_TOP, 1.5f, 1.5f);
+		
+		renderUI(1.0f, -1.0f, UI_ID_LOGO, UIO_RIGHT, UIO_TOP, 0.5f, 0.5f);
 
 		renderUI(-0.9f, 0.7f, UI_ID_BUTTON_START, UIO_LEFT, UIO_BOTTOM);
 		renderUI(-0.9f, 0.9f, UI_ID_BUTTON_QUIT, UIO_LEFT, UIO_BOTTOM);
@@ -751,7 +760,7 @@ public:
 	 * Renders the end menu
 	 */
 	void renderEndMenu() {
-		renderUI(0.0f, -0.35f, UI_ID_END, UIO_CENTER, UIO_MIDDLE);
+		renderUI(0.0f, -0.35f, UI_ID_END, UIO_CENTER, UIO_MIDDLE, 1.25f, 1.25f);
 
 		renderUI(-0.9f, 0.9f, UI_ID_BUTTON_QUIT, UIO_LEFT, UIO_BOTTOM);
 	}

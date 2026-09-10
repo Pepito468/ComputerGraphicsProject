@@ -271,6 +271,7 @@ class Engine : public BaseProject {
                 case UI_ID_BUTTON_START:
                     MainEngine->ui.toggleVisibility(UI_ID_BUTTON_START);
                     MainEngine->ui.toggleVisibility(UI_ID_TITLE);
+                    MainEngine->ui.toggleVisibility(UI_ID_LOGO); 
                     Engine::requestSceneChange(std::any_cast<Node*>(Engine::getGlobalVariable("Forest")));
                     MainEngine->ui.renderPauseMenu();
                     Engine::setCursorMode(GLFW_CURSOR_DISABLED);
@@ -702,7 +703,8 @@ class Engine : public BaseProject {
 
             // UIElements for the main menu
             ui.initElement(UI_ID_MENU_BACKGROUND, {{ProceduralTextures::generateMenuBackgroundTint(windowWidth, windowHeight)}, true, FULL_RESIZABLE});
-            ui.initElement(UI_ID_TITLE, {{"assets/textures/ui/title.png"}, true, KEEP_ASPECT_RATIO});   //TODO make the tile bigger (i dont know why scale doesn't work) 
+            ui.initElement(UI_ID_TITLE, {{"assets/textures/ui/title.png"}, true, KEEP_ASPECT_RATIO});
+            ui.initElement(UI_ID_LOGO, {{"assets/textures/ui/logo.png"}, true, KEEP_ASPECT_RATIO});
             ui.initElement(UI_ID_BUTTON_START, {{"assets/textures/ui/start_button.png", "assets/textures/ui/start_button_hover.png", "assets/textures/ui/start_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
             ui.initElement(UI_ID_BUTTON_QUIT, {{"assets/textures/ui/quit_button.png", "assets/textures/ui/quit_button_hover.png", "assets/textures/ui/quit_button_click.png"}, false, KEEP_ASPECT_RATIO, UI_BUTTON});
 
@@ -716,6 +718,7 @@ class Engine : public BaseProject {
             ui.initElement(UI_ID_SLIDER_SENSITIVITY_PLAQUE, {{"assets/textures/ui/sensitivity.png"}, true, KEEP_ASPECT_RATIO, UI_NORMAL});
             ui.initElement(UI_ID_COMMANDS, {{"assets/textures/ui/commands.png"}, true, KEEP_ASPECT_RATIO, UI_NORMAL});
 
+            // UIElements for the end menu
             ui.initElement(UI_ID_END, {{"assets/textures/ui/end.png"}, true, KEEP_ASPECT_RATIO, UI_NORMAL});
 
             ui.init(windowWidth, windowHeight);

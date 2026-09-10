@@ -20,8 +20,8 @@ class LeverNode : public InteractableNode
     Node3D* handle = nullptr;
     Node3D* bridge = nullptr;
     Collider* bridgeWall = nullptr;
+    OutlineMaterial outMat = OutlineMaterial({1, 1, 0, 0.25f}, 0.1f);
 
-    Collider* coll = nullptr;
     float timer = 0.0f;
 
     bool firstTimePull = true;
@@ -31,7 +31,27 @@ class LeverNode : public InteractableNode
 public:
     void interact() override
     {
+        if (hasBeenPulled) return;
+
         hasBeenPulled = true;
+
+        if (leverSound && bridgeSound) {
+            leverSound->playSound();
+            bridgeSound->playSound();
+        }
+        outMat.setVisible(false);
+    }
+
+    void select() override
+    {
+        if (hasBeenPulled) return;
+        outMat.setVisible(true);
+    }
+
+    void deselect() override
+    {
+        if (hasBeenPulled) return;
+        outMat.setVisible(false);
     }
 
     void update() override
@@ -51,12 +71,6 @@ public:
             return;
         }
 
-        if (firstTimePull && leverSound && bridgeSound) {
-            leverSound->playSound();
-            bridgeSound->playSound();
-            firstTimePull = false;
-        }
-
         handle->localRotateX(L_ROT_SPEED * Engine::getDeltaTime());
         bridge->localRotateX(B_ROT_SPEED * Engine::getDeltaTime());
     }
@@ -69,13 +83,16 @@ public:
         lever->adopt(lever_b);
         Model3D* lever_h = new Model3D("Lever_Handle.gltf", VEC3_ZERO, VEC3_ZERO, VEC3_ONE, mat);
         lever->adopt(lever_h);
+        //Model3D* baseOutline = new Model3D("Lever_Base_smooth.gltf", VEC3_ZERO, VEC3_ZERO, VEC3_ONE, &lever->outMat);
+        //lever_b->adopt(baseOutline);
+        Model3D* handleOutline = new Model3D("Lever_Handle_smooth.gltf", VEC3_ZERO, VEC3_ZERO, VEC3_ONE, &lever->outMat);
+        lever_h->adopt(handleOutline);
         lever->handle = lever_h;
         Collider* leverColl = new SphereCollider();
         leverColl->name = "LeverCollider";
         leverColl->layer = INTERACTABLE;
         leverColl->collidesWith = NONE;
         leverColl->movementStatus = STATIC;
-        lever->coll = leverColl;
         lever->adopt(leverColl);
 
         lever->globalScaleAll(VEC3_ONE * 2.0f);
