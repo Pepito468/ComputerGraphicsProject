@@ -9,12 +9,12 @@
 | Physics           |         0          |        0         |       28       |         0         |
 | Model Rendering   |         0          |        46        |       0        |         0         |
 | Testing           |         3          |        0         |       16       |         6         |
-| Shaders           |         0          |        20        |      4.30      |         3         |
+| Shaders           |         0          |        18        |      4.30      |         3         |
 | UI                |         50         |        0         |       0        |         0         |
 | Game Nodes        |         0          |        6         |       15       |         2         |
 | Engine            |         0          |        0         |       0        |        24         |
 | Audio             |         0          |        0         |       0        |         5         |
-| Asset Procurement |         0          |        0.5       |       18       |         0         |
+| Asset Procurement |         0          |        2.5       |       18       |         0         |
 | Scene Layout      |         10         |        3         |     11.30      |         3         |
 
 ## Asset Sources
