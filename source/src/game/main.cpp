@@ -25,6 +25,7 @@
 #include "Particles.hpp"
 #include "gamenodes/AudioController.hpp"
 #include "gamenodes/CustomCameraUpdate.hpp"
+#include "gamenodes/FlyingBat.hpp"
 #include "gamenodes/FollowPath.hpp"
 #include "gamenodes/FPSTextUpdater.hpp"
 #include "gamenodes/LeverNode.hpp"
@@ -54,6 +55,8 @@ CookTorranceAnimMaterial animMat = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f
 RainbowMaterial rMat = {0.2, 1, 1, 0.3};
 SonarMaterial sMat = {20, 10, 75};
 
+CookTorranceMaterial duckMat = {glm::vec3(1.0f, 0.0f, 0.0f), {1.0f,1.0f,1.0f,100.0f}, "duck.png"};
+
 void freeNodeTree(Node *node) {
     for (Node *child : node->children)
         freeNodeTree(child);
@@ -73,6 +76,8 @@ WaterMaterial waterMat = {glm::vec3(1.0f, 1.0f, 1.0f), {1.0f,1.0f,1.0f,100.0f}, 
 LambertMaterial rainMat = {glm::vec3(0.0f, 0.0f, .9f), {1.0f,1.0f,1.0f,100.0f}};
 OutlineMaterial outlineMat = OutlineMaterial({1, 0, 1, 0.5}, 0.1f);
 LambertMaterial metalMat = {{0.153, 0.212, 0.322}, {0.153, 0.212, 0.322, 1}};
+LambertMaterial batMat = {{0.1,0.1,0.1}, {1,1,1,5}};
+LambertMaterial magicVfxMat = {{0.95, 0.2, 0.0}, {1,1,1,100}};
 
 Node* createScene1() {
 
@@ -461,8 +466,8 @@ Node* createForestScene() {
     models->name = "ModelContainer";
     root->adopt(models);
 
-    Particles* rain = new Particles({0.0f,10.0f,0.0f}, {0.0f, 0.0f, 0.0f}, "", &rainMat);
-    rain->setMaxParticles(25);
+    Particles* rain = new Particles({0.0f,10.0f,0.0f}, {0.0f, 0.0f, 0.0f}, {0.05f, 0.2f, 0.05f}, "", &rainMat);
+    rain->setMaxParticles(100);
     rain->setBounds({10.0f, 5.0f, 10.0f});
     rain->setMaxLifeTime({0.5f, 1.0f});
     rain->setLinearVelocity({0.0f, -15.0f, 0.0f});
@@ -511,6 +516,38 @@ Node* createForestScene() {
     models->adopt(rocks1);
     Model3D* rocks2 = new Model3D("Unit Plane.gltf", {0, -50, 76.2f}, {M_PI/2, 0, 0}, {100, 1, 100}, rockMat);
     models->adopt(rocks2);
+
+    Model3D* duck = new Model3D("scene.gltf", {-1.5,0,-9.5},{-M_PI/2,glm::radians(15.0f),0},{0.03,0.03,0.03},&duckMat);
+    models->adopt(duck);
+
+    FlyingBat* bat = new FlyingBat({0,30,20},{0,0,0}, {0.5,0.5,0.5}, 30.0f, 2.0f, 10.0f, &batMat);
+    bat->adopt(bat->createBody());
+    models->adopt(bat);
+
+
+    FlyingBat* bat2 = new FlyingBat({20,20,40},{0,0,0}, {0.5,0.5,0.5}, 30.0f, 1.2f, 5.0f, &batMat);
+    bat2->adopt(bat2->createBody());
+    models->adopt(bat2);
+
+    FlyingBat* bat3 = new FlyingBat({-20,23,60},{0,0,0}, {0.5,0.5,0.5}, 30.0f, 2.5f, 15.0f, &batMat);
+    bat3->adopt(bat3->createBody());
+    models->adopt(bat3);
+
+    FlyingBat* bat4 = new FlyingBat({5,35,100},{0,0,0}, {0.5,0.5,0.5}, 30.0f, 1.8f, 20.0f, &batMat);
+    bat4->adopt(bat4->createBody());
+    models->adopt(bat4);
+
+    FlyingBat* bat5 = new FlyingBat({-5,40,40},{0,0,0}, {0.5,0.5,0.5}, 30.0f, 1.8f, 15.0f, &batMat);
+    bat5->adopt(bat5->createBody());
+    models->adopt(bat5);
+
+    FlyingBat* bat6 = new FlyingBat({40,45,50},{0,0,0}, {0.5,0.5,0.5}, 30.0f, 2.3f, 20.0f, &batMat);
+    bat6->adopt(bat6->createBody());
+    models->adopt(bat6);
+
+    FlyingBat* bat7 = new FlyingBat({40,45,80},{0,0,0}, {0.5,0.5,0.5}, 30.0f, 1.7f, 12.0f, &batMat);
+    bat7->adopt(bat7->createBody());
+    models->adopt(bat7);
 
     //flames
     Model3D *fire1 = new Model3D("Unit Plane.gltf", {7.0f, 8.0f, 101.0f}, {glm::radians(90.0f), 0.0f, glm::radians(180.0f)}, glm::vec3(2.5, 3.5, 2.5), &flame1);
@@ -934,8 +971,15 @@ Node* createLabyrinthScene()
     root->adopt(startCeiling);
     Model3D* endCeiling = new Model3D("Unit Plane.gltf", {0, 5.990, 84.900}, {0, 0, 3.142}, {10, 1, 10}, &rMat);
     root->adopt(endCeiling);
-    Model3D* magicCircle = new Model3D("Unit Plane.gltf", {0, 0, 84.900}, VEC3_ZERO, {5, 1, 5}, &magicMat);
+    Model3D* magicCircle = new Model3D("Unit Plane.gltf", {0, 0, 84.900}, VEC3_ZERO, {5, 5, 5}, &magicMat);
     root->adopt(magicCircle);
+    Particles* magic_vfx = new Particles({0.0f, 0.2f, 0.0f}, {0.0f,0.0f,0.0f},{0.01f, 0.01f, 0.01f} , "", &rMat);
+    magic_vfx->setMaxParticles(10);
+    magic_vfx->setBounds({2.0f, 0.5f, 2.0f});
+    magic_vfx->setMaxLifeTime({8.0f, 12.0f});
+    magic_vfx->setLinearVelocity({0.0f, 0.2f, 0.0f});
+    magic_vfx->setRandomRescalingFactor(1.0f, 2.5f);
+    magicCircle->adopt(magic_vfx);
 
     BoxCollider* endZone = new BoxCollider(true, {0.0f, 0.1f, 84.900}, VEC3_ZERO, {5, 5, 5});
     endZone->movementStatus = STATIC;
@@ -1311,8 +1355,8 @@ Node* createMainMenu() {
     camera->lookAt({castle->getGlobalPosition()});
     root->adopt(camera);
 
-    Particles* rain = new Particles({0.0f,10.0f,0.0f}, {0.0f, 0.0f, 0.0f}, "", &rainMat);
-    rain->setMaxParticles(20);
+    Particles* rain = new Particles({0.0f,10.0f,0.0f}, {0.0f, 0.0f, 0.0f},{0.05f, 0.2f, 0.05f}, "", &rainMat);
+    rain->setMaxParticles(100);
     rain->setBounds({10.0f, 10.0f, 10.0f});
     rain->setMaxLifeTime({0.5f, 1.0f});
     rain->setLinearVelocity({0.0f, -15.0f, 0.0f});

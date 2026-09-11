@@ -46,6 +46,9 @@ class Particles : public UpdateNode3D {
     glm::vec3 boxBounds;
     glm::vec3 linearVelocity;
 
+    glm::vec3 particlesScale;
+    float rescalingFactor;
+
     std::string textureName;
     Material* material;
 
@@ -55,11 +58,15 @@ class Particles : public UpdateNode3D {
 
     public:
 
-    Particles(const glm::vec3 position, const glm::vec3 rotation, const std::string textureName, Material* material) :
+    Particles(const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 particlesScale, const std::string textureName, Material* material) :
         UpdateNode3D(position, rotation, glm::vec3(1.0f, 1.0f, 1.0f))
     {
         this->textureName = textureName;
         this->material = material;
+
+        this->particlesScale = particlesScale;
+
+        rescalingFactor = 1.0f;
 
         srand(time(nullptr));
     }
@@ -69,7 +76,7 @@ class Particles : public UpdateNode3D {
     }
 
     void onEnter() override {
-        for (size_t i = 0; i < 100; i++) {
+        for (size_t i = 0; i < maxParticles; i++) {
             spawnParticle();
         }
     }
@@ -100,6 +107,10 @@ class Particles : public UpdateNode3D {
         this->maxParticles = maxParticles;
     }
 
+    void setRandomRescalingFactor(float min, float max) {
+        this->rescalingFactor = getRand(min, max);
+    }
+
     private:
 
     //from: https://lucidar.me/en/c-class/lesson-08-08-random-numbers-in-c/
@@ -117,7 +128,7 @@ class Particles : public UpdateNode3D {
     void spawnParticle() {
         glm::vec3 spawnPos = target != nullptr ? target->getGlobalPosition() + getGlobalPosition() : getGlobalPosition();
 
-        SingleParticle* p = new SingleParticle("Unit Cube.gltf", spawnPos, {0.0f, 0.0f, 0.0f}, {0.05f, 0.2f, 0.05f}, material, this);
+        SingleParticle* p = new SingleParticle("Unit Cube.gltf", spawnPos, {0.0f, 0.0f, 0.0f}, rescalingFactor*particlesScale, material, this);
         p->globalTranslate({getRand(-boxBounds.x, boxBounds.x), getRand(-boxBounds.y, boxBounds.y),getRand(-boxBounds.z, boxBounds.z)});
 
         this->adopt(p);

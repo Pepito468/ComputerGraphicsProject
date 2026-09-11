@@ -380,6 +380,7 @@ class Renderer {
             t->init(bp,"assets/textures/normal/" + name);
         }
 
+
         //Insert model and texture
         model3D->getMaterial()->setAlbedoTex(&albedoTexAssets[model3D->getMaterial()->getTextureName()]);
         model3D->getMaterial()->setArmTex(&armTexAssets[model3D->getMaterial()->getTextureName()]);
