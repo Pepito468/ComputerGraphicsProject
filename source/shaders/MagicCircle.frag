@@ -91,7 +91,7 @@ void main()
     float t = gubo.time;
     vec4 lighterColor = vec4(0.94, 0.52, 0.05, 1.0);
     vec4 darkerColor = vec4(0.74, 0.32, 0.01, 1.0);
-    vec4 background = vec4(0.64, 0.32, 0.075, 1.0);
+    vec4 background = vec4(0.14, 0.07, 0.008, 1.0);
     float twirlStrength = 10;
     float rippleCount = 4;
     float noiseSpeed = .2;
