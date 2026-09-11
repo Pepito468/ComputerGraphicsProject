@@ -170,7 +170,7 @@ void main()
     float waterDepth = linearizeDepth(sceneDepthValue) - screenPos.w;
 
     //Fading
-    float fadeDistance = 1.5;
+    float fadeDistance = 0.2;
     float fade = clamp(waterDepth / fadeDistance, 0.0, 1.0);
     vec3 baseColor = mix(shallowColor, deepColor, fade);
 
@@ -183,14 +183,15 @@ void main()
     vec3 H = normalize(V + L);
     float dotNH = max(dot(N, H), 0.0);
     float fresnel = fresnelSchlick(dotNH);
-	vec3 color = mix(underwaterColor, horizonColor, fresnel);
+	vec3 underColor = mix(underwaterColor, horizonColor, fresnel);
 
     //Direct Light
     float specular = blinn(L, N, V, smoothness);
     vec3 specular_ = mix(specular, step(0.5, specular), lightingHardness) * specularColor;
     float dotNL = max(dot(N,L), 0.0);
     vec3 directLight = gubo.lightColor.rgb * dotNL;
-    color *= directLight;
+
+    vec3 color = horizonColor * directLight;
     color += specular_;
 
     //Point Lights
@@ -203,6 +204,8 @@ void main()
         dotNL = max(dot(N,L), 0.0);
         color += Lc * (dotNL + specularTerm);
     }
+
+    color = mix(underColor, color, fresnel);
 
     //Ambient Light
     vec3 ambient = mix(gubo.ambientLower.rgb,gubo.ambientUpper.rgb,max(dot(N, normalize(gubo.ambientDir.xyz)), 0.0));
